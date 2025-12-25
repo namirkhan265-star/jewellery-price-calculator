@@ -1,6 +1,8 @@
 jQuery(document).ready(function($) {
     'use strict';
     
+    let currentCalculatedPrice = 0;
+    
     // Debounce function to avoid too many AJAX calls
     function debounce(func, wait) {
         let timeout;
@@ -59,6 +61,7 @@ jQuery(document).ready(function($) {
             },
             success: function(response) {
                 if (response.success) {
+                    currentCalculatedPrice = response.data.final_price;
                     displayPriceBreakup(response.data);
                 } else {
                     $('.jpc-price-breakup-admin').html('<p style="color: red;">' + response.data.message + '</p>');
@@ -70,11 +73,28 @@ jQuery(document).ready(function($) {
         });
     }
     
+    // Apply calculated price to product price field
+    function applyPriceToProduct() {
+        if (currentCalculatedPrice > 0) {
+            const formattedPrice = currentCalculatedPrice.toFixed(2);
+            $('#_regular_price').val(formattedPrice);
+            
+            // Show success message
+            const $button = $('.jpc-apply-price-btn');
+            const originalText = $button.text();
+            $button.text('✓ Applied!').prop('disabled', true);
+            
+            setTimeout(function() {
+                $button.text(originalText).prop('disabled', false);
+            }, 2000);
+        }
+    }
+    
     // Display price breakup
     function displayPriceBreakup(data) {
         let html = '<h4>Live Price Calculation</h4>';
         html += '<p class="description" style="color: #2271b1; margin-bottom: 10px;">';
-        html += '<strong>Note:</strong> This is a live calculation. Click "Update" to save these values.';
+        html += '<strong>Note:</strong> This is a live calculation. Click the button below to apply this price to the product.';
         html += '</p>';
         html += '<table>';
         
@@ -115,7 +135,14 @@ jQuery(document).ready(function($) {
         html += '<tr class="total-row"><td><strong>Final Price:</strong></td><td><strong>₹' + formatNumber(data.final_price) + '</strong></td></tr>';
         html += '</table>';
         
+        html += '<p style="margin-top: 15px;">';
+        html += '<button type="button" class="button button-primary jpc-apply-price-btn">Apply to Product Price</button>';
+        html += '</p>';
+        
         $('.jpc-price-breakup-admin').html(html);
+        
+        // Bind click event to the button
+        $('.jpc-apply-price-btn').off('click').on('click', applyPriceToProduct);
     }
     
     // Format number with 2 decimals
