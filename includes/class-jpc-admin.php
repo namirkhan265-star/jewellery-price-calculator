@@ -67,6 +67,15 @@ class JPC_Admin {
         
         add_submenu_page(
             'jewellery-price-calc',
+            __('Diamonds', 'jewellery-price-calc'),
+            __('Diamonds', 'jewellery-price-calc'),
+            'manage_woocommerce',
+            'jpc-diamonds',
+            array($this, 'render_diamonds')
+        );
+        
+        add_submenu_page(
+            'jewellery-price-calc',
             __('Discount Settings', 'jewellery-price-calc'),
             __('Discount', 'jewellery-price-calc'),
             'manage_woocommerce',
@@ -173,6 +182,13 @@ class JPC_Admin {
      */
     public function render_metals() {
         include JPC_PLUGIN_DIR . 'templates/admin/metals.php';
+    }
+    
+    /**
+     * Render diamonds page
+     */
+    public function render_diamonds() {
+        include JPC_PLUGIN_DIR . 'templates/admin/diamonds.php';
     }
     
     /**
