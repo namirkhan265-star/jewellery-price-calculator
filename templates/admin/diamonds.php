@@ -11,10 +11,24 @@ $diamonds = JPC_Diamonds::get_all();
 $types = JPC_Diamonds::get_types();
 $certifications = JPC_Diamonds::get_certifications();
 $carat_sizes = JPC_Diamonds::get_carat_sizes();
+
+// Debug info
+$diamond_count = count($diamonds);
+error_log('JPC Diamonds Page: Found ' . $diamond_count . ' diamonds');
 ?>
 
 <div class="wrap jpc-admin-wrap">
-    <h1><?php _e('Manage Diamonds', 'jewellery-price-calc'); ?></h1>
+    <h1>
+        <?php _e('Manage Diamonds', 'jewellery-price-calc'); ?>
+        <a href="<?php echo admin_url('admin.php?page=jpc-diamonds'); ?>" class="page-title-action">
+            <?php _e('Refresh', 'jewellery-price-calc'); ?>
+        </a>
+    </h1>
+    
+    <!-- Debug Info -->
+    <div class="notice notice-info" style="margin: 15px 0;">
+        <p><strong>Debug:</strong> Currently showing <?php echo $diamond_count; ?> diamonds in database.</p>
+    </div>
     
     <div class="jpc-admin-content">
         <!-- Add New Diamond Form -->
@@ -97,10 +111,12 @@ $carat_sizes = JPC_Diamonds::get_carat_sizes();
         
         <!-- Existing Diamonds -->
         <div class="jpc-card">
-            <h2><?php _e('Existing Diamonds', 'jewellery-price-calc'); ?></h2>
+            <h2><?php _e('Existing Diamonds', 'jewellery-price-calc'); ?> (<?php echo $diamond_count; ?>)</h2>
             
             <?php if (empty($diamonds)): ?>
-                <p><?php _e('No diamonds found. Add your first diamond above.', 'jewellery-price-calc'); ?></p>
+                <div class="notice notice-warning inline">
+                    <p><?php _e('No diamonds found. Add your first diamond above.', 'jewellery-price-calc'); ?></p>
+                </div>
             <?php else: ?>
                 <!-- Filter by Type -->
                 <div style="margin-bottom: 20px;">
@@ -169,9 +185,12 @@ $carat_sizes = JPC_Diamonds::get_carat_sizes();
             <div class="quick-add-buttons">
                 <button class="button" onclick="quickAddDiamond('natural', '0.50', 'gia', '50000')">0.50ct Natural (GIA)</button>
                 <button class="button" onclick="quickAddDiamond('natural', '1.00', 'gia', '95000')">1.00ct Natural (GIA)</button>
+                <button class="button" onclick="quickAddDiamond('natural', '2.00', 'gia', '180000')">2.00ct Natural (GIA)</button>
                 <button class="button" onclick="quickAddDiamond('lab_grown', '0.50', 'igi', '25000')">0.50ct Lab Grown (IGI)</button>
                 <button class="button" onclick="quickAddDiamond('lab_grown', '1.00', 'igi', '45000')">1.00ct Lab Grown (IGI)</button>
+                <button class="button" onclick="quickAddDiamond('lab_grown', '2.00', 'igi', '85000')">2.00ct Lab Grown (IGI)</button>
                 <button class="button" onclick="quickAddDiamond('moissanite', '1.00', 'none', '15000')">1.00ct Moissanite</button>
+                <button class="button" onclick="quickAddDiamond('moissanite', '2.00', 'none', '28000')">2.00ct Moissanite</button>
             </div>
         </div>
     </div>
@@ -219,16 +238,21 @@ function quickAddDiamond(type, carat, cert, price) {
 }
 
 // Filter diamonds by type
-document.getElementById('filter-type').addEventListener('change', function() {
-    const filterValue = this.value;
-    const rows = document.querySelectorAll('#diamonds-table tbody tr');
-    
-    rows.forEach(row => {
-        if (!filterValue || row.dataset.type === filterValue) {
-            row.style.display = '';
-        } else {
-            row.style.display = 'none';
-        }
-    });
+document.addEventListener('DOMContentLoaded', function() {
+    const filterSelect = document.getElementById('filter-type');
+    if (filterSelect) {
+        filterSelect.addEventListener('change', function() {
+            const filterValue = this.value;
+            const rows = document.querySelectorAll('#diamonds-table tbody tr');
+            
+            rows.forEach(row => {
+                if (!filterValue || row.dataset.type === filterValue) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+    }
 });
 </script>
