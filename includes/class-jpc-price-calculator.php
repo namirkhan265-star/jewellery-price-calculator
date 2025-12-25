@@ -67,8 +67,19 @@ class JPC_Price_Calculator {
         if ($diamond_id && $diamond_quantity > 0) {
             $diamond = JPC_Diamonds::get_by_id($diamond_id);
             if ($diamond) {
+                // Debug logging
+                error_log('JPC Diamond Calculation Debug:');
+                error_log('Diamond ID: ' . $diamond_id);
+                error_log('Diamond Type: ' . $diamond->type);
+                error_log('Diamond Carat: ' . $diamond->carat);
+                error_log('Price Per Carat: ' . $diamond->price_per_carat);
+                error_log('Quantity: ' . $diamond_quantity);
+                
                 $diamond_unit_price = $diamond->price_per_carat * $diamond->carat;
+                error_log('Diamond Unit Price (per carat × carat): ' . $diamond_unit_price);
+                
                 $diamond_price = $diamond_unit_price * $diamond_quantity;
+                error_log('Total Diamond Price (unit × quantity): ' . $diamond_price);
             }
         }
         
