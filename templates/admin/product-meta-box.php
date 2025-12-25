@@ -6,31 +6,6 @@
 if (!defined('ABSPATH')) {
     exit;
 }
-
-// Get diamond debug info if diamond is selected
-$diamond_debug = '';
-if ($diamond_id && $diamond_quantity > 0) {
-    $selected_diamond = JPC_Diamonds::get_by_id($diamond_id);
-    if ($selected_diamond) {
-        $unit_price = $selected_diamond->price_per_carat * $selected_diamond->carat;
-        $total_diamond_price = $unit_price * $diamond_quantity;
-        $diamond_debug = sprintf(
-            '<div style="background: #f0f0f1; padding: 10px; margin-top: 10px; border-left: 4px solid #2271b1;">
-                <strong>Diamond Calculation Debug:</strong><br>
-                Price per carat: ₹%s<br>
-                Carat weight: %s ct<br>
-                Unit price (per carat × carat): ₹%s<br>
-                Quantity: %d<br>
-                <strong>Total Diamond Price: ₹%s</strong>
-            </div>',
-            number_format($selected_diamond->price_per_carat, 2),
-            $selected_diamond->carat,
-            number_format($unit_price, 2),
-            $diamond_quantity,
-            number_format($total_diamond_price, 2)
-        );
-    }
-}
 ?>
 
 <div class="jpc-product-meta-box">
@@ -74,9 +49,6 @@ if ($diamond_id && $diamond_quantity > 0) {
         <label for="_jpc_diamond_quantity"><?php _e('Diamond Quantity', 'jewellery-price-calc'); ?></label>
         <input type="number" id="_jpc_diamond_quantity" name="_jpc_diamond_quantity" value="<?php echo esc_attr($diamond_quantity ?: 1); ?>" step="1" min="0" class="widefat">
         <p class="description"><?php _e('Number of diamonds (leave 0 or empty if no diamond)', 'jewellery-price-calc'); ?></p>
-        <?php if ($diamond_debug): ?>
-            <?php echo $diamond_debug; ?>
-        <?php endif; ?>
     </div>
     
     <div class="form-field">
@@ -135,55 +107,10 @@ if ($diamond_id && $diamond_quantity > 0) {
     </div>
     <?php endif; ?>
     
-    <?php if ($price_breakup && is_array($price_breakup) && isset($_GET['post'])): ?>
+    <!-- Live Price Breakup Container -->
     <div class="jpc-price-breakup-admin">
-        <h4><?php _e('Last Saved Price Breakup', 'jewellery-price-calc'); ?></h4>
-        <p class="description" style="color: #d63638; margin-bottom: 10px;">
-            <strong><?php _e('Note:', 'jewellery-price-calc'); ?></strong> 
-            <?php _e('This shows the price from the last save. Click "Update" to recalculate with current values.', 'jewellery-price-calc'); ?>
-        </p>
-        <table>
-            <tr>
-                <td><?php _e('Metal Price:', 'jewellery-price-calc'); ?></td>
-                <td>₹<?php echo number_format($price_breakup['metal_price'], 2); ?></td>
-            </tr>
-            <?php if (!empty($price_breakup['diamond_price']) && $price_breakup['diamond_price'] > 0): ?>
-            <tr>
-                <td><?php _e('Diamond Price:', 'jewellery-price-calc'); ?></td>
-                <td>₹<?php echo number_format($price_breakup['diamond_price'], 2); ?></td>
-            </tr>
-            <?php endif; ?>
-            <?php if ($price_breakup['making_charge'] > 0): ?>
-            <tr>
-                <td><?php _e('Making Charge:', 'jewellery-price-calc'); ?></td>
-                <td>₹<?php echo number_format($price_breakup['making_charge'], 2); ?></td>
-            </tr>
-            <?php endif; ?>
-            <?php if ($price_breakup['wastage_charge'] > 0): ?>
-            <tr>
-                <td><?php _e('Wastage Charge:', 'jewellery-price-calc'); ?></td>
-                <td>₹<?php echo number_format($price_breakup['wastage_charge'], 2); ?></td>
-            </tr>
-            <?php endif; ?>
-            <?php if ($price_breakup['discount'] > 0): ?>
-            <tr>
-                <td><?php _e('Discount:', 'jewellery-price-calc'); ?></td>
-                <td>-₹<?php echo number_format($price_breakup['discount'], 2); ?></td>
-            </tr>
-            <?php endif; ?>
-            <?php if ($price_breakup['gst'] > 0): ?>
-            <tr>
-                <td><?php _e('GST:', 'jewellery-price-calc'); ?></td>
-                <td>₹<?php echo number_format($price_breakup['gst'], 2); ?></td>
-            </tr>
-            <?php endif; ?>
-            <tr class="total-row">
-                <td><?php _e('Final Price:', 'jewellery-price-calc'); ?></td>
-                <td>₹<?php echo number_format($price_breakup['final_price'], 2); ?></td>
-            </tr>
-        </table>
+        <p class="description"><?php _e('Fill in the fields above to see live price calculation', 'jewellery-price-calc'); ?></p>
     </div>
-    <?php endif; ?>
     
     <p class="description">
         <strong><?php _e('Note:', 'jewellery-price-calc'); ?></strong> 
