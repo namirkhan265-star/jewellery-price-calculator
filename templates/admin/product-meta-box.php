@@ -6,6 +6,31 @@
 if (!defined('ABSPATH')) {
     exit;
 }
+
+// Get diamond debug info if diamond is selected
+$diamond_debug = '';
+if ($diamond_id && $diamond_quantity > 0) {
+    $selected_diamond = JPC_Diamonds::get_by_id($diamond_id);
+    if ($selected_diamond) {
+        $unit_price = $selected_diamond->price_per_carat * $selected_diamond->carat;
+        $total_diamond_price = $unit_price * $diamond_quantity;
+        $diamond_debug = sprintf(
+            '<div style="background: #f0f0f1; padding: 10px; margin-top: 10px; border-left: 4px solid #2271b1;">
+                <strong>Diamond Calculation Debug:</strong><br>
+                Price per carat: ₹%s<br>
+                Carat weight: %s ct<br>
+                Unit price (per carat × carat): ₹%s<br>
+                Quantity: %d<br>
+                <strong>Total Diamond Price: ₹%s</strong>
+            </div>',
+            number_format($selected_diamond->price_per_carat, 2),
+            $selected_diamond->carat,
+            number_format($unit_price, 2),
+            $diamond_quantity,
+            number_format($total_diamond_price, 2)
+        );
+    }
+}
 ?>
 
 <div class="jpc-product-meta-box">
@@ -49,6 +74,9 @@ if (!defined('ABSPATH')) {
         <label for="_jpc_diamond_quantity"><?php _e('Diamond Quantity', 'jewellery-price-calc'); ?></label>
         <input type="number" id="_jpc_diamond_quantity" name="_jpc_diamond_quantity" value="<?php echo esc_attr($diamond_quantity ?: 1); ?>" step="1" min="0" class="widefat">
         <p class="description"><?php _e('Number of diamonds (leave 0 or empty if no diamond)', 'jewellery-price-calc'); ?></p>
+        <?php if ($diamond_debug): ?>
+            <?php echo $diamond_debug; ?>
+        <?php endif; ?>
     </div>
     
     <div class="form-field">
@@ -86,7 +114,7 @@ if (!defined('ABSPATH')) {
     <?php if (get_option('jpc_enable_stone_cost') === 'yes'): ?>
     <div class="form-field">
         <label for="_jpc_stone_cost"><?php _e('Stone Cost', 'jewellery-price-calc'); ?></label>
-        <input type="number" id="_jpc_stone_cost" name="_jpc_stone_cost" value="<?php echo esc_attr($stone_cost); ?>" step="0.01" min="0" class="widefat">
+        <input type="number" id="_jpc_stone_cost" name="_jpc_stone_cost" value="<?php echo esc_attr($stone_cost); ?>\" step="0.01" min="0" class="widefat">
         <p class="description"><?php _e('Enter stone cost if applicable', 'jewellery-price-calc'); ?></p>
     </div>
     <?php endif; ?>
