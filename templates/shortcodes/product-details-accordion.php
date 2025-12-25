@@ -37,10 +37,15 @@ if ($diamond_id) {
 $metal = null;
 $metal_group = null;
 $metal_karat = '';
+$is_silver = false;
 if ($metal_id) {
     $metal = JPC_Metals::get_by_id($metal_id);
     if ($metal) {
         $metal_group = JPC_Metal_Groups::get_by_id($metal->metal_group_id);
+        // Check if metal is silver
+        if ($metal_group && strtolower($metal_group->name) === 'silver') {
+            $is_silver = true;
+        }
         // Extract karat from metal name (e.g., "22K Gold" -> "22K")
         if (preg_match('/(\d+K)/i', $metal->name, $matches)) {
             $metal_karat = $matches[1];
@@ -53,11 +58,28 @@ $price_breakup = get_post_meta($product_id, '_jpc_price_breakup', true);
 
 // Get product tags
 $tags = wp_get_post_terms($product_id, 'product_tag');
+
+// Check if we have any data to display
+$has_product_details = $product_weight || $metal || $diamond;
+$has_diamond_details = $diamond && $diamond_quantity > 0;
+$has_metal_details = $metal;
+$has_price_breakup = $price_breakup && is_array($price_breakup);
+$has_tags = !empty($tags);
 ?>
 
+<?php if ($has_product_details || $has_diamond_details || $has_metal_details || $has_price_breakup || $has_tags): ?>
 <div class="jpc-product-details-accordion">
     
+    <!-- Silver Badge (if applicable) -->
+    <?php if ($is_silver): ?>
+    <div class="jpc-silver-badge">
+        <span class="jpc-silver-icon">✦</span>
+        <span class="jpc-silver-text">Made With Pure 925 Silver</span>
+    </div>
+    <?php endif; ?>
+    
     <!-- Product Details Section -->
+    <?php if ($has_product_details): ?>
     <div class="jpc-accordion-section jpc-active">
         <div class="jpc-accordion-header">
             <h3>PRODUCT DETAILS</h3>
@@ -73,7 +95,7 @@ $tags = wp_get_post_terms($product_id, 'product_tag');
             </div>
             <?php endif; ?>
             
-            <?php if ($metal && $metal_karat): ?>
+            <?php if ($metal): ?>
             <div class="jpc-detail-row">
                 <span class="jpc-detail-label">Metal Type</span>
                 <span class="jpc-detail-value"><?php echo esc_html($metal->name); ?></span>
@@ -93,9 +115,10 @@ $tags = wp_get_post_terms($product_id, 'product_tag');
             <?php endif; ?>
         </div>
     </div>
+    <?php endif; ?>
     
     <!-- Diamond Details Section -->
-    <?php if ($diamond && $diamond_quantity > 0): ?>
+    <?php if ($has_diamond_details): ?>
     <div class="jpc-accordion-section">
         <div class="jpc-accordion-header">
             <h3>DIAMOND DETAILS</h3>
@@ -134,7 +157,7 @@ $tags = wp_get_post_terms($product_id, 'product_tag');
     <?php endif; ?>
     
     <!-- Metal Details Section -->
-    <?php if ($metal): ?>
+    <?php if ($has_metal_details): ?>
     <div class="jpc-accordion-section">
         <div class="jpc-accordion-header">
             <h3>METAL DETAILS</h3>
@@ -172,7 +195,7 @@ $tags = wp_get_post_terms($product_id, 'product_tag');
     <?php endif; ?>
     
     <!-- Price Breakup Section -->
-    <?php if ($price_breakup && is_array($price_breakup)): ?>
+    <?php if ($has_price_breakup): ?>
     <div class="jpc-accordion-section">
         <div class="jpc-accordion-header">
             <h3>PRICE BREAKUP</h3>
@@ -251,7 +274,7 @@ $tags = wp_get_post_terms($product_id, 'product_tag');
     <?php endif; ?>
     
     <!-- Tags Section -->
-    <?php if (!empty($tags)): ?>
+    <?php if ($has_tags): ?>
     <div class="jpc-accordion-section">
         <div class="jpc-accordion-header">
             <h3>TAGS</h3>
@@ -282,6 +305,31 @@ $tags = wp_get_post_terms($product_id, 'product_tag');
     border: 1px solid #e5e5e5;
     border-radius: 4px;
     padding: 0 24px;
+}
+
+.jpc-silver-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 16px 24px;
+    margin: 0 -24px;
+    background: linear-gradient(135deg, #c0c0c0 0%, #e8e8e8 50%, #c0c0c0 100%);
+    border-bottom: 1px solid #b0b0b0;
+    font-size: 15px;
+    font-weight: 600;
+    color: #2c2c2c;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.jpc-silver-icon {
+    font-size: 18px;
+    color: #808080;
+}
+
+.jpc-silver-text {
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
 }
 
 .jpc-accordion-section {
@@ -418,6 +466,12 @@ $tags = wp_get_post_terms($product_id, 'product_tag');
         padding: 0 16px;
     }
     
+    .jpc-silver-badge {
+        margin: 0 -16px;
+        padding: 14px 16px;
+        font-size: 14px;
+    }
+    
     .jpc-accordion-header {
         padding: 18px 0;
     }
@@ -456,3 +510,4 @@ jQuery(document).ready(function($) {
     });
 });
 </script>
+<?php endif; ?>
