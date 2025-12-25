@@ -62,9 +62,9 @@ class JPC_Metal_Groups {
             'name' => sanitize_text_field($data['name']),
             'unit' => sanitize_text_field($data['unit']),
             'enable_making_charge' => isset($data['enable_making_charge']) ? 1 : 0,
-            'making_charge_type' => sanitize_text_field($data['making_charge_type']),
+            'making_charge_type' => isset($data['making_charge_type']) ? sanitize_text_field($data['making_charge_type']) : 'percentage',
             'enable_wastage_charge' => isset($data['enable_wastage_charge']) ? 1 : 0,
-            'wastage_charge_type' => sanitize_text_field($data['wastage_charge_type']),
+            'wastage_charge_type' => isset($data['wastage_charge_type']) ? sanitize_text_field($data['wastage_charge_type']) : 'percentage',
         );
         
         $result = $wpdb->insert($table, $insert_data);
@@ -87,9 +87,9 @@ class JPC_Metal_Groups {
             'name' => sanitize_text_field($data['name']),
             'unit' => sanitize_text_field($data['unit']),
             'enable_making_charge' => isset($data['enable_making_charge']) ? 1 : 0,
-            'making_charge_type' => sanitize_text_field($data['making_charge_type']),
+            'making_charge_type' => isset($data['making_charge_type']) ? sanitize_text_field($data['making_charge_type']) : 'percentage',
             'enable_wastage_charge' => isset($data['enable_wastage_charge']) ? 1 : 0,
-            'wastage_charge_type' => sanitize_text_field($data['wastage_charge_type']),
+            'wastage_charge_type' => isset($data['wastage_charge_type']) ? sanitize_text_field($data['wastage_charge_type']) : 'percentage',
         );
         
         return $wpdb->update($table, $update_data, array('id' => $id));
@@ -123,13 +123,18 @@ class JPC_Metal_Groups {
             wp_send_json_error(array('message' => __('Permission denied', 'jewellery-price-calc')));
         }
         
+        // Validate required fields
+        if (empty($_POST['name']) || empty($_POST['unit'])) {
+            wp_send_json_error(array('message' => __('Name and Unit are required fields', 'jewellery-price-calc')));
+        }
+        
         $data = array(
             'name' => $_POST['name'],
             'unit' => $_POST['unit'],
-            'enable_making_charge' => isset($_POST['enable_making_charge']),
-            'making_charge_type' => $_POST['making_charge_type'] ?? 'percentage',
-            'enable_wastage_charge' => isset($_POST['enable_wastage_charge']),
-            'wastage_charge_type' => $_POST['wastage_charge_type'] ?? 'percentage',
+            'enable_making_charge' => isset($_POST['enable_making_charge']) ? true : false,
+            'making_charge_type' => isset($_POST['making_charge_type']) ? $_POST['making_charge_type'] : 'percentage',
+            'enable_wastage_charge' => isset($_POST['enable_wastage_charge']) ? true : false,
+            'wastage_charge_type' => isset($_POST['wastage_charge_type']) ? $_POST['wastage_charge_type'] : 'percentage',
         );
         
         $result = self::add($data);
@@ -140,7 +145,7 @@ class JPC_Metal_Groups {
                 'id' => $result
             ));
         } else {
-            wp_send_json_error(array('message' => __('Failed to add metal group', 'jewellery-price-calc')));
+            wp_send_json_error(array('message' => __('Failed to add metal group. Please check if a group with this name already exists.', 'jewellery-price-calc')));
         }
     }
     
@@ -155,13 +160,19 @@ class JPC_Metal_Groups {
         }
         
         $id = intval($_POST['id']);
+        
+        // Validate required fields
+        if (empty($_POST['name']) || empty($_POST['unit'])) {
+            wp_send_json_error(array('message' => __('Name and Unit are required fields', 'jewellery-price-calc')));
+        }
+        
         $data = array(
             'name' => $_POST['name'],
             'unit' => $_POST['unit'],
-            'enable_making_charge' => isset($_POST['enable_making_charge']),
-            'making_charge_type' => $_POST['making_charge_type'] ?? 'percentage',
-            'enable_wastage_charge' => isset($_POST['enable_wastage_charge']),
-            'wastage_charge_type' => $_POST['wastage_charge_type'] ?? 'percentage',
+            'enable_making_charge' => isset($_POST['enable_making_charge']) ? true : false,
+            'making_charge_type' => isset($_POST['making_charge_type']) ? $_POST['making_charge_type'] : 'percentage',
+            'enable_wastage_charge' => isset($_POST['enable_wastage_charge']) ? true : false,
+            'wastage_charge_type' => isset($_POST['wastage_charge_type']) ? $_POST['wastage_charge_type'] : 'percentage',
         );
         
         $result = self::update($id, $data);
