@@ -63,24 +63,65 @@
             });
         });
         
-        // Edit Diamond
-        $('.jpc-edit-diamond').on('click', function() {
+        // Edit Diamond - Open Modal
+        $(document).on('click', '.jpc-edit-diamond', function() {
             var diamondId = $(this).data('id');
             var row = $(this).closest('tr');
             
-            // Get data from row
+            // Extract data from row
             var type = row.data('type');
-            var carat = row.find('td:eq(2)').text().replace(' ct', '');
-            var cert = row.find('.cert-badge').text().toLowerCase();
-            var displayName = row.find('td:eq(4)').text();
-            var pricePerCarat = row.find('td:eq(5)').text().replace('₹', '').replace(',', '');
+            var carat = row.find('td').eq(2).text().replace(' ct', '').trim();
+            var certBadge = row.find('.cert-badge').text().toLowerCase().trim();
+            var displayName = row.find('td').eq(4).text().trim();
+            var priceText = row.find('td').eq(5).text().replace('₹', '').replace(',', '').trim();
             
-            // Populate form (you'd need to create an edit modal similar to metals)
-            alert('Edit functionality - Diamond ID: ' + diamondId);
+            console.log('Edit diamond:', {diamondId, type, carat, certBadge, displayName, priceText});
+            
+            // Populate edit form
+            $('#edit_diamond_id').val(diamondId);
+            $('#edit_diamond_type').val(type);
+            $('#edit_carat').val(carat);
+            $('#edit_certification').val(certBadge);
+            $('#edit_display_name').val(displayName);
+            $('#edit_price_per_carat').val(priceText);
+            
+            // Show modal
+            $('#jpc-edit-diamond-modal').show();
+        });
+        
+        // Update Diamond Form
+        $('#jpc-edit-diamond-form').on('submit', function(e) {
+            e.preventDefault();
+            
+            var formData = {
+                action: 'jpc_update_diamond',
+                nonce: jpcAdmin.nonce,
+                id: $('#edit_diamond_id').val(),
+                type: $('#edit_diamond_type').val(),
+                carat: $('#edit_carat').val(),
+                certification: $('#edit_certification').val(),
+                display_name: $('#edit_display_name').val(),
+                price_per_carat: $('#edit_price_per_carat').val()
+            };
+            
+            console.log('Updating diamond:', formData);
+            
+            $.post(jpcAdmin.ajaxurl, formData, function(response) {
+                console.log('Update response:', response);
+                if (response.success) {
+                    alert(response.data.message);
+                    location.reload();
+                } else {
+                    alert(response.data.message || 'Failed to update diamond');
+                }
+            }).fail(function(xhr, status, error) {
+                console.error('AJAX Error:', xhr.responseText);
+                alert('Failed to update diamond. Please check console for details.');
+            });
         });
         
         // Delete Diamond
-        $('.jpc-delete-diamond').on('click', function() {
+        $(document).on('click', '.jpc-delete-diamond', function() {
             if (!confirm(jpcAdmin.confirmDelete)) {
                 return;
             }
