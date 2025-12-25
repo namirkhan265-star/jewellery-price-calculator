@@ -168,6 +168,9 @@ class JPC_Product_Meta {
         
         // Calculate GST
         $gst_amount = 0;
+        $gst_percentage = 0;
+        $gst_label = get_option('jpc_gst_label', 'GST');
+        
         if (get_option('jpc_enable_gst') === 'yes') {
             $gst_percentage = floatval(get_option('jpc_gst_value', 5));
             
@@ -185,7 +188,7 @@ class JPC_Product_Meta {
         // Calculate final price
         $final_price = $subtotal + $gst_amount;
         
-        // Apply rounding (IMPORTANT: This was missing!)
+        // Apply rounding
         $rounding = get_option('jpc_price_rounding', 'default');
         $final_price = $this->apply_rounding($final_price, $rounding);
         
@@ -200,6 +203,8 @@ class JPC_Product_Meta {
             'discount' => $discount_amount,
             'subtotal' => $subtotal,
             'gst' => $gst_amount,
+            'gst_percentage' => $gst_percentage,
+            'gst_label' => $gst_label,
             'final_price' => $final_price,
         ));
     }
