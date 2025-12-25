@@ -22,6 +22,50 @@ class JPC_Shortcodes {
         add_shortcode('jpc_metal_rates', array($this, 'metal_rates_shortcode'));
         add_shortcode('jpc_metal_rates_marquee', array($this, 'metal_rates_marquee_shortcode'));
         add_shortcode('jpc_metal_rates_table', array($this, 'metal_rates_table_shortcode'));
+        add_shortcode('jpc_product_details', array($this, 'product_details_shortcode'));
+    }
+    
+    /**
+     * Product details shortcode - accordion style
+     */
+    public function product_details_shortcode($atts) {
+        global $product;
+        
+        if (!$product) {
+            return '';
+        }
+        
+        $product_id = $product->get_id();
+        
+        // Get product meta
+        $metal_id = get_post_meta($product_id, '_jpc_metal_id', true);
+        $metal_weight = get_post_meta($product_id, '_jpc_metal_weight', true);
+        $diamond_id = get_post_meta($product_id, '_jpc_diamond_id', true);
+        $diamond_quantity = get_post_meta($product_id, '_jpc_diamond_quantity', true);
+        $price_breakup = get_post_meta($product_id, '_jpc_price_breakup', true);
+        
+        // Get metal details
+        $metal = null;
+        $metal_group = null;
+        if ($metal_id) {
+            $metal = JPC_Metals::get_by_id($metal_id);
+            if ($metal) {
+                $metal_group = JPC_Metal_Groups::get_by_id($metal->metal_group_id);
+            }
+        }
+        
+        // Get diamond details
+        $diamond = null;
+        if ($diamond_id) {
+            $diamond = JPC_Diamonds::get_by_id($diamond_id);
+        }
+        
+        // Get product tags
+        $tags = wp_get_post_terms($product_id, 'product_tag');
+        
+        ob_start();
+        include JPC_PLUGIN_DIR . 'templates/shortcodes/product-details-accordion.php';
+        return ob_get_clean();
     }
     
     /**
