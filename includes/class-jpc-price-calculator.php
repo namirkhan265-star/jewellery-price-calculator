@@ -19,15 +19,24 @@ class JPC_Price_Calculator {
     }
     
     private function __construct() {
-        // Hook into product save
-        add_action('woocommerce_process_product_meta', array($this, 'calculate_and_update_price'), 20);
-        add_action('woocommerce_save_product_variation', array($this, 'calculate_and_update_price'), 20);
+        // Hook into product save - priority 30 to run AFTER meta is saved (meta saves at priority 10)
+        add_action('woocommerce_process_product_meta', array($this, 'calculate_and_update_price'), 30);
+        add_action('woocommerce_save_product_variation', array($this, 'calculate_and_update_price'), 30);
+        
+        // Also hook into save_post as a fallback
+        add_action('save_post_product', array($this, 'calculate_and_update_price'), 30);
     }
     
     /**
      * Calculate and update product price
      */
     public static function calculate_and_update_price($product_id) {
+        // Prevent infinite loops
+        if (defined('JPC_CALCULATING_PRICE')) {
+            return false;
+        }
+        define('JPC_CALCULATING_PRICE', true);
+        
         $product = wc_get_product($product_id);
         
         if (!$product) {
@@ -67,19 +76,8 @@ class JPC_Price_Calculator {
         if ($diamond_id && $diamond_quantity > 0) {
             $diamond = JPC_Diamonds::get_by_id($diamond_id);
             if ($diamond) {
-                // Debug logging
-                error_log('JPC Diamond Calculation Debug:');
-                error_log('Diamond ID: ' . $diamond_id);
-                error_log('Diamond Type: ' . $diamond->type);
-                error_log('Diamond Carat: ' . $diamond->carat);
-                error_log('Price Per Carat: ' . $diamond->price_per_carat);
-                error_log('Quantity: ' . $diamond_quantity);
-                
                 $diamond_unit_price = $diamond->price_per_carat * $diamond->carat;
-                error_log('Diamond Unit Price (per carat × carat): ' . $diamond_unit_price);
-                
                 $diamond_price = $diamond_unit_price * $diamond_quantity;
-                error_log('Total Diamond Price (unit × quantity): ' . $diamond_price);
             }
         }
         
@@ -170,9 +168,12 @@ class JPC_Price_Calculator {
         // Get old price for logging
         $old_price = $product->get_regular_price();
         
-        // Update product price
-        $product->set_regular_price($final_price);
-        $product->save();
+        // Update product price using direct meta update to avoid recursion
+        update_post_meta($product_id, '_regular_price', $final_price);
+        update_post_meta($product_id, '_price', $final_price);
+        
+        // Clear product cache
+        wc_delete_product_transients($product_id);
         
         // Log price change
         if ($old_price != $final_price) {
@@ -249,11 +250,10 @@ class JPC_Price_Calculator {
         global $wpdb;
         $table = $wpdb->prefix . 'jpc_product_price_log';
         
-        return $wpdb->get_results($wpdb->prepare("
-            SELECT * FROM $table 
-            WHERE product_id = %d 
-            ORDER BY changed_at DESC 
-            LIMIT %d
-        ", $product_id, $limit));
+        return $wpdb->get_results($wpdb->prepare(
+            "SELECT * FROM $table WHERE product_id = %d ORDER BY changed_at DESC LIMIT %d",
+            $product_id,
+            $limit
+        ));
     }
 }
