@@ -22,6 +22,42 @@ class JPC_Admin {
         add_action('admin_menu', array($this, 'add_admin_menu'));
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_assets'));
         add_action('admin_init', array($this, 'register_settings'));
+        add_action('admin_init', array($this, 'handle_settings_save'));
+    }
+    
+    /**
+     * Handle settings save to properly handle checkboxes
+     */
+    public function handle_settings_save() {
+        if (!isset($_POST['option_page']) || $_POST['option_page'] !== 'jpc_general_settings') {
+            return;
+        }
+        
+        if (!isset($_POST['_wpnonce']) || !wp_verify_nonce($_POST['_wpnonce'], 'jpc_general_settings-options')) {
+            return;
+        }
+        
+        // Handle checkbox fields - set to 'no' if not checked
+        $checkbox_fields = array(
+            'jpc_enable_pearl_cost',
+            'jpc_enable_stone_cost',
+            'jpc_enable_extra_fee',
+            'jpc_enable_gst',
+            'jpc_show_price_breakup',
+        );
+        
+        foreach ($checkbox_fields as $field) {
+            if (!isset($_POST[$field])) {
+                update_option($field, 'no');
+            }
+        }
+        
+        // Handle extra field checkboxes
+        for ($i = 1; $i <= 5; $i++) {
+            if (!isset($_POST['jpc_enable_extra_field_' . $i])) {
+                update_option('jpc_enable_extra_field_' . $i, 'no');
+            }
+        }
     }
     
     /**
