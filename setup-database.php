@@ -2,32 +2,65 @@
 /**
  * Manual Database Setup Script
  * 
- * Access this file directly: /wp-content/plugins/jewellery-price-calculator/setup-database.php
- * This will manually create all required tables
+ * Access this file directly via browser after uploading to your plugin directory
+ * URL: https://yoursite.com/wp-content/plugins/jewellery-price-calculator/setup-database.php
  */
 
-// Load WordPress
-require_once('../../../wp-load.php');
+// Define WordPress path - adjust if needed
+$wp_load_path = dirname(dirname(dirname(__FILE__))) . '/wp-load.php';
+
+// Try to load WordPress
+if (file_exists($wp_load_path)) {
+    require_once($wp_load_path);
+} else {
+    // Alternative path
+    $wp_load_path = dirname(dirname(dirname(dirname(__FILE__)))) . '/wp-load.php';
+    if (file_exists($wp_load_path)) {
+        require_once($wp_load_path);
+    } else {
+        die('Error: Could not find wp-load.php. Please check the file path.');
+    }
+}
 
 // Check if user is admin
 if (!current_user_can('manage_options')) {
-    die('Access denied. You must be an administrator.');
+    die('Access denied. You must be logged in as an administrator.');
 }
 
 global $wpdb;
 
-echo '<h1>Jewellery Price Calculator - Manual Database Setup</h1>';
-echo '<pre>';
+?>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>JPC Database Setup</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h1 { color: #333; border-bottom: 2px solid #0073aa; padding-bottom: 10px; }
+        pre { background: #f9f9f9; padding: 15px; border-left: 4px solid #0073aa; overflow-x: auto; }
+        .success { color: #46b450; }
+        .error { color: #dc3232; }
+        .info { color: #0073aa; }
+        .button { display: inline-block; padding: 10px 20px; background: #0073aa; color: white; text-decoration: none; border-radius: 4px; margin: 10px 5px; }
+        .button:hover { background: #005a87; }
+    </style>
+</head>
+<body>
+<div class="container">
+<h1>Jewellery Price Calculator - Manual Database Setup</h1>
+<pre>
+<?php
 
 $charset_collate = $wpdb->get_charset_collate();
 $prefix = $wpdb->prefix;
 
-echo "Database: " . DB_NAME . "\n";
-echo "Table Prefix: " . $prefix . "\n";
-echo "Charset: " . $charset_collate . "\n\n";
+echo "<span class='info'>Database: " . DB_NAME . "</span>\n";
+echo "<span class='info'>Table Prefix: " . $prefix . "</span>\n";
+echo "<span class='info'>Charset: " . $charset_collate . "</span>\n\n";
 
 // Drop existing tables first
-echo "=== Dropping existing tables ===\n";
+echo "=== STEP 1: Dropping existing tables ===\n";
 $tables_to_drop = array(
     $prefix . 'jpc_product_price_log',
     $prefix . 'jpc_price_history',
@@ -37,10 +70,14 @@ $tables_to_drop = array(
 
 foreach ($tables_to_drop as $table) {
     $result = $wpdb->query("DROP TABLE IF EXISTS `$table`");
-    echo "Dropped: $table - " . ($result !== false ? 'Success' : 'Failed') . "\n";
+    if ($result !== false) {
+        echo "<span class='success'>✓ Dropped: $table</span>\n";
+    } else {
+        echo "<span class='error'>✗ Failed to drop: $table</span>\n";
+    }
 }
 
-echo "\n=== Creating tables ===\n";
+echo "\n=== STEP 2: Creating tables ===\n";
 
 // 1. Metal Groups Table
 $sql1 = "CREATE TABLE `{$prefix}jpc_metal_groups` (
@@ -58,9 +95,13 @@ $sql1 = "CREATE TABLE `{$prefix}jpc_metal_groups` (
 ) $charset_collate;";
 
 $result1 = $wpdb->query($sql1);
-echo "1. Metal Groups Table: " . ($result1 !== false ? 'Created ✓' : 'Failed ✗') . "\n";
-if ($wpdb->last_error) {
-    echo "   Error: " . $wpdb->last_error . "\n";
+if ($result1 !== false) {
+    echo "<span class='success'>✓ Metal Groups Table Created</span>\n";
+} else {
+    echo "<span class='error'>✗ Metal Groups Table Failed</span>\n";
+    if ($wpdb->last_error) {
+        echo "<span class='error'>   Error: " . $wpdb->last_error . "</span>\n";
+    }
 }
 
 // 2. Metals Table
@@ -78,9 +119,13 @@ $sql2 = "CREATE TABLE `{$prefix}jpc_metals` (
 ) $charset_collate;";
 
 $result2 = $wpdb->query($sql2);
-echo "2. Metals Table: " . ($result2 !== false ? 'Created ✓' : 'Failed ✗') . "\n";
-if ($wpdb->last_error) {
-    echo "   Error: " . $wpdb->last_error . "\n";
+if ($result2 !== false) {
+    echo "<span class='success'>✓ Metals Table Created</span>\n";
+} else {
+    echo "<span class='error'>✗ Metals Table Failed</span>\n";
+    if ($wpdb->last_error) {
+        echo "<span class='error'>   Error: " . $wpdb->last_error . "</span>\n";
+    }
 }
 
 // 3. Price History Table
@@ -97,9 +142,13 @@ $sql3 = "CREATE TABLE `{$prefix}jpc_price_history` (
 ) $charset_collate;";
 
 $result3 = $wpdb->query($sql3);
-echo "3. Price History Table: " . ($result3 !== false ? 'Created ✓' : 'Failed ✗') . "\n";
-if ($wpdb->last_error) {
-    echo "   Error: " . $wpdb->last_error . "\n";
+if ($result3 !== false) {
+    echo "<span class='success'>✓ Price History Table Created</span>\n";
+} else {
+    echo "<span class='error'>✗ Price History Table Failed</span>\n";
+    if ($wpdb->last_error) {
+        echo "<span class='error'>   Error: " . $wpdb->last_error . "</span>\n";
+    }
 }
 
 // 4. Product Price Log Table
@@ -116,13 +165,17 @@ $sql4 = "CREATE TABLE `{$prefix}jpc_product_price_log` (
 ) $charset_collate;";
 
 $result4 = $wpdb->query($sql4);
-echo "4. Product Price Log Table: " . ($result4 !== false ? 'Created ✓' : 'Failed ✗') . "\n";
-if ($wpdb->last_error) {
-    echo "   Error: " . $wpdb->last_error . "\n";
+if ($result4 !== false) {
+    echo "<span class='success'>✓ Product Price Log Table Created</span>\n";
+} else {
+    echo "<span class='error'>✗ Product Price Log Table Failed</span>\n";
+    if ($wpdb->last_error) {
+        echo "<span class='error'>   Error: " . $wpdb->last_error . "</span>\n";
+    }
 }
 
 // Insert default data
-echo "\n=== Inserting default data ===\n";
+echo "\n=== STEP 3: Inserting default data ===\n";
 
 // Insert metal groups
 $groups = array(
@@ -134,9 +187,13 @@ $groups = array(
 
 foreach ($groups as $group) {
     $result = $wpdb->insert($prefix . 'jpc_metal_groups', $group);
-    echo "Inserted group '{$group['name']}': " . ($result !== false ? 'Success ✓' : 'Failed ✗') . "\n";
-    if ($wpdb->last_error) {
-        echo "   Error: " . $wpdb->last_error . "\n";
+    if ($result !== false) {
+        echo "<span class='success'>✓ Inserted group: {$group['name']}</span>\n";
+    } else {
+        echo "<span class='error'>✗ Failed to insert group: {$group['name']}</span>\n";
+        if ($wpdb->last_error) {
+            echo "<span class='error'>   Error: " . $wpdb->last_error . "</span>\n";
+        }
     }
 }
 
@@ -151,14 +208,18 @@ $metals = array(
 
 foreach ($metals as $metal) {
     $result = $wpdb->insert($prefix . 'jpc_metals', $metal);
-    echo "Inserted metal '{$metal['display_name']}': " . ($result !== false ? 'Success ✓' : 'Failed ✗') . "\n";
-    if ($wpdb->last_error) {
-        echo "   Error: " . $wpdb->last_error . "\n";
+    if ($result !== false) {
+        echo "<span class='success'>✓ Inserted metal: {$metal['display_name']}</span>\n";
+    } else {
+        echo "<span class='error'>✗ Failed to insert metal: {$metal['display_name']}</span>\n";
+        if ($wpdb->last_error) {
+            echo "<span class='error'>   Error: " . $wpdb->last_error . "</span>\n";
+        }
     }
 }
 
 // Verify tables exist
-echo "\n=== Verification ===\n";
+echo "\n=== STEP 4: Verification ===\n";
 $tables = array(
     $prefix . 'jpc_metal_groups',
     $prefix . 'jpc_metals',
@@ -166,19 +227,40 @@ $tables = array(
     $prefix . 'jpc_product_price_log',
 );
 
+$all_success = true;
 foreach ($tables as $table) {
     $exists = $wpdb->get_var("SHOW TABLES LIKE '$table'") == $table;
-    echo "$table: " . ($exists ? 'Exists ✓' : 'Missing ✗') . "\n";
-    
     if ($exists) {
         $count = $wpdb->get_var("SELECT COUNT(*) FROM `$table`");
-        echo "   Records: $count\n";
+        echo "<span class='success'>✓ $table exists ($count records)</span>\n";
+    } else {
+        echo "<span class='error'>✗ $table is missing</span>\n";
+        $all_success = false;
     }
 }
 
-echo "\n=== DONE ===\n";
-echo "Setup complete! You can now go to: Jewellery Price → Metal Groups\n";
-echo "\n<a href='" . admin_url('admin.php?page=jpc-metal-groups') . "'>Go to Metal Groups</a>\n";
-echo "<a href='" . admin_url('admin.php?page=jpc-debug') . "'>Go to Debug Page</a>\n";
+echo "\n=== RESULT ===\n";
+if ($all_success) {
+    echo "<span class='success' style='font-size: 18px; font-weight: bold;'>✓ SETUP COMPLETE!</span>\n";
+    echo "\nAll tables created successfully. You can now use the plugin.\n";
+} else {
+    echo "<span class='error' style='font-size: 18px; font-weight: bold;'>✗ SETUP FAILED</span>\n";
+    echo "\nSome tables could not be created. Please check the errors above.\n";
+}
 
-echo '</pre>';
+?>
+</pre>
+
+<div style="margin-top: 20px;">
+    <a href="<?php echo admin_url('admin.php?page=jpc-metal-groups'); ?>" class="button">Go to Metal Groups</a>
+    <a href="<?php echo admin_url('admin.php?page=jpc-debug'); ?>" class="button">Go to Debug Page</a>
+    <a href="<?php echo admin_url('plugins.php'); ?>" class="button">Go to Plugins</a>
+</div>
+
+<div style="margin-top: 30px; padding: 15px; background: #fff3cd; border-left: 4px solid #ffc107;">
+    <strong>Security Note:</strong> For security reasons, please delete this file (setup-database.php) after successful setup.
+</div>
+
+</div>
+</body>
+</html>
