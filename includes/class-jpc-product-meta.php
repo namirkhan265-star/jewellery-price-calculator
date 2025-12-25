@@ -1,6 +1,6 @@
 <?php
 /**
- * Product Meta Box Handler
+ * Product Meta Handler
  */
 
 if (!defined('ABSPATH')) {
@@ -20,11 +20,9 @@ class JPC_Product_Meta {
     
     private function __construct() {
         add_action('add_meta_boxes', array($this, 'add_meta_boxes'));
-        add_action('woocommerce_process_product_meta', array($this, 'save_product_meta'), 10);
-        add_action('woocommerce_save_product_variation', array($this, 'save_variation_meta'), 10, 2);
-        
-        // Add variation fields
+        add_action('save_post', array($this, 'save_product_meta'));
         add_action('woocommerce_product_after_variable_attributes', array($this, 'add_variation_fields'), 10, 3);
+        add_action('woocommerce_save_product_variation', array($this, 'save_variation_fields'), 10, 2);
     }
     
     /**
@@ -49,6 +47,8 @@ class JPC_Product_Meta {
         
         $metal_id = get_post_meta($post->ID, '_jpc_metal_id', true);
         $metal_weight = get_post_meta($post->ID, '_jpc_metal_weight', true);
+        $diamond_id = get_post_meta($post->ID, '_jpc_diamond_id', true);
+        $diamond_quantity = get_post_meta($post->ID, '_jpc_diamond_quantity', true);
         $making_charge = get_post_meta($post->ID, '_jpc_making_charge', true);
         $making_charge_type = get_post_meta($post->ID, '_jpc_making_charge_type', true) ?: 'percentage';
         $wastage_charge = get_post_meta($post->ID, '_jpc_wastage_charge', true);
@@ -87,6 +87,15 @@ class JPC_Product_Meta {
         
         if (isset($_POST['_jpc_metal_weight'])) {
             update_post_meta($post_id, '_jpc_metal_weight', floatval($_POST['_jpc_metal_weight']));
+        }
+        
+        // Save diamond data
+        if (isset($_POST['_jpc_diamond_id'])) {
+            update_post_meta($post_id, '_jpc_diamond_id', sanitize_text_field($_POST['_jpc_diamond_id']));
+        }
+        
+        if (isset($_POST['_jpc_diamond_quantity'])) {
+            update_post_meta($post_id, '_jpc_diamond_quantity', intval($_POST['_jpc_diamond_quantity']));
         }
         
         if (isset($_POST['_jpc_making_charge'])) {
@@ -139,6 +148,8 @@ class JPC_Product_Meta {
         
         $metal_id = get_post_meta($variation_id, '_jpc_metal_id', true);
         $metal_weight = get_post_meta($variation_id, '_jpc_metal_weight', true);
+        $diamond_id = get_post_meta($variation_id, '_jpc_diamond_id', true);
+        $diamond_quantity = get_post_meta($variation_id, '_jpc_diamond_quantity', true);
         $making_charge = get_post_meta($variation_id, '_jpc_making_charge', true);
         $making_charge_type = get_post_meta($variation_id, '_jpc_making_charge_type', true) ?: 'percentage';
         $wastage_charge = get_post_meta($variation_id, '_jpc_wastage_charge', true);
@@ -150,15 +161,23 @@ class JPC_Product_Meta {
     }
     
     /**
-     * Save variation meta
+     * Save variation fields
      */
-    public function save_variation_meta($variation_id, $i) {
+    public function save_variation_fields($variation_id, $i) {
         if (isset($_POST['_jpc_metal_id'][$i])) {
             update_post_meta($variation_id, '_jpc_metal_id', sanitize_text_field($_POST['_jpc_metal_id'][$i]));
         }
         
         if (isset($_POST['_jpc_metal_weight'][$i])) {
             update_post_meta($variation_id, '_jpc_metal_weight', floatval($_POST['_jpc_metal_weight'][$i]));
+        }
+        
+        if (isset($_POST['_jpc_diamond_id'][$i])) {
+            update_post_meta($variation_id, '_jpc_diamond_id', sanitize_text_field($_POST['_jpc_diamond_id'][$i]));
+        }
+        
+        if (isset($_POST['_jpc_diamond_quantity'][$i])) {
+            update_post_meta($variation_id, '_jpc_diamond_quantity', intval($_POST['_jpc_diamond_quantity'][$i]));
         }
         
         if (isset($_POST['_jpc_making_charge'][$i])) {
