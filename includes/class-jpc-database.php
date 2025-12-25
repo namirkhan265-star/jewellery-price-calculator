@@ -84,6 +84,11 @@ class JPC_Database {
         
         // Insert default metal groups
         self::insert_default_data();
+        
+        // Log any errors
+        if ($wpdb->last_error) {
+            error_log('JPC Database Error: ' . $wpdb->last_error);
+        }
     }
     
     /**
@@ -111,6 +116,9 @@ class JPC_Database {
         
         foreach ($groups as $group) {
             $wpdb->insert($table_groups, $group);
+            if ($wpdb->last_error) {
+                error_log('JPC Insert Group Error: ' . $wpdb->last_error);
+            }
         }
         
         // Insert default metals
@@ -124,7 +132,32 @@ class JPC_Database {
         
         foreach ($metals as $metal) {
             $wpdb->insert($table_metals, $metal);
+            if ($wpdb->last_error) {
+                error_log('JPC Insert Metal Error: ' . $wpdb->last_error);
+            }
         }
+    }
+    
+    /**
+     * Check if tables exist
+     */
+    public static function tables_exist() {
+        global $wpdb;
+        
+        $tables = array(
+            $wpdb->prefix . 'jpc_metal_groups',
+            $wpdb->prefix . 'jpc_metals',
+            $wpdb->prefix . 'jpc_price_history',
+            $wpdb->prefix . 'jpc_product_price_log',
+        );
+        
+        foreach ($tables as $table) {
+            if ($wpdb->get_var("SHOW TABLES LIKE '$table'") != $table) {
+                return false;
+            }
+        }
+        
+        return true;
     }
     
     /**
