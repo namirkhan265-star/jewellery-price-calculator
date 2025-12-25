@@ -59,6 +59,19 @@ class JPC_Price_Calculator {
         // Calculate base metal price
         $metal_price = $weight * $metal->price_per_unit;
         
+        // Get diamond data and calculate diamond price
+        $diamond_price = 0;
+        $diamond_id = get_post_meta($product_id, '_jpc_diamond_id', true);
+        $diamond_quantity = intval(get_post_meta($product_id, '_jpc_diamond_quantity', true));
+        
+        if ($diamond_id && $diamond_quantity > 0) {
+            $diamond = JPC_Diamonds::get_by_id($diamond_id);
+            if ($diamond) {
+                $diamond_unit_price = $diamond->price_per_carat * $diamond->carat;
+                $diamond_price = $diamond_unit_price * $diamond_quantity;
+            }
+        }
+        
         // Calculate making charge
         $making_charge_amount = 0;
         if ($metal_group->enable_making_charge && $making_charge > 0) {
@@ -84,8 +97,8 @@ class JPC_Price_Calculator {
         $stone_cost = floatval(get_post_meta($product_id, '_jpc_stone_cost', true));
         $extra_fee = floatval(get_post_meta($product_id, '_jpc_extra_fee', true));
         
-        // Calculate subtotal before tax
-        $subtotal = $metal_price + $making_charge_amount + $wastage_charge_amount + $pearl_cost + $stone_cost + $extra_fee;
+        // Calculate subtotal before tax (including diamond price)
+        $subtotal = $metal_price + $diamond_price + $making_charge_amount + $wastage_charge_amount + $pearl_cost + $stone_cost + $extra_fee;
         
         // Apply additional percentage if enabled
         $additional_percentage = get_option('jpc_additional_percentage_value', 0);
@@ -158,6 +171,7 @@ class JPC_Price_Calculator {
         // Store price breakup for display
         $breakup = array(
             'metal_price' => $metal_price,
+            'diamond_price' => $diamond_price,
             'making_charge' => $making_charge_amount,
             'wastage_charge' => $wastage_charge_amount,
             'pearl_cost' => $pearl_cost,
