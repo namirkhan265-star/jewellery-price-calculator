@@ -128,8 +128,12 @@ jQuery(document).ready(function($) {
             html += '<tr><td>Discount:</td><td>-₹' + formatNumber(data.discount) + '</td></tr>';
         }
         
-        if (data.gst > 0) {
-            html += '<tr><td>GST:</td><td>₹' + formatNumber(data.gst) + '</td></tr>';
+        // Always show GST line if GST is enabled (even if 0)
+        if (typeof data.gst !== 'undefined') {
+            const gstLabel = data.gst_label || 'GST';
+            const gstPercentage = data.gst_percentage || '';
+            const gstLabelText = gstPercentage ? gstLabel + ' (' + gstPercentage + '%)' : gstLabel;
+            html += '<tr><td>' + gstLabelText + ':</td><td>₹' + formatNumber(data.gst) + '</td></tr>';
         }
         
         html += '<tr class="total-row"><td><strong>Final Price:</strong></td><td><strong>₹' + formatNumber(data.final_price) + '</strong></td></tr>';
