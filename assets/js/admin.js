@@ -33,6 +33,77 @@
             });
         });
         
+        // Add Diamond Form
+        $('#jpc-add-diamond-form').on('submit', function(e) {
+            e.preventDefault();
+            
+            var formData = {
+                action: 'jpc_add_diamond',
+                nonce: jpcAdmin.nonce,
+                type: $('#diamond_type').val(),
+                carat: $('#carat').val(),
+                certification: $('#certification').val(),
+                display_name: $('#display_name').val(),
+                price_per_carat: $('#price_per_carat').val()
+            };
+            
+            console.log('Sending diamond data:', formData);
+            
+            $.post(jpcAdmin.ajaxurl, formData, function(response) {
+                console.log('Diamond response:', response);
+                if (response.success) {
+                    alert(response.data.message);
+                    location.reload();
+                } else {
+                    alert(response.data.message || 'Failed to add diamond');
+                }
+            }).fail(function(xhr, status, error) {
+                console.error('AJAX Error:', xhr.responseText);
+                alert('Failed to add diamond. Please check console for details.');
+            });
+        });
+        
+        // Edit Diamond
+        $('.jpc-edit-diamond').on('click', function() {
+            var diamondId = $(this).data('id');
+            var row = $(this).closest('tr');
+            
+            // Get data from row
+            var type = row.data('type');
+            var carat = row.find('td:eq(2)').text().replace(' ct', '');
+            var cert = row.find('.cert-badge').text().toLowerCase();
+            var displayName = row.find('td:eq(4)').text();
+            var pricePerCarat = row.find('td:eq(5)').text().replace('₹', '').replace(',', '');
+            
+            // Populate form (you'd need to create an edit modal similar to metals)
+            alert('Edit functionality - Diamond ID: ' + diamondId);
+        });
+        
+        // Delete Diamond
+        $('.jpc-delete-diamond').on('click', function() {
+            if (!confirm(jpcAdmin.confirmDelete)) {
+                return;
+            }
+            
+            var diamondId = $(this).data('id');
+            
+            $.post(jpcAdmin.ajaxurl, {
+                action: 'jpc_delete_diamond',
+                nonce: jpcAdmin.nonce,
+                id: diamondId
+            }, function(response) {
+                if (response.success) {
+                    alert(response.data.message);
+                    location.reload();
+                } else {
+                    alert(response.data.message || 'An error occurred');
+                }
+            }).fail(function(xhr, status, error) {
+                console.error('AJAX Error:', error);
+                alert('Failed to delete diamond. Please check console for details.');
+            });
+        });
+        
         // Edit Metal
         $('.jpc-edit-metal').on('click', function() {
             var metalId = $(this).data('id');
