@@ -170,8 +170,10 @@ class JPC_Product_Meta {
         $gst_amount = 0;
         $gst_percentage = 0;
         $gst_label = get_option('jpc_gst_label', 'GST');
+        $gst_enabled = get_option('jpc_enable_gst');
         
-        if (get_option('jpc_enable_gst') === 'yes') {
+        // Check if GST is enabled (handle both 'yes' and '1' for checkbox compatibility)
+        if ($gst_enabled === 'yes' || $gst_enabled === '1' || $gst_enabled === 1 || $gst_enabled === true) {
             $gst_percentage = floatval(get_option('jpc_gst_value', 5));
             
             // Check for metal-specific GST
@@ -205,6 +207,7 @@ class JPC_Product_Meta {
             'gst' => $gst_amount,
             'gst_percentage' => $gst_percentage,
             'gst_label' => $gst_label,
+            'gst_enabled' => $gst_enabled, // Debug info
             'final_price' => $final_price,
         ));
     }
