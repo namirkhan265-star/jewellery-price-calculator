@@ -105,9 +105,9 @@ $tags = wp_get_post_terms($product_id, 'product_tag');
             <div class="jpc-detail-row">
                 <span class="jpc-detail-label">
                     Total Weight 
-                    <span class="jpc-info-icon" title="Total diamond weight in carats">ⓘ</span>
+                    <span class="jpc-info-icon" title="Weight per diamond">ⓘ</span>
                 </span>
-                <span class="jpc-detail-value"><?php echo number_format($diamond->carat * $diamond_quantity, 3); ?> Ct</span>
+                <span class="jpc-detail-value"><?php echo number_format($diamond->carat, 3); ?> Ct</span>
             </div>
             
             <div class="jpc-detail-row">
