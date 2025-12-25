@@ -80,6 +80,7 @@ class Jewellery_Price_Calculator {
         require_once JPC_PLUGIN_DIR . 'includes/class-jpc-admin.php';
         require_once JPC_PLUGIN_DIR . 'includes/class-jpc-metal-groups.php';
         require_once JPC_PLUGIN_DIR . 'includes/class-jpc-metals.php';
+        require_once JPC_PLUGIN_DIR . 'includes/class-jpc-diamonds.php';
         require_once JPC_PLUGIN_DIR . 'includes/class-jpc-product-meta.php';
         require_once JPC_PLUGIN_DIR . 'includes/class-jpc-price-calculator.php';
         require_once JPC_PLUGIN_DIR . 'includes/class-jpc-database.php';
@@ -99,6 +100,7 @@ class Jewellery_Price_Calculator {
         JPC_Admin::get_instance();
         JPC_Metal_Groups::get_instance();
         JPC_Metals::get_instance();
+        JPC_Diamonds::get_instance();
         JPC_Product_Meta::get_instance();
         JPC_Price_Calculator::get_instance();
         JPC_Frontend::get_instance();
