@@ -196,6 +196,82 @@ error_log('JPC Diamonds Page: Found ' . $diamond_count . ' diamonds');
     </div>
 </div>
 
+<!-- Edit Diamond Modal -->
+<div id="jpc-edit-diamond-modal" class="jpc-modal" style="display: none;">
+    <div class="jpc-modal-content">
+        <span class="jpc-modal-close">&times;</span>
+        <h2><?php _e('Edit Diamond', 'jewellery-price-calc'); ?></h2>
+        
+        <form id="jpc-edit-diamond-form" method="post">
+            <input type="hidden" id="edit_diamond_id" name="id">
+            
+            <table class="form-table">
+                <tr>
+                    <th scope="row">
+                        <label for="edit_diamond_type"><?php _e('Diamond Type', 'jewellery-price-calc'); ?></label>
+                    </th>
+                    <td>
+                        <select id="edit_diamond_type" name="type" class="regular-text" required>
+                            <?php foreach ($types as $key => $label): ?>
+                                <option value="<?php echo esc_attr($key); ?>"><?php echo esc_html($label); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </td>
+                </tr>
+                
+                <tr>
+                    <th scope="row">
+                        <label for="edit_carat"><?php _e('Carat Weight', 'jewellery-price-calc'); ?></label>
+                    </th>
+                    <td>
+                        <select id="edit_carat" name="carat" class="regular-text" required>
+                            <?php foreach ($carat_sizes as $size): ?>
+                                <option value="<?php echo esc_attr($size); ?>"><?php echo esc_html($size); ?> ct</option>
+                            <?php endforeach; ?>
+                        </select>
+                    </td>
+                </tr>
+                
+                <tr>
+                    <th scope="row">
+                        <label for="edit_certification"><?php _e('Certification', 'jewellery-price-calc'); ?></label>
+                    </th>
+                    <td>
+                        <select id="edit_certification" name="certification" class="regular-text" required>
+                            <?php foreach ($certifications as $key => $label): ?>
+                                <option value="<?php echo esc_attr($key); ?>"><?php echo esc_html($label); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </td>
+                </tr>
+                
+                <tr>
+                    <th scope="row">
+                        <label for="edit_display_name"><?php _e('Display Name', 'jewellery-price-calc'); ?></label>
+                    </th>
+                    <td>
+                        <input type="text" id="edit_display_name" name="display_name" class="regular-text" required>
+                    </td>
+                </tr>
+                
+                <tr>
+                    <th scope="row">
+                        <label for="edit_price_per_carat"><?php _e('Price per Carat (₹)', 'jewellery-price-calc'); ?></label>
+                    </th>
+                    <td>
+                        <input type="number" id="edit_price_per_carat" name="price_per_carat" class="regular-text" step="0.01" min="0" required>
+                    </td>
+                </tr>
+            </table>
+            
+            <p class="submit">
+                <button type="submit" class="button button-primary"><?php _e('Update Diamond', 'jewellery-price-calc'); ?></button>
+                <button type="button" class="button jpc-modal-close"><?php _e('Cancel', 'jewellery-price-calc'); ?></button>
+            </p>
+        </form>
+    </div>
+</div>
+
 <style>
 .diamond-type-badge {
     padding: 4px 8px;
@@ -220,6 +296,44 @@ error_log('JPC Diamonds Page: Found ' . $diamond_count . ' diamonds');
 
 .quick-add-buttons { display: flex; gap: 10px; flex-wrap: wrap; }
 .quick-add-buttons .button { margin: 0; }
+
+/* Modal Styles */
+.jpc-modal {
+    display: none;
+    position: fixed;
+    z-index: 100000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.5);
+}
+
+.jpc-modal-content {
+    background-color: #fefefe;
+    margin: 5% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 600px;
+    border-radius: 5px;
+    position: relative;
+}
+
+.jpc-modal-close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    line-height: 20px;
+}
+
+.jpc-modal-close:hover,
+.jpc-modal-close:focus {
+    color: #000;
+}
 </style>
 
 <script>
