@@ -30,7 +30,20 @@ class JPC_Metal_Groups {
     public static function get_all() {
         global $wpdb;
         $table = $wpdb->prefix . 'jpc_metal_groups';
-        return $wpdb->get_results("SELECT * FROM $table ORDER BY id ASC");
+        
+        // Check if table exists
+        if ($wpdb->get_var("SHOW TABLES LIKE '$table'") != $table) {
+            error_log('JPC: Metal groups table does not exist');
+            return array();
+        }
+        
+        $results = $wpdb->get_results("SELECT * FROM $table ORDER BY id ASC");
+        
+        if ($wpdb->last_error) {
+            error_log('JPC Get All Groups Error: ' . $wpdb->last_error);
+        }
+        
+        return $results ? $results : array();
     }
     
     /**
@@ -58,6 +71,12 @@ class JPC_Metal_Groups {
         global $wpdb;
         $table = $wpdb->prefix . 'jpc_metal_groups';
         
+        // Check if group with same name exists
+        $existing = self::get_by_name($data['name']);
+        if ($existing) {
+            return new WP_Error('duplicate', __('A metal group with this name already exists', 'jewellery-price-calc'));
+        }
+        
         $insert_data = array(
             'name' => sanitize_text_field($data['name']),
             'unit' => sanitize_text_field($data['unit']),
@@ -68,6 +87,11 @@ class JPC_Metal_Groups {
         );
         
         $result = $wpdb->insert($table, $insert_data);
+        
+        if ($wpdb->last_error) {
+            error_log('JPC Add Group Error: ' . $wpdb->last_error);
+            return new WP_Error('db_error', $wpdb->last_error);
+        }
         
         if ($result) {
             return $wpdb->insert_id;
@@ -139,13 +163,15 @@ class JPC_Metal_Groups {
         
         $result = self::add($data);
         
-        if ($result) {
+        if (is_wp_error($result)) {
+            wp_send_json_error(array('message' => $result->get_error_message()));
+        } elseif ($result) {
             wp_send_json_success(array(
                 'message' => __('Metal group added successfully', 'jewellery-price-calc'),
                 'id' => $result
             ));
         } else {
-            wp_send_json_error(array('message' => __('Failed to add metal group. Please check if a group with this name already exists.', 'jewellery-price-calc')));
+            wp_send_json_error(array('message' => __('Failed to add metal group. Database error occurred.', 'jewellery-price-calc')));
         }
     }
     
