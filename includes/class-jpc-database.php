@@ -51,6 +51,23 @@ class JPC_Database {
             KEY `metal_group_id` (`metal_group_id`)
         ) $charset_collate;";
         
+        // Diamonds Table
+        $table_diamonds = $prefix . 'jpc_diamonds';
+        $sql_diamonds = "CREATE TABLE IF NOT EXISTS `$table_diamonds` (
+            `id` bigint(20) NOT NULL AUTO_INCREMENT,
+            `type` varchar(50) NOT NULL,
+            `carat` decimal(10,2) NOT NULL,
+            `certification` varchar(50) NOT NULL,
+            `price_per_carat` decimal(10,2) NOT NULL DEFAULT 0,
+            `display_name` varchar(200) NOT NULL,
+            `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+            `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (`id`),
+            KEY `type` (`type`),
+            KEY `carat` (`carat`),
+            KEY `certification` (`certification`)
+        ) $charset_collate;";
+        
         // Price History Table
         $table_price_history = $prefix . 'jpc_price_history';
         $sql_history = "CREATE TABLE IF NOT EXISTS `$table_price_history` (
@@ -84,15 +101,17 @@ class JPC_Database {
         // Execute queries
         $result1 = dbDelta($sql_groups);
         $result2 = dbDelta($sql_metals);
-        $result3 = dbDelta($sql_history);
-        $result4 = dbDelta($sql_product_log);
+        $result3 = dbDelta($sql_diamonds);
+        $result4 = dbDelta($sql_history);
+        $result5 = dbDelta($sql_product_log);
         
         // Log results
         error_log('JPC Table Creation Results:');
         error_log('Groups: ' . print_r($result1, true));
         error_log('Metals: ' . print_r($result2, true));
-        error_log('History: ' . print_r($result3, true));
-        error_log('Product Log: ' . print_r($result4, true));
+        error_log('Diamonds: ' . print_r($result3, true));
+        error_log('History: ' . print_r($result4, true));
+        error_log('Product Log: ' . print_r($result5, true));
         
         // Check if tables were created
         if (self::tables_exist()) {
@@ -117,6 +136,7 @@ class JPC_Database {
         
         $table_groups = $wpdb->prefix . 'jpc_metal_groups';
         $table_metals = $wpdb->prefix . 'jpc_metals';
+        $table_diamonds = $wpdb->prefix . 'jpc_diamonds';
         
         // Check if data already exists
         $count = $wpdb->get_var("SELECT COUNT(*) FROM `$table_groups`");
@@ -159,6 +179,24 @@ class JPC_Database {
                 error_log('JPC: Inserted metal: ' . $metal['display_name']);
             }
         }
+        
+        // Insert default diamonds
+        $diamonds = array(
+            array('type' => 'natural', 'carat' => 0.50, 'certification' => 'gia', 'price_per_carat' => 50000.00, 'display_name' => '0.50ct Natural Diamond (GIA)'),
+            array('type' => 'natural', 'carat' => 1.00, 'certification' => 'gia', 'price_per_carat' => 95000.00, 'display_name' => '1.00ct Natural Diamond (GIA)'),
+            array('type' => 'lab_grown', 'carat' => 0.50, 'certification' => 'igi', 'price_per_carat' => 25000.00, 'display_name' => '0.50ct Lab Grown Diamond (IGI)'),
+            array('type' => 'lab_grown', 'carat' => 1.00, 'certification' => 'igi', 'price_per_carat' => 45000.00, 'display_name' => '1.00ct Lab Grown Diamond (IGI)'),
+            array('type' => 'moissanite', 'carat' => 1.00, 'certification' => 'none', 'price_per_carat' => 15000.00, 'display_name' => '1.00ct Moissanite'),
+        );
+        
+        foreach ($diamonds as $diamond) {
+            $result = $wpdb->insert($table_diamonds, $diamond);
+            if ($wpdb->last_error) {
+                error_log('JPC Insert Diamond Error: ' . $wpdb->last_error);
+            } else {
+                error_log('JPC: Inserted diamond: ' . $diamond['display_name']);
+            }
+        }
     }
     
     /**
@@ -170,6 +208,7 @@ class JPC_Database {
         $tables = array(
             $wpdb->prefix . 'jpc_metal_groups',
             $wpdb->prefix . 'jpc_metals',
+            $wpdb->prefix . 'jpc_diamonds',
             $wpdb->prefix . 'jpc_price_history',
             $wpdb->prefix . 'jpc_product_price_log',
         );
@@ -194,6 +233,7 @@ class JPC_Database {
         $tables = array(
             $wpdb->prefix . 'jpc_product_price_log',
             $wpdb->prefix . 'jpc_price_history',
+            $wpdb->prefix . 'jpc_diamonds',
             $wpdb->prefix . 'jpc_metals',
             $wpdb->prefix . 'jpc_metal_groups',
         );
