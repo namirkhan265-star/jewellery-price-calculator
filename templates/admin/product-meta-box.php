@@ -114,7 +114,7 @@ if ($diamond_id && $diamond_quantity > 0) {
     <?php if (get_option('jpc_enable_stone_cost') === 'yes'): ?>
     <div class="form-field">
         <label for="_jpc_stone_cost"><?php _e('Stone Cost', 'jewellery-price-calc'); ?></label>
-        <input type="number" id="_jpc_stone_cost" name="_jpc_stone_cost" value="<?php echo esc_attr($stone_cost); ?>\" step="0.01" min="0" class="widefat">
+        <input type="number" id="_jpc_stone_cost" name="_jpc_stone_cost" value="<?php echo esc_attr($stone_cost); ?>" step="0.01" min="0" class="widefat">
         <p class="description"><?php _e('Enter stone cost if applicable', 'jewellery-price-calc'); ?></p>
     </div>
     <?php endif; ?>
@@ -135,9 +135,13 @@ if ($diamond_id && $diamond_quantity > 0) {
     </div>
     <?php endif; ?>
     
-    <?php if ($price_breakup && is_array($price_breakup)): ?>
+    <?php if ($price_breakup && is_array($price_breakup) && isset($_GET['post'])): ?>
     <div class="jpc-price-breakup-admin">
-        <h4><?php _e('Current Price Breakup', 'jewellery-price-calc'); ?></h4>
+        <h4><?php _e('Last Saved Price Breakup', 'jewellery-price-calc'); ?></h4>
+        <p class="description" style="color: #d63638; margin-bottom: 10px;">
+            <strong><?php _e('Note:', 'jewellery-price-calc'); ?></strong> 
+            <?php _e('This shows the price from the last save. Click "Update" to recalculate with current values.', 'jewellery-price-calc'); ?>
+        </p>
         <table>
             <tr>
                 <td><?php _e('Metal Price:', 'jewellery-price-calc'); ?></td>
