@@ -71,6 +71,7 @@ class JPC_Product_Meta {
     
     /**
      * AJAX handler for live price calculation
+     * Uses the EXACT same logic as JPC_Price_Calculator::calculate_product_price()
      */
     public function ajax_calculate_live_price() {
         check_ajax_referer('jpc_live_calc_nonce', 'nonce');
@@ -134,10 +135,16 @@ class JPC_Product_Meta {
             }
         }
         
-        // Calculate subtotal
+        // Calculate subtotal before tax (including diamond price)
         $subtotal = $metal_price + $diamond_price + $making_charge_amount + $wastage_charge_amount + $pearl_cost + $stone_cost + $extra_fee;
         
-        // Apply discount
+        // Apply additional percentage if enabled
+        $additional_percentage = get_option('jpc_additional_percentage_value', 0);
+        if ($additional_percentage > 0) {
+            $subtotal += ($subtotal * $additional_percentage) / 100;
+        }
+        
+        // Apply discount if enabled
         $discount_amount = 0;
         if (get_option('jpc_enable_discount') === 'yes' && $discount_percentage > 0) {
             $discount_on_metals = get_option('jpc_discount_on_metals') === 'yes';
@@ -145,9 +152,15 @@ class JPC_Product_Meta {
             $discount_on_wastage = get_option('jpc_discount_on_wastage') === 'yes';
             
             $discountable_amount = 0;
-            if ($discount_on_metals) $discountable_amount += $metal_price;
-            if ($discount_on_making) $discountable_amount += $making_charge_amount;
-            if ($discount_on_wastage) $discountable_amount += $wastage_charge_amount;
+            if ($discount_on_metals) {
+                $discountable_amount += $metal_price;
+            }
+            if ($discount_on_making) {
+                $discountable_amount += $making_charge_amount;
+            }
+            if ($discount_on_wastage) {
+                $discountable_amount += $wastage_charge_amount;
+            }
             
             $discount_amount = ($discountable_amount * $discount_percentage) / 100;
             $subtotal -= $discount_amount;
@@ -158,6 +171,7 @@ class JPC_Product_Meta {
         if (get_option('jpc_enable_gst') === 'yes') {
             $gst_percentage = floatval(get_option('jpc_gst_value', 5));
             
+            // Check for metal-specific GST
             $metal_group_name = strtolower($metal_group->name);
             $metal_gst = get_option('jpc_gst_' . $metal_group_name);
             
@@ -170,6 +184,10 @@ class JPC_Product_Meta {
         
         // Calculate final price
         $final_price = $subtotal + $gst_amount;
+        
+        // Apply rounding (IMPORTANT: This was missing!)
+        $rounding = get_option('jpc_price_rounding', 'default');
+        $final_price = $this->apply_rounding($final_price, $rounding);
         
         wp_send_json_success(array(
             'metal_price' => $metal_price,
@@ -184,6 +202,34 @@ class JPC_Product_Meta {
             'gst' => $gst_amount,
             'final_price' => $final_price,
         ));
+    }
+    
+    /**
+     * Apply price rounding (same as in JPC_Price_Calculator)
+     */
+    private function apply_rounding($price, $rounding) {
+        switch ($rounding) {
+            case 'nearest_10':
+                return round($price / 10) * 10;
+            case 'nearest_50':
+                return round($price / 50) * 50;
+            case 'nearest_100':
+                return round($price / 100) * 100;
+            case 'ceil_10':
+                return ceil($price / 10) * 10;
+            case 'ceil_50':
+                return ceil($price / 50) * 50;
+            case 'ceil_100':
+                return ceil($price / 100) * 100;
+            case 'floor_10':
+                return floor($price / 10) * 10;
+            case 'floor_50':
+                return floor($price / 50) * 50;
+            case 'floor_100':
+                return floor($price / 100) * 100;
+            default:
+                return round($price, 2);
+        }
     }
     
     /**
