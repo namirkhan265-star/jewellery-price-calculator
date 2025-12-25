@@ -29,6 +29,29 @@ if (!defined('ABSPATH')) {
     </div>
     
     <div class="form-field">
+        <label for="_jpc_diamond_id"><?php _e('Select Diamond (Optional)', 'jewellery-price-calc'); ?></label>
+        <select id="_jpc_diamond_id" name="_jpc_diamond_id" class="widefat">
+            <option value=""><?php _e('No Diamond', 'jewellery-price-calc'); ?></option>
+            <?php 
+            $diamonds = JPC_Diamonds::get_all();
+            foreach ($diamonds as $diamond): 
+                $total_price = $diamond->price_per_carat * $diamond->carat;
+            ?>
+                <option value="<?php echo esc_attr($diamond->id); ?>" <?php selected($diamond_id, $diamond->id); ?>>
+                    <?php echo esc_html($diamond->display_name); ?> - ₹<?php echo number_format($total_price, 2); ?>
+                </option>
+            <?php endforeach; ?>
+        </select>
+        <p class="description"><?php _e('Select a diamond to include in the price calculation', 'jewellery-price-calc'); ?></p>
+    </div>
+    
+    <div class="form-field">
+        <label for="_jpc_diamond_quantity"><?php _e('Diamond Quantity', 'jewellery-price-calc'); ?></label>
+        <input type="number" id="_jpc_diamond_quantity" name="_jpc_diamond_quantity" value="<?php echo esc_attr($diamond_quantity ?: 1); ?>" step="1" min="0" class="widefat">
+        <p class="description"><?php _e('Number of diamonds (leave 0 or empty if no diamond)', 'jewellery-price-calc'); ?></p>
+    </div>
+    
+    <div class="form-field">
         <label for="_jpc_making_charge"><?php _e('Making Charge', 'jewellery-price-calc'); ?></label>
         <div style="display: flex; gap: 10px;">
             <input type="number" id="_jpc_making_charge" name="_jpc_making_charge" value="<?php echo esc_attr($making_charge); ?>" step="0.01" min="0" style="flex: 1;">
@@ -92,6 +115,12 @@ if (!defined('ABSPATH')) {
                 <td><?php _e('Metal Price:', 'jewellery-price-calc'); ?></td>
                 <td>₹<?php echo number_format($price_breakup['metal_price'], 2); ?></td>
             </tr>
+            <?php if (!empty($price_breakup['diamond_price']) && $price_breakup['diamond_price'] > 0): ?>
+            <tr>
+                <td><?php _e('Diamond Price:', 'jewellery-price-calc'); ?></td>
+                <td>₹<?php echo number_format($price_breakup['diamond_price'], 2); ?></td>
+            </tr>
+            <?php endif; ?>
             <?php if ($price_breakup['making_charge'] > 0): ?>
             <tr>
                 <td><?php _e('Making Charge:', 'jewellery-price-calc'); ?></td>
