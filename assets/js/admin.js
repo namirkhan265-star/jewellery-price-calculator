@@ -25,8 +25,11 @@
                     alert(response.data.message);
                     location.reload();
                 } else {
-                    alert(response.data.message);
+                    alert(response.data.message || 'An error occurred');
                 }
+            }).fail(function(xhr, status, error) {
+                console.error('AJAX Error:', error);
+                alert('Failed to add metal. Please check console for details.');
             });
         });
         
@@ -61,8 +64,11 @@
                     alert(response.data.message);
                     location.reload();
                 } else {
-                    alert(response.data.message);
+                    alert(response.data.message || 'An error occurred');
                 }
+            }).fail(function(xhr, status, error) {
+                console.error('AJAX Error:', error);
+                alert('Failed to update metal. Please check console for details.');
             });
         });
         
@@ -83,8 +89,11 @@
                     alert(response.data.message);
                     location.reload();
                 } else {
-                    alert(response.data.message);
+                    alert(response.data.message || 'An error occurred');
                 }
+            }).fail(function(xhr, status, error) {
+                console.error('AJAX Error:', error);
+                alert('Failed to delete metal. Please check console for details.');
             });
         });
         
@@ -121,8 +130,11 @@
                     alert(response.data.message);
                     location.reload();
                 } else {
-                    alert(response.data.message);
+                    alert(response.data.message || 'An error occurred');
                 }
+            }).fail(function(xhr, status, error) {
+                console.error('AJAX Error:', error);
+                alert('Failed to update prices. Please check console for details.');
             });
         });
         
@@ -136,16 +148,26 @@
                 name: $('#group_name').val(),
                 unit: $('#unit').val(),
                 enable_making_charge: $('input[name="enable_making_charge"]').is(':checked') ? 1 : 0,
-                enable_wastage_charge: $('input[name="enable_wastage_charge"]').is(':checked') ? 1 : 0
+                enable_wastage_charge: $('input[name="enable_wastage_charge"]').is(':checked') ? 1 : 0,
+                making_charge_type: 'percentage',
+                wastage_charge_type: 'percentage'
             };
             
+            console.log('Sending data:', formData);
+            
             $.post(jpcAdmin.ajaxurl, formData, function(response) {
+                console.log('Response:', response);
                 if (response.success) {
                     alert(response.data.message);
                     location.reload();
                 } else {
-                    alert(response.data.message);
+                    alert(response.data.message || 'Failed to add metal group');
                 }
+            }).fail(function(xhr, status, error) {
+                console.error('AJAX Error:', xhr.responseText);
+                console.error('Status:', status);
+                console.error('Error:', error);
+                alert('Failed to add metal group. Please check console for details.');
             });
         });
         
@@ -166,8 +188,11 @@
                     alert(response.data.message);
                     location.reload();
                 } else {
-                    alert(response.data.message);
+                    alert(response.data.message || 'An error occurred');
                 }
+            }).fail(function(xhr, status, error) {
+                console.error('AJAX Error:', error);
+                alert('Failed to delete metal group. Please check console for details.');
             });
         });
         
