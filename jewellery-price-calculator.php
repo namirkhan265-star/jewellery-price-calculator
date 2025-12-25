@@ -4,8 +4,8 @@
  * Plugin URI: https://github.com/namirkhan265-star/jewellery-price-calculator
  * Description: Automatic jewellery price calculation based on metal rates (Gold, Silver, Diamond, Platinum) with support for making charges, wastage, GST, and discounts
  * Version: 1.2.1
- * Author: Brand Witty
- * Author URI: https://bhindi.io
+ * Author: Brandwitty
+ * Author URI: https://brandwitty.com
  * Text Domain: jewellery-price-calc
  * Domain Path: /languages
  * Requires at least: 5.8
