@@ -34,7 +34,7 @@ class JPC_Admin {
             'manage_woocommerce',
             'jewellery-price-calc',
             array($this, 'render_general_settings'),
-            'dashicons-money-alt',
+            'dashicons-admin-generic',
             56
         );
         
@@ -91,6 +91,16 @@ class JPC_Admin {
             'jpc-shortcodes',
             array($this, 'render_shortcodes')
         );
+        
+        // Debug page (temporary - remove in production)
+        add_submenu_page(
+            'jewellery-price-calc',
+            __('Debug Info', 'jewellery-price-calc'),
+            __('Debug', 'jewellery-price-calc'),
+            'manage_woocommerce',
+            'jpc-debug',
+            array($this, 'render_debug')
+        );
     }
     
     /**
@@ -117,11 +127,8 @@ class JPC_Admin {
     public function register_settings() {
         // General settings
         register_setting('jpc_general_settings', 'jpc_enable_pearl_cost');
-        register_setting('jpc_general_settings', 'jpc_enable_pearl_weight');
         register_setting('jpc_general_settings', 'jpc_enable_stone_cost');
-        register_setting('jpc_general_settings', 'jpc_enable_stone_weight');
         register_setting('jpc_general_settings', 'jpc_enable_extra_fee');
-        register_setting('jpc_general_settings', 'jpc_enable_extra_fee_weight');
         register_setting('jpc_general_settings', 'jpc_additional_percentage_label');
         register_setting('jpc_general_settings', 'jpc_additional_percentage_value');
         register_setting('jpc_general_settings', 'jpc_enable_gst');
@@ -187,5 +194,12 @@ class JPC_Admin {
      */
     public function render_shortcodes() {
         include JPC_PLUGIN_DIR . 'templates/admin/shortcodes.php';
+    }
+    
+    /**
+     * Render debug page
+     */
+    public function render_debug() {
+        include JPC_PLUGIN_DIR . 'templates/admin/debug.php';
     }
 }
