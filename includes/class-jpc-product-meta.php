@@ -20,11 +20,12 @@ class JPC_Product_Meta {
     
     private function __construct() {
         add_action('add_meta_boxes', array($this, 'add_meta_boxes'));
-        add_action('save_post', array($this, 'save_product_meta'));
+        add_action('save_post_product', array($this, 'save_product_meta'), 10);
         add_action('woocommerce_product_after_variable_attributes', array($this, 'add_variation_fields'), 10, 3);
         add_action('woocommerce_save_product_variation', array($this, 'save_variation_fields'), 10, 2);
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_scripts'));
         add_action('wp_ajax_jpc_calculate_live_price', array($this, 'ajax_calculate_live_price'));
+        add_action('wp_ajax_jpc_sync_price_to_product', array($this, 'ajax_sync_price_to_product'));
     }
     
     /**
@@ -51,6 +52,20 @@ class JPC_Product_Meta {
         wp_localize_script('jpc-live-calculator', 'jpcLiveCalc', array(
             'ajax_url' => admin_url('admin-ajax.php'),
             'nonce' => wp_create_nonce('jpc_live_calc_nonce'),
+        ));
+    }
+    
+    /**
+     * AJAX handler to sync calculated price to product price field
+     */
+    public function ajax_sync_price_to_product() {
+        check_ajax_referer('jpc_live_calc_nonce', 'nonce');
+        
+        $final_price = floatval($_POST['final_price']);
+        
+        wp_send_json_success(array(
+            'price' => $final_price,
+            'formatted' => number_format($final_price, 2, '.', '')
         ));
     }
     
@@ -214,15 +229,23 @@ class JPC_Product_Meta {
      * Save product meta
      */
     public function save_product_meta($post_id) {
+        // Verify nonce
         if (!isset($_POST['jpc_product_meta_nonce']) || !wp_verify_nonce($_POST['jpc_product_meta_nonce'], 'jpc_product_meta_nonce')) {
             return;
         }
         
+        // Check autosave
         if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
             return;
         }
         
+        // Check permissions
         if (!current_user_can('edit_post', $post_id)) {
+            return;
+        }
+        
+        // Check if it's a product
+        if (get_post_type($post_id) !== 'product') {
             return;
         }
         
