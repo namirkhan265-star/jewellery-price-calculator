@@ -99,13 +99,17 @@ class JPC_Diamonds {
             'display_name' => sanitize_text_field($data['display_name']),
         );
         
+        error_log('JPC: Attempting to insert diamond: ' . print_r($insert_data, true));
+        
         $result = $wpdb->insert($table, $insert_data);
         
         if ($result) {
+            error_log('JPC: Diamond inserted successfully with ID: ' . $wpdb->insert_id);
             return $wpdb->insert_id;
+        } else {
+            error_log('JPC: Failed to insert diamond. Error: ' . $wpdb->last_error);
+            return false;
         }
-        
-        return false;
     }
     
     /**
@@ -158,10 +162,23 @@ class JPC_Diamonds {
      * AJAX: Add diamond
      */
     public function ajax_add_diamond() {
+        error_log('JPC: ajax_add_diamond called');
+        error_log('JPC: POST data: ' . print_r($_POST, true));
+        
         check_ajax_referer('jpc_admin_nonce', 'nonce');
         
         if (!current_user_can('manage_woocommerce')) {
+            error_log('JPC: Permission denied for user');
             wp_send_json_error(array('message' => __('Permission denied', 'jewellery-price-calc')));
+            return;
+        }
+        
+        // Validate required fields
+        if (empty($_POST['type']) || empty($_POST['carat']) || empty($_POST['certification']) || 
+            empty($_POST['display_name']) || empty($_POST['price_per_carat'])) {
+            error_log('JPC: Missing required fields');
+            wp_send_json_error(array('message' => __('All fields are required', 'jewellery-price-calc')));
+            return;
         }
         
         $data = array(
@@ -175,12 +192,14 @@ class JPC_Diamonds {
         $id = self::add($data);
         
         if ($id) {
+            error_log('JPC: Diamond added successfully with ID: ' . $id);
             wp_send_json_success(array(
                 'message' => __('Diamond added successfully', 'jewellery-price-calc'),
                 'id' => $id
             ));
         } else {
-            wp_send_json_error(array('message' => __('Failed to add diamond', 'jewellery-price-calc')));
+            error_log('JPC: Failed to add diamond');
+            wp_send_json_error(array('message' => __('Failed to add diamond. Check error log.', 'jewellery-price-calc')));
         }
     }
     
