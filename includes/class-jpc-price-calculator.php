@@ -10,6 +10,7 @@ if (!defined('ABSPATH')) {
 class JPC_Price_Calculator {
     
     private static $instance = null;
+    private static $calculating_products = array(); // Track which products are being calculated
     
     public static function get_instance() {
         if (null === self::$instance) {
@@ -203,7 +204,10 @@ class JPC_Price_Calculator {
         
         // Calculate GST
         $gst_amount = 0;
-        if (get_option('jpc_enable_gst') === 'yes') {
+        $gst_enabled = get_option('jpc_enable_gst');
+        
+        // Check if GST is enabled (handle both 'yes' and '1' for checkbox compatibility)
+        if ($gst_enabled === 'yes' || $gst_enabled === '1' || $gst_enabled === 1 || $gst_enabled === true) {
             $gst_percentage = floatval(get_option('jpc_gst_value', 5));
             
             // Check for metal-specific GST
@@ -326,7 +330,10 @@ class JPC_Price_Calculator {
         
         // Calculate GST
         $gst_amount = 0;
-        if (get_option('jpc_enable_gst') === 'yes') {
+        $gst_enabled = get_option('jpc_enable_gst');
+        
+        // Check if GST is enabled (handle both 'yes' and '1' for checkbox compatibility)
+        if ($gst_enabled === 'yes' || $gst_enabled === '1' || $gst_enabled === 1 || $gst_enabled === true) {
             $gst_percentage = floatval(get_option('jpc_gst_value', 5));
             
             // Check for metal-specific GST
@@ -368,18 +375,19 @@ class JPC_Price_Calculator {
     }
     
     /**
-     * Calculate and update product price (called on save)
+     * Calculate and update product price (called on save or bulk update)
      */
     public static function calculate_and_update_price($product_id) {
-        // Prevent infinite loops
-        if (defined('JPC_CALCULATING_PRICE')) {
+        // Prevent infinite loops - use per-product tracking
+        if (isset(self::$calculating_products[$product_id])) {
             return false;
         }
-        define('JPC_CALCULATING_PRICE', true);
+        self::$calculating_products[$product_id] = true;
         
         $product = wc_get_product($product_id);
         
         if (!$product) {
+            unset(self::$calculating_products[$product_id]);
             return false;
         }
         
@@ -387,6 +395,7 @@ class JPC_Price_Calculator {
         $final_price = self::calculate_product_price($product_id);
         
         if ($final_price === false) {
+            unset(self::$calculating_products[$product_id]);
             return false;
         }
         
@@ -408,6 +417,9 @@ class JPC_Price_Calculator {
         
         // Store price breakup
         self::calculate_and_store_breakup($product_id);
+        
+        // Remove from tracking
+        unset(self::$calculating_products[$product_id]);
         
         return $final_price;
     }
