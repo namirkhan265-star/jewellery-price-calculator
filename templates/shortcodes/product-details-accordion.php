@@ -1,6 +1,8 @@
 <?php
 /**
  * Product Details Accordion Template
+ * Displays product details, diamond details, metal details, price breakup, and tags
+ * Usage: [jpc_product_details]
  */
 
 if (!defined('ABSPATH')) {
@@ -11,11 +13,11 @@ if (!defined('ABSPATH')) {
 <div class="jpc-product-details-accordion">
     
     <!-- Product Details Section -->
-    <div class="jpc-accordion-section">
+    <div class="jpc-accordion-section jpc-active">
         <div class="jpc-accordion-header">
             <h3>PRODUCT DETAILS</h3>
         </div>
-        <div class="jpc-accordion-content jpc-active">
+        <div class="jpc-accordion-content">
             <?php if ($product->get_sku()): ?>
             <div class="jpc-detail-row">
                 <span class="jpc-detail-label">Product Code</span>
@@ -80,7 +82,7 @@ if (!defined('ABSPATH')) {
             <h3>METAL DETAILS</h3>
             <span class="jpc-accordion-toggle">−</span>
         </div>
-        <div class="jpc-accordion-content jpc-active">
+        <div class="jpc-accordion-content">
             <div class="jpc-detail-row">
                 <span class="jpc-detail-label">Type</span>
                 <span class="jpc-detail-value"><?php echo esc_html($metal->name); ?></span>
@@ -106,7 +108,7 @@ if (!defined('ABSPATH')) {
             <h3>PRICE BREAKUP</h3>
             <span class="jpc-accordion-toggle">−</span>
         </div>
-        <div class="jpc-accordion-content jpc-active">
+        <div class="jpc-accordion-content">
             <?php if (!empty($price_breakup['metal_price'])): ?>
             <div class="jpc-detail-row">
                 <span class="jpc-detail-label"><?php echo $metal_group ? esc_html($metal_group->name) : 'Metal'; ?></span>
@@ -157,7 +159,7 @@ if (!defined('ABSPATH')) {
             <h3>TAGS</h3>
             <span class="jpc-accordion-toggle">−</span>
         </div>
-        <div class="jpc-accordion-content jpc-active">
+        <div class="jpc-accordion-content">
             <div class="jpc-tags-list">
                 <?php 
                 $tag_links = array();
@@ -177,59 +179,74 @@ if (!defined('ABSPATH')) {
 .jpc-product-details-accordion {
     max-width: 1200px;
     margin: 20px 0;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', sans-serif;
+    background: #fff;
+    border: 1px solid #e5e5e5;
+    border-radius: 4px;
+    padding: 0 24px;
 }
 
 .jpc-accordion-section {
     border-bottom: 1px solid #e5e5e5;
-    margin-bottom: 0;
+}
+
+.jpc-accordion-section:last-child {
+    border-bottom: none;
 }
 
 .jpc-accordion-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 20px 0;
+    padding: 24px 0;
     cursor: pointer;
     user-select: none;
 }
 
 .jpc-accordion-header h3 {
     margin: 0;
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 600;
-    letter-spacing: 0.5px;
-    color: #000;
+    letter-spacing: 0.8px;
+    color: #1a1a1a;
+    text-transform: uppercase;
 }
 
 .jpc-accordion-toggle {
-    font-size: 24px;
+    font-size: 28px;
     font-weight: 300;
-    color: #666;
-    transition: transform 0.3s ease;
+    color: #1a1a1a;
+    line-height: 1;
+    transition: transform 0.2s ease;
+    min-width: 20px;
+    text-align: center;
 }
 
-.jpc-accordion-section.jpc-collapsed .jpc-accordion-toggle {
+.jpc-accordion-section:not(.jpc-active) .jpc-accordion-toggle {
+    transform: rotate(0deg);
+}
+
+.jpc-accordion-section.jpc-active .jpc-accordion-toggle {
     transform: rotate(0deg);
 }
 
 .jpc-accordion-content {
     max-height: 0;
     overflow: hidden;
-    transition: max-height 0.3s ease;
+    transition: max-height 0.3s ease-out;
     padding: 0;
 }
 
-.jpc-accordion-content.jpc-active {
-    max-height: 1000px;
-    padding-bottom: 20px;
+.jpc-accordion-section.jpc-active .jpc-accordion-content {
+    max-height: 2000px;
+    padding-bottom: 24px;
 }
 
 .jpc-detail-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 12px 0;
+    padding: 14px 0;
     border-bottom: 1px solid #f5f5f5;
 }
 
@@ -239,49 +256,51 @@ if (!defined('ABSPATH')) {
 
 .jpc-detail-label {
     color: #5b7fa4;
-    font-size: 14px;
+    font-size: 15px;
     font-weight: 400;
     display: flex;
     align-items: center;
-    gap: 5px;
+    gap: 6px;
 }
 
 .jpc-detail-value {
     color: #5b7fa4;
-    font-size: 14px;
+    font-size: 15px;
     font-weight: 500;
     text-align: right;
 }
 
-.jpc-info-icon {
-    display: inline-block;
-    width: 16px;
-    height: 16px;
-    background: #ccc;
-    color: #fff;
-    border-radius: 50%;
-    text-align: center;
-    line-height: 16px;
-    font-size: 11px;
-    cursor: help;
-}
-
 .jpc-total-row {
-    margin-top: 10px;
-    padding-top: 15px;
+    margin-top: 8px;
+    padding-top: 16px;
     border-top: 2px solid #e5e5e5 !important;
 }
 
 .jpc-total-row .jpc-detail-label,
 .jpc-total-row .jpc-detail-value {
-    font-size: 15px;
-    color: #000;
+    color: #1a1a1a;
+    font-size: 16px;
+}
+
+.jpc-info-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    background: #d0d0d0;
+    color: #fff;
+    border-radius: 50%;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: help;
+    font-style: normal;
 }
 
 .jpc-tags-list {
     color: #5b7fa4;
-    font-size: 14px;
-    line-height: 1.8;
+    font-size: 15px;
+    line-height: 1.6;
 }
 
 .jpc-tags-list a {
@@ -295,35 +314,46 @@ if (!defined('ABSPATH')) {
     text-decoration: underline;
 }
 
-/* Responsive */
+/* Responsive Design */
 @media (max-width: 768px) {
+    .jpc-product-details-accordion {
+        padding: 0 16px;
+    }
+    
+    .jpc-accordion-header {
+        padding: 18px 0;
+    }
+    
     .jpc-accordion-header h3 {
         font-size: 14px;
     }
     
     .jpc-detail-label,
     .jpc-detail-value {
-        font-size: 13px;
+        font-size: 14px;
+    }
+    
+    .jpc-detail-row {
+        padding: 12px 0;
     }
 }
 </style>
 
 <script>
 jQuery(document).ready(function($) {
+    // Toggle accordion sections
     $('.jpc-accordion-header').on('click', function() {
-        const $section = $(this).closest('.jpc-accordion-section');
-        const $content = $section.find('.jpc-accordion-content');
-        const $toggle = $section.find('.jpc-accordion-toggle');
+        var section = $(this).closest('.jpc-accordion-section');
+        var toggle = $(this).find('.jpc-accordion-toggle');
         
         // Toggle active state
-        $content.toggleClass('jpc-active');
-        $section.toggleClass('jpc-collapsed');
+        section.toggleClass('jpc-active');
         
         // Update toggle icon
-        if ($content.hasClass('jpc-active')) {
-            $toggle.text('−');
+        if (section.hasClass('jpc-active')) {
+            toggle.text('−');
         } else {
-            $toggle.text('+');
+            toggle.text('+');
         }
     });
 });
