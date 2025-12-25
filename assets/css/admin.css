@@ -1,0 +1,239 @@
+/* Jewellery Price Calculator - Admin Styles */
+
+.jpc-admin-wrap {
+    margin: 20px 20px 0 0;
+}
+
+.jpc-admin-content {
+    max-width: 1200px;
+}
+
+.jpc-card {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    box-shadow: 0 1px 1px rgba(0,0,0,.04);
+    margin-bottom: 20px;
+    padding: 20px;
+}
+
+.jpc-card h2 {
+    margin-top: 0;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.jpc-form .form-table th {
+    width: 200px;
+    padding: 15px 10px 15px 0;
+}
+
+.jpc-form .form-table td {
+    padding: 15px 10px;
+}
+
+.jpc-price-edit {
+    width: 120px;
+}
+
+.jpc-bulk-actions {
+    padding: 15px;
+    background: #f0f0f1;
+    border-radius: 4px;
+}
+
+.jpc-bulk-actions h3 {
+    margin-top: 0;
+}
+
+/* Modal Styles */
+.jpc-modal {
+    display: none;
+    position: fixed;
+    z-index: 100000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.5);
+}
+
+.jpc-modal-content {
+    background-color: #fefefe;
+    margin: 5% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 600px;
+    border-radius: 4px;
+}
+
+.jpc-modal-close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.jpc-modal-close:hover,
+.jpc-modal-close:focus {
+    color: #000;
+}
+
+/* Buttons */
+.jpc-edit-metal,
+.jpc-delete-metal,
+.jpc-edit-group,
+.jpc-delete-group {
+    margin-right: 5px;
+}
+
+.button .dashicons {
+    line-height: 28px;
+    font-size: 16px;
+}
+
+/* Price History Table */
+.jpc-price-history-table {
+    width: 100%;
+}
+
+.jpc-price-history-table .price-increase {
+    color: #46b450;
+}
+
+.jpc-price-history-table .price-decrease {
+    color: #dc3232;
+}
+
+/* Tabs */
+.jpc-tabs {
+    margin: 0 0 20px;
+    padding: 0;
+    border-bottom: 1px solid #ccc;
+}
+
+.jpc-tabs li {
+    display: inline-block;
+    margin: 0;
+    padding: 0;
+}
+
+.jpc-tabs li a {
+    display: block;
+    padding: 10px 15px;
+    text-decoration: none;
+    border: 1px solid transparent;
+    border-bottom: none;
+}
+
+.jpc-tabs li.active a {
+    background: #fff;
+    border-color: #ccc;
+    border-bottom-color: #fff;
+    margin-bottom: -1px;
+}
+
+/* Product Meta Box */
+.jpc-product-meta-box {
+    padding: 12px;
+}
+
+.jpc-product-meta-box .form-field {
+    margin-bottom: 15px;
+}
+
+.jpc-product-meta-box label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+}
+
+.jpc-product-meta-box input[type="text"],
+.jpc-product-meta-box input[type="number"],
+.jpc-product-meta-box select {
+    width: 100%;
+    max-width: 300px;
+}
+
+.jpc-product-meta-box .description {
+    font-style: italic;
+    color: #666;
+    font-size: 12px;
+}
+
+/* Price Breakup Display */
+.jpc-price-breakup-admin {
+    margin-top: 15px;
+    padding: 15px;
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.jpc-price-breakup-admin h4 {
+    margin-top: 0;
+}
+
+.jpc-price-breakup-admin table {
+    width: 100%;
+}
+
+.jpc-price-breakup-admin td {
+    padding: 5px;
+}
+
+.jpc-price-breakup-admin .total-row {
+    font-weight: bold;
+    border-top: 2px solid #333;
+}
+
+/* Responsive */
+@media screen and (max-width: 782px) {
+    .jpc-modal-content {
+        width: 95%;
+        margin: 10% auto;
+    }
+    
+    .jpc-form .form-table th,
+    .jpc-form .form-table td {
+        display: block;
+        width: 100%;
+        padding: 10px 0;
+    }
+}
+
+/* Loading Spinner */
+.jpc-loading {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(0,0,0,.1);
+    border-radius: 50%;
+    border-top-color: #2271b1;
+    animation: jpc-spin 1s ease-in-out infinite;
+}
+
+@keyframes jpc-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Success/Error Messages */
+.jpc-message {
+    padding: 10px 15px;
+    margin: 15px 0;
+    border-radius: 4px;
+}
+
+.jpc-message.success {
+    background: #d4edda;
+    border: 1px solid #c3e6cb;
+    color: #155724;
+}
+
+.jpc-message.error {
+    background: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+}
