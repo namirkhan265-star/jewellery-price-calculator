@@ -25,24 +25,78 @@ class JPC_Price_Calculator {
         
         // Also hook into save_post as a fallback
         add_action('save_post_product', array($this, 'calculate_and_update_price'), 30);
+        
+        // DYNAMIC PRICING: Hook into price display filters
+        add_filter('woocommerce_product_get_price', array($this, 'get_dynamic_price'), 99, 2);
+        add_filter('woocommerce_product_get_regular_price', array($this, 'get_dynamic_price'), 99, 2);
+        add_filter('woocommerce_product_variation_get_price', array($this, 'get_dynamic_price'), 99, 2);
+        add_filter('woocommerce_product_variation_get_regular_price', array($this, 'get_dynamic_price'), 99, 2);
+        
+        // Update price breakup dynamically
+        add_filter('woocommerce_get_price_html', array($this, 'update_price_breakup_on_display'), 10, 2);
     }
     
     /**
-     * Calculate and update product price
+     * Get dynamic price based on current metal rates
      */
-    public static function calculate_and_update_price($product_id) {
-        // Prevent infinite loops
-        if (defined('JPC_CALCULATING_PRICE')) {
-            return false;
+    public function get_dynamic_price($price, $product) {
+        // Skip if in admin (except for AJAX requests)
+        if (is_admin() && !wp_doing_ajax()) {
+            return $price;
         }
-        define('JPC_CALCULATING_PRICE', true);
         
-        $product = wc_get_product($product_id);
-        
+        // Skip if no product
         if (!$product) {
-            return false;
+            return $price;
         }
         
+        $product_id = $product->get_id();
+        
+        // Check if this product uses JPC
+        $metal_id = get_post_meta($product_id, '_jpc_metal_id', true);
+        
+        if (!$metal_id) {
+            return $price; // Not a JPC product, return original price
+        }
+        
+        // Calculate real-time price
+        $dynamic_price = self::calculate_product_price($product_id);
+        
+        if ($dynamic_price !== false) {
+            return $dynamic_price;
+        }
+        
+        return $price;
+    }
+    
+    /**
+     * Update price breakup when price is displayed
+     */
+    public function update_price_breakup_on_display($price_html, $product) {
+        // Only on frontend
+        if (is_admin()) {
+            return $price_html;
+        }
+        
+        $product_id = $product->get_id();
+        
+        // Check if this product uses JPC
+        $metal_id = get_post_meta($product_id, '_jpc_metal_id', true);
+        
+        if (!$metal_id) {
+            return $price_html;
+        }
+        
+        // Recalculate and update breakup
+        self::calculate_and_store_breakup($product_id);
+        
+        return $price_html;
+    }
+    
+    /**
+     * Calculate product price (without saving to database)
+     */
+    public static function calculate_product_price($product_id) {
         // Get metal data
         $metal_id = get_post_meta($product_id, '_jpc_metal_id', true);
         
@@ -60,6 +114,11 @@ class JPC_Price_Calculator {
         
         // Get product metal data
         $weight = floatval(get_post_meta($product_id, '_jpc_metal_weight', true));
+        
+        if (!$weight) {
+            return false;
+        }
+        
         $making_charge = floatval(get_post_meta($product_id, '_jpc_making_charge', true));
         $making_charge_type = get_post_meta($product_id, '_jpc_making_charge_type', true) ?: 'percentage';
         $wastage_charge = floatval(get_post_meta($product_id, '_jpc_wastage_charge', true));
@@ -165,20 +224,128 @@ class JPC_Price_Calculator {
         $rounding = get_option('jpc_price_rounding', 'default');
         $final_price = self::apply_rounding($final_price, $rounding);
         
-        // Get old price for logging
-        $old_price = $product->get_regular_price();
+        return $final_price;
+    }
+    
+    /**
+     * Calculate and store price breakup (for display purposes)
+     */
+    public static function calculate_and_store_breakup($product_id) {
+        // Get metal data
+        $metal_id = get_post_meta($product_id, '_jpc_metal_id', true);
         
-        // Update product price using direct meta update to avoid recursion
-        update_post_meta($product_id, '_regular_price', $final_price);
-        update_post_meta($product_id, '_price', $final_price);
-        
-        // Clear product cache
-        wc_delete_product_transients($product_id);
-        
-        // Log price change
-        if ($old_price != $final_price) {
-            self::log_product_price_change($product_id, $old_price, $final_price, $metal_id);
+        if (!$metal_id) {
+            return false;
         }
+        
+        $metal = JPC_Metals::get_by_id($metal_id);
+        
+        if (!$metal) {
+            return false;
+        }
+        
+        $metal_group = JPC_Metal_Groups::get_by_id($metal->metal_group_id);
+        
+        // Get product metal data
+        $weight = floatval(get_post_meta($product_id, '_jpc_metal_weight', true));
+        $making_charge = floatval(get_post_meta($product_id, '_jpc_making_charge', true));
+        $making_charge_type = get_post_meta($product_id, '_jpc_making_charge_type', true) ?: 'percentage';
+        $wastage_charge = floatval(get_post_meta($product_id, '_jpc_wastage_charge', true));
+        $wastage_charge_type = get_post_meta($product_id, '_jpc_wastage_charge_type', true) ?: 'percentage';
+        
+        // Calculate base metal price
+        $metal_price = $weight * $metal->price_per_unit;
+        
+        // Get diamond data and calculate diamond price
+        $diamond_price = 0;
+        $diamond_id = get_post_meta($product_id, '_jpc_diamond_id', true);
+        $diamond_quantity = intval(get_post_meta($product_id, '_jpc_diamond_quantity', true));
+        
+        if ($diamond_id && $diamond_quantity > 0) {
+            $diamond = JPC_Diamonds::get_by_id($diamond_id);
+            if ($diamond) {
+                $diamond_unit_price = $diamond->price_per_carat * $diamond->carat;
+                $diamond_price = $diamond_unit_price * $diamond_quantity;
+            }
+        }
+        
+        // Calculate making charge
+        $making_charge_amount = 0;
+        if ($metal_group->enable_making_charge && $making_charge > 0) {
+            if ($making_charge_type === 'percentage') {
+                $making_charge_amount = ($metal_price * $making_charge) / 100;
+            } else {
+                $making_charge_amount = $making_charge;
+            }
+        }
+        
+        // Calculate wastage charge
+        $wastage_charge_amount = 0;
+        if ($metal_group->enable_wastage_charge && $wastage_charge > 0) {
+            if ($wastage_charge_type === 'percentage') {
+                $wastage_charge_amount = ($metal_price * $wastage_charge) / 100;
+            } else {
+                $wastage_charge_amount = $wastage_charge;
+            }
+        }
+        
+        // Get additional costs
+        $pearl_cost = floatval(get_post_meta($product_id, '_jpc_pearl_cost', true));
+        $stone_cost = floatval(get_post_meta($product_id, '_jpc_stone_cost', true));
+        $extra_fee = floatval(get_post_meta($product_id, '_jpc_extra_fee', true));
+        
+        // Calculate subtotal before tax
+        $subtotal = $metal_price + $diamond_price + $making_charge_amount + $wastage_charge_amount + $pearl_cost + $stone_cost + $extra_fee;
+        
+        // Apply discount if enabled
+        $discount_amount = 0;
+        if (get_option('jpc_enable_discount') === 'yes') {
+            $discount_percentage = floatval(get_post_meta($product_id, '_jpc_discount_percentage', true));
+            
+            if ($discount_percentage > 0) {
+                $discount_on_metals = get_option('jpc_discount_on_metals') === 'yes';
+                $discount_on_making = get_option('jpc_discount_on_making') === 'yes';
+                $discount_on_wastage = get_option('jpc_discount_on_wastage') === 'yes';
+                
+                $discountable_amount = 0;
+                
+                if ($discount_on_metals) {
+                    $discountable_amount += $metal_price;
+                }
+                if ($discount_on_making) {
+                    $discountable_amount += $making_charge_amount;
+                }
+                if ($discount_on_wastage) {
+                    $discountable_amount += $wastage_charge_amount;
+                }
+                
+                $discount_amount = ($discountable_amount * $discount_percentage) / 100;
+                $subtotal -= $discount_amount;
+            }
+        }
+        
+        // Calculate GST
+        $gst_amount = 0;
+        if (get_option('jpc_enable_gst') === 'yes') {
+            $gst_percentage = floatval(get_option('jpc_gst_value', 5));
+            
+            // Check for metal-specific GST
+            $metal_group_name = strtolower($metal_group->name);
+            $metal_gst = get_option('jpc_gst_' . $metal_group_name);
+            
+            if ($metal_gst !== false && $metal_gst !== '') {
+                $gst_percentage = floatval($metal_gst);
+            }
+            
+            $gst_amount = ($subtotal * $gst_percentage) / 100;
+        }
+        
+        // Calculate final price
+        $final_price = $subtotal + $gst_amount;
+        
+        // Apply rounding
+        $rounding = get_option('jpc_price_rounding', 'default');
+        $final_price = self::apply_rounding($final_price, $rounding);
         
         // Store price breakup for display
         $breakup = array(
@@ -196,6 +363,51 @@ class JPC_Price_Calculator {
         );
         
         update_post_meta($product_id, '_jpc_price_breakup', $breakup);
+        
+        return $breakup;
+    }
+    
+    /**
+     * Calculate and update product price (called on save)
+     */
+    public static function calculate_and_update_price($product_id) {
+        // Prevent infinite loops
+        if (defined('JPC_CALCULATING_PRICE')) {
+            return false;
+        }
+        define('JPC_CALCULATING_PRICE', true);
+        
+        $product = wc_get_product($product_id);
+        
+        if (!$product) {
+            return false;
+        }
+        
+        // Calculate price
+        $final_price = self::calculate_product_price($product_id);
+        
+        if ($final_price === false) {
+            return false;
+        }
+        
+        // Get old price for logging
+        $old_price = $product->get_regular_price();
+        
+        // Update product price using direct meta update to avoid recursion
+        update_post_meta($product_id, '_regular_price', $final_price);
+        update_post_meta($product_id, '_price', $final_price);
+        
+        // Clear product cache
+        wc_delete_product_transients($product_id);
+        
+        // Log price change
+        if ($old_price != $final_price) {
+            $metal_id = get_post_meta($product_id, '_jpc_metal_id', true);
+            self::log_product_price_change($product_id, $old_price, $final_price, $metal_id);
+        }
+        
+        // Store price breakup
+        self::calculate_and_store_breakup($product_id);
         
         return $final_price;
     }
