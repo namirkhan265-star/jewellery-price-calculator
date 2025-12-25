@@ -1,0 +1,212 @@
+/* Jewellery Price Calculator - Frontend Styles */
+
+.jpc-price-breakup {
+    margin: 20px 0;
+    padding: 15px;
+    background: #f9f9f9;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+}
+
+.jpc-price-breakup h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 18px;
+    color: #333;
+}
+
+.jpc-price-breakup-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.jpc-price-breakup-table tr {
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.jpc-price-breakup-table tr:last-child {
+    border-bottom: none;
+}
+
+.jpc-price-breakup-table td {
+    padding: 8px 0;
+}
+
+.jpc-price-breakup-table td:first-child {
+    color: #666;
+    font-weight: 500;
+}
+
+.jpc-price-breakup-table td:last-child {
+    text-align: right;
+    font-weight: 600;
+    color: #333;
+}
+
+.jpc-price-breakup-table .total-row td {
+    padding-top: 12px;
+    font-size: 18px;
+    color: #000;
+    border-top: 2px solid #333;
+}
+
+.jpc-price-breakup-table .discount-row td {
+    color: #46b450;
+}
+
+.jpc-price-breakup-table .gst-row td {
+    color: #666;
+    font-size: 14px;
+}
+
+/* Detailed Breakup */
+.jpc-detailed-breakup {
+    margin: 20px 0;
+}
+
+.jpc-detailed-breakup summary {
+    cursor: pointer;
+    padding: 10px;
+    background: #f0f0f0;
+    border-radius: 4px;
+    font-weight: 600;
+}
+
+.jpc-detailed-breakup summary:hover {
+    background: #e0e0e0;
+}
+
+.jpc-detailed-breakup-content {
+    padding: 15px;
+    border: 1px solid #e0e0e0;
+    border-top: none;
+    border-radius: 0 0 4px 4px;
+}
+
+/* Metal Rates Display */
+.jpc-metal-rates {
+    margin: 20px 0;
+}
+
+.jpc-metal-rates-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.jpc-metal-rates-list li {
+    padding: 10px;
+    border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: space-between;
+}
+
+.jpc-metal-rates-list li:last-child {
+    border-bottom: none;
+}
+
+.jpc-metal-name {
+    font-weight: 600;
+    color: #333;
+}
+
+.jpc-metal-price {
+    color: #46b450;
+    font-weight: 700;
+}
+
+/* Metal Rates Table */
+.jpc-metal-rates-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+}
+
+.jpc-metal-rates-table th,
+.jpc-metal-rates-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.jpc-metal-rates-table th {
+    background: #f0f0f0;
+    font-weight: 600;
+}
+
+.jpc-metal-rates-table tr:hover {
+    background: #f9f9f9;
+}
+
+/* Metal Rates Marquee */
+.jpc-metal-rates-marquee {
+    background: #333;
+    color: #fff;
+    padding: 10px 0;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.jpc-metal-rates-marquee-content {
+    display: inline-block;
+    padding-left: 100%;
+    animation: jpc-marquee 20s linear infinite;
+}
+
+.jpc-metal-rates-marquee-item {
+    display: inline-block;
+    padding: 0 30px;
+}
+
+.jpc-metal-rates-marquee-item .metal-name {
+    font-weight: 600;
+}
+
+.jpc-metal-rates-marquee-item .metal-price {
+    color: #ffd700;
+    margin-left: 10px;
+}
+
+@keyframes jpc-marquee {
+    0% {
+        transform: translate(0, 0);
+    }
+    100% {
+        transform: translate(-100%, 0);
+    }
+}
+
+/* Responsive */
+@media screen and (max-width: 768px) {
+    .jpc-price-breakup {
+        padding: 10px;
+    }
+    
+    .jpc-price-breakup-table td {
+        font-size: 14px;
+    }
+    
+    .jpc-metal-rates-table {
+        font-size: 14px;
+    }
+    
+    .jpc-metal-rates-table th,
+    .jpc-metal-rates-table td {
+        padding: 8px;
+    }
+}
+
+/* Print Styles */
+@media print {
+    .jpc-price-breakup {
+        border: 1px solid #000;
+    }
+    
+    .jpc-detailed-breakup summary {
+        display: none;
+    }
+    
+    .jpc-detailed-breakup-content {
+        display: block !important;
+    }
+}
