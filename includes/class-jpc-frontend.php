@@ -21,7 +21,7 @@ class JPC_Frontend {
     private function __construct() {
         add_action('wp_enqueue_scripts', array($this, 'enqueue_frontend_assets'));
         add_action('woocommerce_single_product_summary', array($this, 'display_price_breakup'), 25);
-        add_action('woocommerce_after_add_to_cart_button', array($this, 'display_detailed_breakup'), 15);
+        // Removed: add_action('woocommerce_after_add_to_cart_button', array($this, 'display_detailed_breakup'), 15);
     }
     
     /**
@@ -63,30 +63,6 @@ class JPC_Frontend {
         }
         
         include JPC_PLUGIN_DIR . 'templates/frontend/price-breakup.php';
-    }
-    
-    /**
-     * Display detailed price breakup
-     */
-    public function display_detailed_breakup() {
-        if (get_option('jpc_show_price_breakup') !== 'yes') {
-            return;
-        }
-        
-        global $product;
-        
-        if (!$product) {
-            return;
-        }
-        
-        $product_id = $product->get_id();
-        $breakup = get_post_meta($product_id, '_jpc_price_breakup', true);
-        
-        if (!$breakup || !is_array($breakup)) {
-            return;
-        }
-        
-        include JPC_PLUGIN_DIR . 'templates/frontend/detailed-breakup.php';
     }
     
     /**
