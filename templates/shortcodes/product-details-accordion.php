@@ -8,6 +8,51 @@
 if (!defined('ABSPATH')) {
     exit;
 }
+
+// Get WooCommerce product weight (total product weight)
+$product_weight = $product->get_weight();
+
+// Get metal data
+$metal_weight = get_post_meta($product_id, '_jpc_metal_weight', true);
+
+// Get diamond data
+$diamond_id = get_post_meta($product_id, '_jpc_diamond_id', true);
+$diamond_quantity = intval(get_post_meta($product_id, '_jpc_diamond_quantity', true));
+
+// Get diamond details
+$diamond = null;
+$diamond_type_label = '';
+$diamond_cert_label = '';
+if ($diamond_id) {
+    $diamond = JPC_Diamonds::get_by_id($diamond_id);
+    if ($diamond) {
+        $types = JPC_Diamonds::get_types();
+        $certs = JPC_Diamonds::get_certifications();
+        $diamond_type_label = isset($types[$diamond->type]) ? $types[$diamond->type] : $diamond->type;
+        $diamond_cert_label = isset($certs[$diamond->certification]) ? $certs[$diamond->certification] : $diamond->certification;
+    }
+}
+
+// Get metal details
+$metal = null;
+$metal_group = null;
+$metal_karat = '';
+if ($metal_id) {
+    $metal = JPC_Metals::get_by_id($metal_id);
+    if ($metal) {
+        $metal_group = JPC_Metal_Groups::get_by_id($metal->metal_group_id);
+        // Extract karat from metal name (e.g., "22K Gold" -> "22K")
+        if (preg_match('/(\d+K)/i', $metal->name, $matches)) {
+            $metal_karat = $matches[1];
+        }
+    }
+}
+
+// Get price breakup
+$price_breakup = get_post_meta($product_id, '_jpc_price_breakup', true);
+
+// Get product tags
+$tags = wp_get_post_terms($product_id, 'product_tag');
 ?>
 
 <div class="jpc-product-details-accordion">
@@ -18,34 +63,32 @@ if (!defined('ABSPATH')) {
             <h3>PRODUCT DETAILS</h3>
         </div>
         <div class="jpc-accordion-content">
-            <?php if ($product->get_sku()): ?>
-            <div class="jpc-detail-row">
-                <span class="jpc-detail-label">Product Code</span>
-                <span class="jpc-detail-value"><?php echo esc_html($product->get_sku()); ?></span>
-            </div>
-            <?php endif; ?>
-            
-            <?php 
-            // Get custom fields for length
-            $length = get_post_meta($product_id, '_jpc_extra_field_1', true);
-            if ($length): 
-            ?>
-            <div class="jpc-detail-row">
-                <span class="jpc-detail-label">
-                    Length 
-                    <span class="jpc-info-icon" title="Product length">ⓘ</span>
-                </span>
-                <span class="jpc-detail-value"><?php echo esc_html($length); ?></span>
-            </div>
-            <?php endif; ?>
-            
-            <?php if ($metal_weight): ?>
+            <?php if ($product_weight): ?>
             <div class="jpc-detail-row">
                 <span class="jpc-detail-label">
                     Product Weight 
-                    <span class="jpc-info-icon" title="Total product weight">ⓘ</span>
+                    <span class="jpc-info-icon" title="Total product weight including all components">ⓘ</span>
                 </span>
-                <span class="jpc-detail-value"><?php echo number_format($metal_weight, 2); ?> gram</span>
+                <span class="jpc-detail-value"><?php echo number_format($product_weight, 2); ?> gram</span>
+            </div>
+            <?php endif; ?>
+            
+            <?php if ($metal && $metal_karat): ?>
+            <div class="jpc-detail-row">
+                <span class="jpc-detail-label">Metal Type</span>
+                <span class="jpc-detail-value"><?php echo esc_html($metal->name); ?></span>
+            </div>
+            <?php endif; ?>
+            
+            <?php if ($diamond): ?>
+            <div class="jpc-detail-row">
+                <span class="jpc-detail-label">Diamond Type</span>
+                <span class="jpc-detail-value"><?php echo esc_html($diamond_type_label); ?></span>
+            </div>
+            
+            <div class="jpc-detail-row">
+                <span class="jpc-detail-label">Certificate</span>
+                <span class="jpc-detail-value"><?php echo esc_html($diamond_cert_label); ?></span>
             </div>
             <?php endif; ?>
         </div>
@@ -56,13 +99,13 @@ if (!defined('ABSPATH')) {
     <div class="jpc-accordion-section">
         <div class="jpc-accordion-header">
             <h3>DIAMOND DETAILS</h3>
-            <span class="jpc-accordion-toggle">+</span>
+            <span class="jpc-accordion-toggle">−</span>
         </div>
         <div class="jpc-accordion-content">
             <div class="jpc-detail-row">
                 <span class="jpc-detail-label">
                     Total Weight 
-                    <span class="jpc-info-icon" title="Total diamond weight">ⓘ</span>
+                    <span class="jpc-info-icon" title="Total diamond weight in carats">ⓘ</span>
                 </span>
                 <span class="jpc-detail-value"><?php echo number_format($diamond->carat * $diamond_quantity, 3); ?> Ct</span>
             </div>
@@ -70,6 +113,21 @@ if (!defined('ABSPATH')) {
             <div class="jpc-detail-row">
                 <span class="jpc-detail-label">Total No. Of Diamonds</span>
                 <span class="jpc-detail-value"><?php echo esc_html($diamond_quantity); ?></span>
+            </div>
+            
+            <div class="jpc-detail-row">
+                <span class="jpc-detail-label">Price Per Carat</span>
+                <span class="jpc-detail-value">₹ <?php echo number_format($diamond->price_per_carat, 0); ?>/-</span>
+            </div>
+            
+            <div class="jpc-detail-row">
+                <span class="jpc-detail-label">Diamond Type</span>
+                <span class="jpc-detail-value"><?php echo esc_html($diamond_type_label); ?></span>
+            </div>
+            
+            <div class="jpc-detail-row">
+                <span class="jpc-detail-label">Certificate</span>
+                <span class="jpc-detail-value"><?php echo esc_html($diamond_cert_label); ?></span>
             </div>
         </div>
     </div>
@@ -85,14 +143,26 @@ if (!defined('ABSPATH')) {
         <div class="jpc-accordion-content">
             <div class="jpc-detail-row">
                 <span class="jpc-detail-label">Type</span>
-                <span class="jpc-detail-value"><?php echo esc_html($metal->name); ?></span>
+                <span class="jpc-detail-value"><?php echo esc_html($metal_group ? $metal_group->name : $metal->name); ?></span>
+            </div>
+            
+            <?php if ($metal_karat): ?>
+            <div class="jpc-detail-row">
+                <span class="jpc-detail-label">Karat</span>
+                <span class="jpc-detail-value"><?php echo esc_html($metal_karat); ?></span>
+            </div>
+            <?php endif; ?>
+            
+            <div class="jpc-detail-row">
+                <span class="jpc-detail-label">Rate Per Gram</span>
+                <span class="jpc-detail-value">₹ <?php echo number_format($metal->price_per_unit, 2); ?>/-</span>
             </div>
             
             <?php if ($metal_weight): ?>
             <div class="jpc-detail-row">
                 <span class="jpc-detail-label">
                     Weight 
-                    <span class="jpc-info-icon" title="Metal weight">ⓘ</span>
+                    <span class="jpc-info-icon" title="Metal weight used in product">ⓘ</span>
                 </span>
                 <span class="jpc-detail-value"><?php echo number_format($metal_weight, 2); ?> gram</span>
             </div>
@@ -134,6 +204,34 @@ if (!defined('ABSPATH')) {
             <div class="jpc-detail-row">
                 <span class="jpc-detail-label">Wastage Charge</span>
                 <span class="jpc-detail-value">₹ <?php echo number_format($price_breakup['wastage_charge'], 0); ?>/-</span>
+            </div>
+            <?php endif; ?>
+            
+            <?php if (!empty($price_breakup['pearl_cost'])): ?>
+            <div class="jpc-detail-row">
+                <span class="jpc-detail-label">Pearl Cost</span>
+                <span class="jpc-detail-value">₹ <?php echo number_format($price_breakup['pearl_cost'], 0); ?>/-</span>
+            </div>
+            <?php endif; ?>
+            
+            <?php if (!empty($price_breakup['stone_cost'])): ?>
+            <div class="jpc-detail-row">
+                <span class="jpc-detail-label">Stone Cost</span>
+                <span class="jpc-detail-value">₹ <?php echo number_format($price_breakup['stone_cost'], 0); ?>/-</span>
+            </div>
+            <?php endif; ?>
+            
+            <?php if (!empty($price_breakup['extra_fee'])): ?>
+            <div class="jpc-detail-row">
+                <span class="jpc-detail-label">Extra Fee</span>
+                <span class="jpc-detail-value">₹ <?php echo number_format($price_breakup['extra_fee'], 0); ?>/-</span>
+            </div>
+            <?php endif; ?>
+            
+            <?php if (!empty($price_breakup['discount'])): ?>
+            <div class="jpc-detail-row">
+                <span class="jpc-detail-label">Discount</span>
+                <span class="jpc-detail-value">- ₹ <?php echo number_format($price_breakup['discount'], 0); ?>/-</span>
             </div>
             <?php endif; ?>
             
