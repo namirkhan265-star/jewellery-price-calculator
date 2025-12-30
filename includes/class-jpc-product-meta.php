@@ -21,7 +21,7 @@ class JPC_Product_Meta {
     private function __construct() {
         add_action('add_meta_boxes', array($this, 'add_meta_boxes'));
         add_action('save_post_product', array($this, 'save_product_meta'), 10);
-        add_action('woocommerce_process_product_meta', array($this, 'save_woocommerce_prices'), 20); // Hook after WooCommerce
+        add_action('woocommerce_process_product_meta', array($this, 'calculate_and_save_prices'), 20);
         add_action('woocommerce_product_after_variable_attributes', array($this, 'add_variation_fields'), 10, 3);
         add_action('woocommerce_save_product_variation', array($this, 'save_variation_fields'), 10, 2);
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_scripts'));
@@ -57,44 +57,47 @@ class JPC_Product_Meta {
     }
     
     /**
-     * Save WooCommerce prices after calculation
-     * This ensures the regular and sale prices are properly saved
+     * Calculate and save prices properly
+     * This runs AFTER WooCommerce saves the regular price
      */
-    public function save_woocommerce_prices($post_id) {
-        // Check if we have JPC data
+    public function calculate_and_save_prices($post_id) {
+        // Check if this is a JPC product
         $metal_id = get_post_meta($post_id, '_jpc_metal_id', true);
         if (!$metal_id) {
             return; // Not a JPC product
         }
         
-        // Get the discount percentage
-        $discount_percentage = get_post_meta($post_id, '_jpc_discount_percentage', true);
-        
-        // Get the regular price (this should be set by WooCommerce already)
+        // Get the regular price that was just saved by WooCommerce
         $regular_price = get_post_meta($post_id, '_regular_price', true);
         
         if (!$regular_price || $regular_price <= 0) {
             return; // No price to work with
         }
         
-        // If there's a discount, calculate and set sale price
+        // Get discount percentage
+        $discount_percentage = get_post_meta($post_id, '_jpc_discount_percentage', true);
+        
+        // Calculate sale price if discount exists
         if ($discount_percentage > 0) {
             // Calculate the discounted price
-            $sale_price = $regular_price * (1 - ($discount_percentage / 100));
+            $sale_price = $regular_price - ($regular_price * ($discount_percentage / 100));
             $sale_price = round($sale_price, 2);
             
-            // Update sale price
+            // Update sale price and active price
             update_post_meta($post_id, '_sale_price', $sale_price);
-            update_post_meta($post_id, '_price', $sale_price); // Active price
+            update_post_meta($post_id, '_price', $sale_price);
             
-            error_log("JPC: Set sale price for product $post_id: Regular=$regular_price, Sale=$sale_price, Discount=$discount_percentage%");
+            error_log("JPC: Calculated sale price for product $post_id: Regular=$regular_price, Discount=$discount_percentage%, Sale=$sale_price");
         } else {
             // No discount - clear sale price
             delete_post_meta($post_id, '_sale_price');
-            update_post_meta($post_id, '_price', $regular_price); // Active price = regular price
+            update_post_meta($post_id, '_price', $regular_price);
             
-            error_log("JPC: Cleared sale price for product $post_id: Regular=$regular_price");
+            error_log("JPC: No discount for product $post_id: Regular=$regular_price");
         }
+        
+        // Clear WooCommerce transients to refresh price display
+        wc_delete_product_transients($post_id);
     }
     
     /**
@@ -113,7 +116,6 @@ class JPC_Product_Meta {
     
     /**
      * AJAX handler for live price calculation
-     * Uses the EXACT same logic as JPC_Price_Calculator::calculate_product_price()
      */
     public function ajax_calculate_live_price() {
         check_ajax_referer('jpc_live_calc_nonce', 'nonce');
@@ -177,55 +179,24 @@ class JPC_Product_Meta {
             }
         }
         
-        // Calculate subtotal before tax (including diamond price)
+        // Calculate subtotal before discount and tax
         $subtotal = $metal_price + $diamond_price + $making_charge_amount + $wastage_charge_amount + $pearl_cost + $stone_cost + $extra_fee;
         
-        // Apply additional percentage if enabled
-        $additional_percentage = get_option('jpc_additional_percentage_value', 0);
-        if ($additional_percentage > 0) {
-            $subtotal += ($subtotal * $additional_percentage) / 100;
-        }
-        
-        // Apply discount if enabled
+        // Apply discount BEFORE GST
         $discount_amount = 0;
-        if (get_option('jpc_enable_discount') === 'yes' && $discount_percentage > 0) {
-            $discount_on_metals = get_option('jpc_discount_on_metals') === 'yes';
-            $discount_on_making = get_option('jpc_discount_on_making') === 'yes';
-            $discount_on_wastage = get_option('jpc_discount_on_wastage') === 'yes';
-            
-            $discountable_amount = 0;
-            if ($discount_on_metals) {
-                $discountable_amount += $metal_price;
-            }
-            if ($discount_on_making) {
-                $discountable_amount += $making_charge_amount;
-            }
-            if ($discount_on_wastage) {
-                $discountable_amount += $wastage_charge_amount;
-            }
-            
-            $discount_amount = ($discountable_amount * $discount_percentage) / 100;
+        if ($discount_percentage > 0) {
+            $discount_amount = ($subtotal * $discount_percentage) / 100;
             $subtotal -= $discount_amount;
         }
         
-        // Calculate GST
+        // Calculate GST on discounted amount
         $gst_amount = 0;
         $gst_percentage = 0;
         $gst_label = get_option('jpc_gst_label', 'GST');
         $gst_enabled = get_option('jpc_enable_gst');
         
-        // Check if GST is enabled (handle both 'yes' and '1' for checkbox compatibility)
         if ($gst_enabled === 'yes' || $gst_enabled === '1' || $gst_enabled === 1 || $gst_enabled === true) {
             $gst_percentage = floatval(get_option('jpc_gst_value', 5));
-            
-            // Check for metal-specific GST
-            $metal_group_name = strtolower($metal_group->name);
-            $metal_gst = get_option('jpc_gst_' . $metal_group_name);
-            
-            if ($metal_gst !== false && $metal_gst !== '') {
-                $gst_percentage = floatval($metal_gst);
-            }
-            
             $gst_amount = ($subtotal * $gst_percentage) / 100;
         }
         
@@ -245,17 +216,17 @@ class JPC_Product_Meta {
             'stone_cost' => $stone_cost,
             'extra_fee' => $extra_fee,
             'discount' => $discount_amount,
+            'discount_percentage' => $discount_percentage,
             'subtotal' => $subtotal,
             'gst' => $gst_amount,
             'gst_percentage' => $gst_percentage,
             'gst_label' => $gst_label,
-            'gst_enabled' => $gst_enabled, // Debug info
             'final_price' => $final_price,
         ));
     }
     
     /**
-     * Apply price rounding (same as in JPC_Price_Calculator)
+     * Apply price rounding
      */
     private function apply_rounding($price, $rounding) {
         switch ($rounding) {
