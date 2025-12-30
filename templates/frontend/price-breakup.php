@@ -7,13 +7,28 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-// Get discount percentage from product meta
+// Get discount percentage - try multiple methods
 $product_id = get_the_ID();
+$discount_percentage = 0;
+
+// Method 1: Get from product meta
 $discount_percentage = floatval(get_post_meta($product_id, '_jpc_discount_percentage', true));
 
-// If discount percentage is not set but discount amount exists, calculate it
+// Method 2: If not in meta, calculate from WooCommerce regular and sale price
+if ($discount_percentage == 0) {
+    $product = wc_get_product($product_id);
+    if ($product) {
+        $regular_price = floatval($product->get_regular_price());
+        $sale_price = floatval($product->get_sale_price());
+        
+        if ($regular_price > 0 && $sale_price > 0 && $sale_price < $regular_price) {
+            $discount_percentage = (($regular_price - $sale_price) / $regular_price) * 100;
+        }
+    }
+}
+
+// Method 3: If still not found, calculate from breakup discount amount
 if ($discount_percentage == 0 && !empty($breakup['discount']) && $breakup['discount'] > 0) {
-    // Calculate the price BEFORE discount was applied
     $price_before_discount = $breakup['subtotal'] + $breakup['discount'];
     
     if ($price_before_discount > 0) {
@@ -79,7 +94,7 @@ if ($discount_percentage == 0 && !empty($breakup['discount']) && $breakup['disco
                 <td>
                     <?php _e('Discount', 'jewellery-price-calc'); ?>
                     <?php if ($discount_percentage > 0): ?>
-                        <span class="discount-percentage">(<?php printf('%.0f%%', $discount_percentage); ?> OFF)</span>
+                        <span class="discount-percentage">(<?php echo number_format($discount_percentage, 0); ?>% OFF)</span>
                     <?php endif; ?>
                 </td>
                 <td class="discount-amount">- <?php echo JPC_Frontend::format_price($breakup['discount']); ?></td>
