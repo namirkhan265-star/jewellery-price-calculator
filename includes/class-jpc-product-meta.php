@@ -179,7 +179,7 @@ class JPC_Product_Meta {
             }
         }
         
-                // Calculate subtotal before discount and tax
+        // Calculate subtotal before discount and tax
         $subtotal_before_discount = $metal_price + $diamond_price + $making_charge_amount + $wastage_charge_amount + $pearl_cost + $stone_cost + $extra_fee;
         
         // Apply discount BEFORE GST
@@ -233,17 +233,6 @@ class JPC_Product_Meta {
             'gst_label' => $gst_label,
             'final_price' => $final_price,
             'price_before_discount' => $price_before_discount,
-            'wastage_charge' => $wastage_charge_amount,
-            'pearl_cost' => $pearl_cost,
-            'stone_cost' => $stone_cost,
-            'extra_fee' => $extra_fee,
-            'discount' => $discount_amount,
-            'discount_percentage' => $discount_percentage,
-            'subtotal' => $subtotal,
-            'gst' => $gst_amount,
-            'gst_percentage' => $gst_percentage,
-            'gst_label' => $gst_label,
-            'final_price' => $final_price,
         ));
     }
     
