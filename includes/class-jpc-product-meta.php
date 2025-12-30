@@ -57,8 +57,8 @@ class JPC_Product_Meta {
     }
     
     /**
-     * Calculate and save prices properly
-     * This runs AFTER WooCommerce saves the regular price
+     * Calculate and save prices properly using JPC Price Calculator
+     * This runs AFTER meta is saved and ensures correct regular/sale prices
      */
     public function calculate_and_save_prices($post_id) {
         // Check if this is a JPC product
@@ -67,33 +67,29 @@ class JPC_Product_Meta {
             return; // Not a JPC product
         }
         
-        // Get the regular price that was just saved by WooCommerce
-        $regular_price = get_post_meta($post_id, '_regular_price', true);
+        // Use JPC Price Calculator to get correct prices
+        $prices = JPC_Price_Calculator::calculate_product_prices($post_id);
         
-        if (!$regular_price || $regular_price <= 0) {
-            return; // No price to work with
+        if ($prices === false) {
+            return; // Calculation failed
         }
         
-        // Get discount percentage
-        $discount_percentage = get_post_meta($post_id, '_jpc_discount_percentage', true);
+        // Update regular price (always set this - it's the price before discount)
+        update_post_meta($post_id, '_regular_price', $prices['regular_price']);
         
-        // Calculate sale price if discount exists
-        if ($discount_percentage > 0) {
-            // Calculate the discounted price
-            $sale_price = $regular_price - ($regular_price * ($discount_percentage / 100));
-            $sale_price = round($sale_price, 2);
+        // Update sale price and active price based on discount
+        if ($prices['discount_percentage'] > 0) {
+            // Has discount - set sale price
+            update_post_meta($post_id, '_sale_price', $prices['sale_price']);
+            update_post_meta($post_id, '_price', $prices['sale_price']);
             
-            // Update sale price and active price
-            update_post_meta($post_id, '_sale_price', $sale_price);
-            update_post_meta($post_id, '_price', $sale_price);
-            
-            error_log("JPC: Calculated sale price for product $post_id: Regular=$regular_price, Discount=$discount_percentage%, Sale=$sale_price");
+            error_log("JPC: Product $post_id - Regular: {$prices['regular_price']}, Sale: {$prices['sale_price']} (Discount: {$prices['discount_percentage']}%)");
         } else {
             // No discount - clear sale price
             delete_post_meta($post_id, '_sale_price');
-            update_post_meta($post_id, '_price', $regular_price);
+            update_post_meta($post_id, '_price', $prices['regular_price']);
             
-            error_log("JPC: No discount for product $post_id: Regular=$regular_price");
+            error_log("JPC: Product $post_id - Regular: {$prices['regular_price']} (No discount)");
         }
         
         // Clear WooCommerce transients to refresh price display
