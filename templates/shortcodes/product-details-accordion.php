@@ -56,6 +56,9 @@ if ($metal_id) {
 // Get price breakup
 $price_breakup = get_post_meta($product_id, '_jpc_price_breakup', true);
 
+// Get discount percentage from meta
+$discount_percentage = floatval(get_post_meta($product_id, '_jpc_discount_percentage', true));
+
 // Get product tags
 $tags = wp_get_post_terms($product_id, 'product_tag');
 
@@ -252,9 +255,14 @@ $has_tags = !empty($tags);
             <?php endif; ?>
             
             <?php if (!empty($price_breakup['discount'])): ?>
-            <div class="jpc-detail-row">
-                <span class="jpc-detail-label">Discount</span>
-                <span class="jpc-detail-value">- ₹ <?php echo number_format($price_breakup['discount'], 0); ?>/-</span>
+            <div class="jpc-detail-row" style="color: #d63638;">
+                <span class="jpc-detail-label">
+                    Discount
+                    <?php if ($discount_percentage > 0): ?>
+                        <span style="font-weight: bold;">(<?php echo number_format($discount_percentage, 0); ?>% OFF)</span>
+                    <?php endif; ?>
+                </span>
+                <span class="jpc-detail-value" style="font-weight: bold;">- ₹ <?php echo number_format($price_breakup['discount'], 0); ?>/-</span>
             </div>
             <?php endif; ?>
             
@@ -298,42 +306,38 @@ $has_tags = !empty($tags);
 
 <style>
 .jpc-product-details-accordion {
-    max-width: 1200px;
     margin: 20px 0;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', sans-serif;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    overflow: hidden;
     background: #fff;
-    border: 1px solid #e5e5e5;
-    border-radius: 4px;
-    padding: 0 24px;
 }
 
 .jpc-silver-badge {
+    background: linear-gradient(135deg, #C0C0C0 0%, #E8E8E8 50%, #C0C0C0 100%);
+    padding: 12px 20px;
+    text-align: center;
+    border-bottom: 1px solid #e0e0e0;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    padding: 16px 24px;
-    margin: 0 -24px;
-    background: linear-gradient(135deg, #c0c0c0 0%, #e8e8e8 50%, #c0c0c0 100%);
-    border-bottom: 1px solid #b0b0b0;
-    font-size: 15px;
-    font-weight: 600;
-    color: #2c2c2c;
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
 }
 
 .jpc-silver-icon {
-    font-size: 18px;
-    color: #808080;
+    font-size: 20px;
+    color: #666;
 }
 
 .jpc-silver-text {
-    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+    font-weight: 600;
+    color: #333;
+    font-size: 14px;
+    letter-spacing: 0.5px;
 }
 
 .jpc-accordion-section {
-    border-bottom: 1px solid #e5e5e5;
+    border-bottom: 1px solid #e0e0e0;
 }
 
 .jpc-accordion-section:last-child {
@@ -341,59 +345,52 @@ $has_tags = !empty($tags);
 }
 
 .jpc-accordion-header {
+    padding: 15px 20px;
+    background: #f8f8f8;
+    cursor: pointer;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 24px 0;
-    cursor: pointer;
-    user-select: none;
+    transition: background 0.3s ease;
+}
+
+.jpc-accordion-header:hover {
+    background: #f0f0f0;
 }
 
 .jpc-accordion-header h3 {
     margin: 0;
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 600;
-    letter-spacing: 0.8px;
-    color: #1a1a1a;
-    text-transform: uppercase;
+    color: #333;
+    letter-spacing: 0.5px;
 }
 
 .jpc-accordion-toggle {
-    font-size: 28px;
-    font-weight: 300;
-    color: #1a1a1a;
-    line-height: 1;
-    transition: transform 0.2s ease;
-    min-width: 20px;
-    text-align: center;
-}
-
-.jpc-accordion-section:not(.jpc-active) .jpc-accordion-toggle {
-    transform: rotate(0deg);
+    font-size: 20px;
+    font-weight: bold;
+    color: #666;
+    transition: transform 0.3s ease;
 }
 
 .jpc-accordion-section.jpc-active .jpc-accordion-toggle {
-    transform: rotate(0deg);
+    transform: rotate(180deg);
 }
 
 .jpc-accordion-content {
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 0.3s ease-out;
-    padding: 0;
+    padding: 15px 20px;
+    display: none;
 }
 
 .jpc-accordion-section.jpc-active .jpc-accordion-content {
-    max-height: 2000px;
-    padding-bottom: 24px;
+    display: block;
 }
 
 .jpc-detail-row {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    padding: 14px 0;
-    border-bottom: 1px solid #f5f5f5;
+    padding: 10px 0;
+    border-bottom: 1px solid #f0f0f0;
 }
 
 .jpc-detail-row:last-child {
@@ -401,112 +398,84 @@ $has_tags = !empty($tags);
 }
 
 .jpc-detail-label {
-    color: #5b7fa4;
-    font-size: 15px;
-    font-weight: 400;
-    display: flex;
-    align-items: center;
-    gap: 6px;
+    font-size: 13px;
+    color: #666;
+    flex: 1;
 }
 
 .jpc-detail-value {
-    color: #5b7fa4;
-    font-size: 15px;
+    font-size: 13px;
+    color: #333;
     font-weight: 500;
     text-align: right;
 }
 
+.jpc-info-icon {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    line-height: 14px;
+    text-align: center;
+    border-radius: 50%;
+    background: #e0e0e0;
+    color: #666;
+    font-size: 10px;
+    cursor: help;
+    margin-left: 4px;
+}
+
 .jpc-total-row {
-    margin-top: 8px;
-    padding-top: 16px;
-    border-top: 2px solid #e5e5e5 !important;
+    margin-top: 10px;
+    padding-top: 15px !important;
+    border-top: 2px solid #333 !important;
+    border-bottom: none !important;
 }
 
 .jpc-total-row .jpc-detail-label,
 .jpc-total-row .jpc-detail-value {
-    color: #1a1a1a;
-    font-size: 16px;
-}
-
-.jpc-info-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 16px;
-    height: 16px;
-    background: #d0d0d0;
-    color: #fff;
-    border-radius: 50%;
-    font-size: 11px;
-    font-weight: 600;
-    cursor: help;
-    font-style: normal;
+    font-size: 15px;
+    color: #333;
 }
 
 .jpc-tags-list {
-    color: #5b7fa4;
-    font-size: 15px;
-    line-height: 1.6;
+    font-size: 13px;
+    line-height: 1.8;
 }
 
 .jpc-tags-list a {
-    color: #5b7fa4;
+    color: #666;
     text-decoration: none;
-    transition: color 0.2s ease;
+    transition: color 0.3s ease;
 }
 
 .jpc-tags-list a:hover {
-    color: #3d5a7a;
+    color: #333;
     text-decoration: underline;
 }
 
-/* Responsive Design */
+/* Mobile Responsive */
 @media (max-width: 768px) {
-    .jpc-product-details-accordion {
-        padding: 0 16px;
-    }
-    
-    .jpc-silver-badge {
-        margin: 0 -16px;
-        padding: 14px 16px;
-        font-size: 14px;
-    }
-    
-    .jpc-accordion-header {
-        padding: 18px 0;
-    }
-    
     .jpc-accordion-header h3 {
-        font-size: 14px;
+        font-size: 13px;
     }
     
     .jpc-detail-label,
     .jpc-detail-value {
-        font-size: 14px;
+        font-size: 12px;
     }
     
-    .jpc-detail-row {
-        padding: 12px 0;
+    .jpc-total-row .jpc-detail-label,
+    .jpc-total-row .jpc-detail-value {
+        font-size: 14px;
     }
 }
 </style>
 
 <script>
 jQuery(document).ready(function($) {
-    // Toggle accordion sections
     $('.jpc-accordion-header').on('click', function() {
         var section = $(this).closest('.jpc-accordion-section');
-        var toggle = $(this).find('.jpc-accordion-toggle');
-        
-        // Toggle active state
         section.toggleClass('jpc-active');
-        
-        // Update toggle icon
-        if (section.hasClass('jpc-active')) {
-            toggle.text('−');
-        } else {
-            toggle.text('+');
-        }
     });
 });
 </script>
