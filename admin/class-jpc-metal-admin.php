@@ -28,7 +28,7 @@ class JPC_Metal_Admin {
         $metal = JPC_Metal::get_instance();
         $metals = $metal->get_all();
         
-        include JPC_PLUGIN_DIR . 'templates/admin-metals.php';
+        include JPC_PLUGIN_DIR . 'templates/admin/metals.php';
     }
     
     public function handle_add_metal() {
