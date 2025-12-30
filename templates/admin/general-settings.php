@@ -6,10 +6,57 @@
 if (!defined('ABSPATH')) {
     exit;
 }
+
+// Handle bulk price update
+if (isset($_POST['jpc_bulk_update_prices']) && check_admin_referer('jpc_bulk_update_prices')) {
+    $updated = 0;
+    $errors = 0;
+    
+    // Get all products with JPC data
+    $args = array(
+        'post_type' => 'product',
+        'posts_per_page' => -1,
+        'post_status' => 'publish',
+        'meta_query' => array(
+            array(
+                'key' => '_jpc_metal_id',
+                'compare' => 'EXISTS'
+            )
+        )
+    );
+    
+    $products = get_posts($args);
+    
+    foreach ($products as $product) {
+        $result = JPC_Price_Calculator::calculate_and_update_price($product->ID);
+        if ($result !== false) {
+            $updated++;
+        } else {
+            $errors++;
+        }
+    }
+    
+    echo '<div class="notice notice-success is-dismissible"><p>';
+    printf(__('Bulk price update completed! Updated: %d products. Errors: %d products.', 'jewellery-price-calc'), $updated, $errors);
+    echo '</p></div>';
+}
 ?>
 
 <div class="wrap jpc-admin-wrap">
     <h1><?php _e('General Settings', 'jewellery-price-calc'); ?></h1>
+    
+    <!-- BULK UPDATE PRICES SECTION -->
+    <div class="jpc-card" style="background: #fff3cd; border-left: 4px solid #ffc107;">
+        <h2>🔄 <?php _e('Bulk Update All Product Prices', 'jewellery-price-calc'); ?></h2>
+        <p><?php _e('Click this button to recalculate and update prices for ALL products based on current metal rates. This will fix any pricing discrepancies.', 'jewellery-price-calc'); ?></p>
+        <form method="post" action="">
+            <?php wp_nonce_field('jpc_bulk_update_prices'); ?>
+            <button type="submit" name="jpc_bulk_update_prices" class="button button-primary button-large" onclick="return confirm('This will update ALL product prices. Continue?');">
+                🔄 <?php _e('Update All Prices Now', 'jewellery-price-calc'); ?>
+            </button>
+        </form>
+        <p><em><?php _e('Note: This may take a few moments if you have many products.', 'jewellery-price-calc'); ?></em></p>
+    </div>
     
     <form method="post" action="options.php">
         <?php settings_fields('jpc_general_settings'); ?>
@@ -103,49 +150,47 @@ if (!defined('ABSPATH')) {
                 </tr>
                 
                 <tr>
-                    <th><label for="jpc_gst_label"><?php _e('Tax Label', 'jewellery-price-calc'); ?></label></th>
+                    <th><label for="jpc_gst_label"><?php _e('GST Label', 'jewellery-price-calc'); ?></label></th>
                     <td>
-                        <input type="text" id="jpc_gst_label" name="jpc_gst_label" value="<?php echo esc_attr(get_option('jpc_gst_label', 'Tax')); ?>" class="regular-text">
+                        <input type="text" id="jpc_gst_label" name="jpc_gst_label" value="<?php echo esc_attr(get_option('jpc_gst_label', 'GST')); ?>" class="regular-text">
                     </td>
                 </tr>
                 
                 <tr>
-                    <th><label for="jpc_gst_value"><?php _e('Tax Value (%)', 'jewellery-price-calc'); ?></label></th>
+                    <th><label for="jpc_gst_value"><?php _e('GST Value (%)', 'jewellery-price-calc'); ?></label></th>
                     <td>
                         <input type="number" id="jpc_gst_value" name="jpc_gst_value" value="<?php echo esc_attr(get_option('jpc_gst_value', 5)); ?>" step="0.01" min="0" class="regular-text">
+                        <p class="description"><?php _e('Default GST percentage for all products', 'jewellery-price-calc'); ?></p>
                     </td>
                 </tr>
                 
                 <tr>
-                    <th colspan="2">
-                        <h3><?php _e('Metal-Specific GST Rates', 'jewellery-price-calc'); ?></h3>
-                        <p class="description"><?php _e('Leave empty to use default GST rate', 'jewellery-price-calc'); ?></p>
-                    </th>
+                    <th colspan="2"><strong><?php _e('Metal-Specific GST Rates (Optional)', 'jewellery-price-calc'); ?></strong></th>
                 </tr>
                 
                 <tr>
-                    <th><label for="jpc_gst_gold"><?php _e('GST for Gold (%)', 'jewellery-price-calc'); ?></label></th>
+                    <th><label for="jpc_gst_gold"><?php _e('Gold GST (%)', 'jewellery-price-calc'); ?></label></th>
                     <td>
                         <input type="number" id="jpc_gst_gold" name="jpc_gst_gold" value="<?php echo esc_attr(get_option('jpc_gst_gold')); ?>" step="0.01" min="0" class="regular-text">
                     </td>
                 </tr>
                 
                 <tr>
-                    <th><label for="jpc_gst_silver"><?php _e('GST for Silver (%)', 'jewellery-price-calc'); ?></label></th>
+                    <th><label for="jpc_gst_silver"><?php _e('Silver GST (%)', 'jewellery-price-calc'); ?></label></th>
                     <td>
                         <input type="number" id="jpc_gst_silver" name="jpc_gst_silver" value="<?php echo esc_attr(get_option('jpc_gst_silver')); ?>" step="0.01" min="0" class="regular-text">
                     </td>
                 </tr>
                 
                 <tr>
-                    <th><label for="jpc_gst_diamond"><?php _e('GST for Diamond (%)', 'jewellery-price-calc'); ?></label></th>
+                    <th><label for="jpc_gst_diamond"><?php _e('Diamond GST (%)', 'jewellery-price-calc'); ?></label></th>
                     <td>
                         <input type="number" id="jpc_gst_diamond" name="jpc_gst_diamond" value="<?php echo esc_attr(get_option('jpc_gst_diamond')); ?>" step="0.01" min="0" class="regular-text">
                     </td>
                 </tr>
                 
                 <tr>
-                    <th><label for="jpc_gst_platinum"><?php _e('GST for Platinum (%)', 'jewellery-price-calc'); ?></label></th>
+                    <th><label for="jpc_gst_platinum"><?php _e('Platinum GST (%)', 'jewellery-price-calc'); ?></label></th>
                     <td>
                         <input type="number" id="jpc_gst_platinum" name="jpc_gst_platinum" value="<?php echo esc_attr(get_option('jpc_gst_platinum')); ?>" step="0.01" min="0" class="regular-text">
                     </td>
