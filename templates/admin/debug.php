@@ -15,11 +15,18 @@ if (isset($_POST['jpc_action'])) {
         check_admin_referer('jpc_recreate_tables');
         JPC_Database::drop_tables();
         JPC_Database::create_tables();
-        echo '<div class="notice notice-success"><p>Tables recreated successfully!</p></div>';
+        echo '<div class="notice notice-success is-dismissible"><p><strong>Success!</strong> All tables recreated. Please refresh this page.</p></div>';
     } elseif ($_POST['jpc_action'] === 'populate_diamond_data') {
         check_admin_referer('jpc_populate_diamond_data');
-        JPC_Database::force_insert_diamond_data();
-        echo '<div class="notice notice-success"><p>Diamond data populated successfully!</p></div>';
+        $result = JPC_Database::force_insert_diamond_data();
+        echo '<div class="notice notice-success is-dismissible"><p><strong>Success!</strong> Diamond data populated:<br>';
+        echo '- Diamond Groups: ' . $result['groups'] . '<br>';
+        echo '- Diamond Types: ' . $result['types'] . '<br>';
+        echo '- Certifications: ' . $result['certifications'] . '</p></div>';
+    } elseif ($_POST['jpc_action'] === 'create_missing_tables') {
+        check_admin_referer('jpc_create_missing_tables');
+        JPC_Database::create_tables();
+        echo '<div class="notice notice-success is-dismissible"><p><strong>Success!</strong> Missing tables created. Please refresh this page.</p></div>';
     }
 }
 
@@ -36,11 +43,16 @@ $tables = array(
     'jpc_product_price_log'
 );
 
+$missing_tables = array();
 foreach ($tables as $table) {
     $full_table = $wpdb->prefix . $table;
     $exists = $wpdb->get_var("SHOW TABLES LIKE '$full_table'") == $full_table;
     $count = $exists ? $wpdb->get_var("SELECT COUNT(*) FROM `$full_table`") : 0;
     $tables_status[$table] = array('exists' => $exists, 'count' => $count);
+    
+    if (!$exists) {
+        $missing_tables[] = $table;
+    }
 }
 
 // Get diamond groups
@@ -57,6 +69,26 @@ $certifications = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}jpc_diamond_c
 <div class="wrap">
     <h1>Jewellery Price Calculator - Debug Info</h1>
     
+    <?php if (!empty($missing_tables)): ?>
+    <div class="notice notice-error" style="padding: 15px; margin: 20px 0;">
+        <h2 style="margin-top: 0;">⚠️ Missing Tables Detected!</h2>
+        <p><strong>The following tables are missing:</strong></p>
+        <ul>
+            <?php foreach ($missing_tables as $table): ?>
+                <li><code><?php echo esc_html($wpdb->prefix . $table); ?></code></li>
+            <?php endforeach; ?>
+        </ul>
+        <form method="post" style="margin-top: 15px;">
+            <?php wp_nonce_field('jpc_create_missing_tables'); ?>
+            <input type="hidden" name="jpc_action" value="create_missing_tables">
+            <button type="submit" class="button button-primary button-large">
+                <span class="dashicons dashicons-admin-tools" style="margin-top: 3px;"></span>
+                Create Missing Tables Now
+            </button>
+        </form>
+    </div>
+    <?php endif; ?>
+    
     <div class="jpc-card" style="background: #fff; padding: 20px; margin: 20px 0;">
         <h2>Database Tables Status</h2>
         <table class="widefat striped">
@@ -69,7 +101,7 @@ $certifications = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}jpc_diamond_c
             </thead>
             <tbody>
                 <?php foreach ($tables_status as $table => $status): ?>
-                <tr>
+                <tr style="<?php echo !$status['exists'] ? 'background: #ffebee;' : ''; ?>">
                     <td><code><?php echo esc_html($wpdb->prefix . $table); ?></code></td>
                     <td>
                         <?php if ($status['exists']): ?>
@@ -81,6 +113,9 @@ $certifications = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}jpc_diamond_c
                     <td>
                         <?php if ($status['exists']): ?>
                             <strong><?php echo $status['count']; ?></strong> records
+                            <?php if ($status['count'] == 0 && strpos($table, 'diamond') !== false): ?>
+                                <span style="color: orange;"> (Empty - needs data)</span>
+                            <?php endif; ?>
                         <?php else: ?>
                             -
                         <?php endif; ?>
@@ -224,6 +259,14 @@ $certifications = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}jpc_diamond_c
                 <td><strong>WooCommerce Active:</strong></td>
                 <td><?php echo class_exists('WooCommerce') ? '<span style="color: green;">✓ Yes</span>' : '<span style="color: red;">✗ No</span>'; ?></td>
             </tr>
+            <tr>
+                <td><strong>Database Charset:</strong></td>
+                <td><code><?php echo $wpdb->charset; ?></code></td>
+            </tr>
+            <tr>
+                <td><strong>Database Collate:</strong></td>
+                <td><code><?php echo $wpdb->collate; ?></code></td>
+            </tr>
         </table>
     </div>
     
@@ -242,29 +285,41 @@ $certifications = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}jpc_diamond_c
         </div>
         
         <div style="margin-bottom: 20px; padding: 15px; background: #e7f3ff; border-left: 4px solid #2196f3;">
-            <h3 style="margin-top: 0;">Populate Diamond Data</h3>
+            <h3 style="margin-top: 0;">
+                <span class="dashicons dashicons-database-add" style="color: #2196f3;"></span>
+                Populate Diamond Data
+            </h3>
             <p><strong>Use this if your Diamond Groups, Types, or Certifications tabs are empty.</strong></p>
             <p>This will add default data:</p>
-            <ul>
-                <li>3 Diamond Groups (Natural, Lab Grown, Moissanite)</li>
-                <li>11 Diamond Types with carat ranges</li>
-                <li>4 Certifications (GIA, IGI, HRD, None)</li>
+            <ul style="margin-left: 20px;">
+                <li>✓ 3 Diamond Groups (Natural, Lab Grown, Moissanite)</li>
+                <li>✓ 11 Diamond Types with carat ranges</li>
+                <li>✓ 4 Certifications (GIA, IGI, HRD, None)</li>
             </ul>
             <form method="post" onsubmit="return confirm('This will clear and repopulate diamond data. Continue?');">
                 <?php wp_nonce_field('jpc_populate_diamond_data'); ?>
                 <input type="hidden" name="jpc_action" value="populate_diamond_data">
-                <button type="submit" class="button button-primary button-large">Populate Diamond Data</button>
+                <button type="submit" class="button button-primary button-large">
+                    <span class="dashicons dashicons-database-add" style="margin-top: 3px;"></span>
+                    Populate Diamond Data
+                </button>
             </form>
         </div>
         
         <div style="padding: 15px; background: #fff3cd; border-left: 4px solid #ff9800;">
-            <h3 style="margin-top: 0;">Recreate All Tables</h3>
+            <h3 style="margin-top: 0;">
+                <span class="dashicons dashicons-update" style="color: #ff9800;"></span>
+                Recreate All Tables
+            </h3>
             <p><strong>⚠️ Warning:</strong> This will drop and recreate all tables. Use only if tables are corrupted.</p>
             <p><strong style="color: red;">This will delete ALL data!</strong></p>
             <form method="post" onsubmit="return confirm('Are you ABSOLUTELY sure? This will DELETE ALL DATA!');">
                 <?php wp_nonce_field('jpc_recreate_tables'); ?>
                 <input type="hidden" name="jpc_action" value="recreate_tables">
-                <button type="submit" class="button button-secondary">Recreate All Tables</button>
+                <button type="submit" class="button button-secondary">
+                    <span class="dashicons dashicons-update" style="margin-top: 3px;"></span>
+                    Recreate All Tables
+                </button>
             </form>
         </div>
     </div>
@@ -282,5 +337,9 @@ $certifications = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}jpc_diamond_c
 }
 .jpc-card h3 {
     margin-top: 0;
+}
+.button .dashicons {
+    vertical-align: middle;
+    margin-right: 5px;
 }
 </style>
