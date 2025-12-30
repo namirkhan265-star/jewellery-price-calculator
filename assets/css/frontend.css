@@ -1,4 +1,4 @@
-/* Jewellery Price Calculator - Frontend Styles */
+/* Jewellery Price Calculator - Frontend Styles v1.6.2 */
 
 .jpc-price-breakup {
     margin: 20px 0;
@@ -59,65 +59,66 @@
     font-size: 14px;
 }
 
-/* Detailed Breakup - ACCORDION WITH PROPER +/- SIGNS */
-.jpc-detailed-breakup {
+/* ACCORDION FIX v1.6.2 - CACHE BUSTED */
+details.jpc-detailed-breakup {
     margin: 20px 0;
 }
 
-.jpc-detailed-breakup summary {
+details.jpc-detailed-breakup summary {
     cursor: pointer;
-    padding: 12px 15px;
+    padding: 12px 15px 12px 45px;
     background: #f0f0f0;
     border-radius: 4px;
     font-weight: 600;
-    list-style: none !important;
+    list-style: none;
     position: relative;
-    padding-left: 40px;
     user-select: none;
     transition: background 0.3s ease;
 }
 
-/* Hide default markers */
-.jpc-detailed-breakup summary::-webkit-details-marker {
-    display: none !important;
+/* Hide browser default markers */
+details.jpc-detailed-breakup summary::-webkit-details-marker {
+    display: none;
 }
 
-.jpc-detailed-breakup summary::marker {
-    display: none !important;
-    content: '' !important;
+details.jpc-detailed-breakup summary::marker {
+    display: none;
+    content: '';
 }
 
-/* Show + when CLOSED */
-.jpc-detailed-breakup:not([open]) summary::before {
+/* PLUS sign when CLOSED */
+details.jpc-detailed-breakup:not([open]) > summary::before {
     content: '+';
     position: absolute;
-    left: 12px;
+    left: 15px;
     top: 50%;
     transform: translateY(-50%);
-    font-size: 24px;
+    font-size: 26px;
     font-weight: bold;
     color: #333;
     line-height: 1;
+    font-family: Arial, sans-serif;
 }
 
-/* Show − when OPEN */
-.jpc-detailed-breakup[open] summary::before {
+/* MINUS sign when OPEN */
+details.jpc-detailed-breakup[open] > summary::before {
     content: '−';
     position: absolute;
-    left: 12px;
+    left: 15px;
     top: 50%;
     transform: translateY(-50%);
-    font-size: 24px;
+    font-size: 26px;
     font-weight: bold;
     color: #333;
     line-height: 1;
+    font-family: Arial, sans-serif;
 }
 
-.jpc-detailed-breakup summary:hover {
+details.jpc-detailed-breakup summary:hover {
     background: #e0e0e0;
 }
 
-.jpc-detailed-breakup summary:focus {
+details.jpc-detailed-breakup summary:focus {
     outline: 2px solid #2271b1;
     outline-offset: 2px;
 }
