@@ -59,6 +59,17 @@ $price_breakup = get_post_meta($product_id, '_jpc_price_breakup', true);
 // Get discount percentage from meta
 $discount_percentage = floatval(get_post_meta($product_id, '_jpc_discount_percentage', true));
 
+// Calculate regular price (before discount) and sale price (after discount)
+$regular_price = 0;
+$sale_price = 0;
+if ($price_breakup && is_array($price_breakup)) {
+    // Regular price = final price + discount (price before discount was applied)
+    if (!empty($price_breakup['discount'])) {
+        $regular_price = $price_breakup['final_price'] + $price_breakup['discount'];
+        $sale_price = $price_breakup['final_price'];
+    }
+}
+
 // Get product tags
 $tags = wp_get_post_terms($product_id, 'product_tag');
 
@@ -273,10 +284,23 @@ $has_tags = !empty($tags);
             </div>
             <?php endif; ?>
             
+            <?php if ($regular_price > 0 && $sale_price > 0): ?>
+            <div class="jpc-price-summary">
+                <div class="jpc-detail-row jpc-regular-price-row">
+                    <span class="jpc-detail-label">Regular Price</span>
+                    <span class="jpc-detail-value jpc-strikethrough">₹ <?php echo number_format($regular_price, 2); ?>/-</span>
+                </div>
+                <div class="jpc-detail-row jpc-sale-price-row">
+                    <span class="jpc-detail-label"><strong>Sale Price</strong></span>
+                    <span class="jpc-detail-value" style="color: #d63638; font-weight: bold; font-size: 16px;">₹ <?php echo number_format($sale_price, 2); ?>/-</span>
+                </div>
+            </div>
+            <?php else: ?>
             <div class="jpc-detail-row jpc-total-row">
                 <span class="jpc-detail-label"><strong>Total</strong></span>
                 <span class="jpc-detail-value"><strong>₹ <?php echo number_format($price_breakup['final_price'], 0); ?>/-</strong></span>
             </div>
+            <?php endif; ?>
             
             <?php if (!empty($price_breakup['discount']) && $discount_percentage > 0): ?>
             <div class="jpc-savings-badge">
@@ -428,6 +452,26 @@ $has_tags = !empty($tags);
     font-size: 10px;
     cursor: help;
     margin-left: 4px;
+}
+
+.jpc-price-summary {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 2px solid #333;
+}
+
+.jpc-regular-price-row {
+    border-bottom: 1px solid #f0f0f0 !important;
+}
+
+.jpc-sale-price-row {
+    border-bottom: none !important;
+    padding-bottom: 0 !important;
+}
+
+.jpc-strikethrough {
+    text-decoration: line-through;
+    color: #999 !important;
 }
 
 .jpc-total-row {
