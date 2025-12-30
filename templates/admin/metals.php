@@ -7,6 +7,40 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+// Handle bulk price update
+if (isset($_POST['jpc_bulk_update_prices']) && check_admin_referer('jpc_bulk_update_prices')) {
+    $updated = 0;
+    $errors = 0;
+    
+    // Get all products with JPC data
+    $args = array(
+        'post_type' => 'product',
+        'posts_per_page' => -1,
+        'post_status' => 'publish',
+        'meta_query' => array(
+            array(
+                'key' => '_jpc_metal_id',
+                'compare' => 'EXISTS'
+            )
+        )
+    );
+    
+    $products = get_posts($args);
+    
+    foreach ($products as $product) {
+        $result = JPC_Price_Calculator::calculate_and_update_price($product->ID);
+        if ($result !== false) {
+            $updated++;
+        } else {
+            $errors++;
+        }
+    }
+    
+    echo '<div class="notice notice-success is-dismissible"><p>';
+    printf(__('Bulk price update completed! Updated: %d products. Errors: %d products.', 'jewellery-price-calc'), $updated, $errors);
+    echo '</p></div>';
+}
+
 $metals = JPC_Metals::get_all();
 $metal_groups = JPC_Metal_Groups::get_all();
 ?>
@@ -103,16 +137,23 @@ $metal_groups = JPC_Metal_Groups::get_all();
                         <?php endforeach; ?>
                     </tbody>
                 </table>
-                
-                <div class="jpc-bulk-actions" style="margin-top: 20px;">
-                    <h3><?php _e('Bulk Update Prices', 'jewellery-price-calc'); ?></h3>
-                    <p class="description"><?php _e('Update multiple metal prices at once. When you update prices, all product prices will be automatically recalculated.', 'jewellery-price-calc'); ?></p>
-                    <button type="button" id="jpc-bulk-update-btn" class="button button-primary">
-                        <?php _e('Update All Prices', 'jewellery-price-calc'); ?>
-                    </button>
-                </div>
             <?php endif; ?>
         </div>
+        
+        <!-- BULK UPDATE PRICES SECTION - SAME AS GENERAL SETTINGS -->
+        <?php if (!empty($metals)): ?>
+        <div class="jpc-card" style="background: #fff3cd; border-left: 4px solid #ffc107;">
+            <h2>🔄 <?php _e('Bulk Update All Product Prices', 'jewellery-price-calc'); ?></h2>
+            <p><?php _e('Click this button to recalculate and update prices for ALL products based on current metal rates. This will fix any pricing discrepancies.', 'jewellery-price-calc'); ?></p>
+            <form method="post" action="">
+                <?php wp_nonce_field('jpc_bulk_update_prices'); ?>
+                <button type="submit" name="jpc_bulk_update_prices" class="button button-primary button-large" onclick="return confirm('This will update ALL product prices. Continue?');">
+                    🔄 <?php _e('Update All Prices Now', 'jewellery-price-calc'); ?>
+                </button>
+            </form>
+            <p><em><?php _e('Note: This may take a few moments if you have many products.', 'jewellery-price-calc'); ?></em></p>
+        </div>
+        <?php endif; ?>
     </div>
 </div>
 
