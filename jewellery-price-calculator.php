@@ -3,7 +3,7 @@
  * Plugin Name: Jewellery Price Calculator
  * Plugin URI: https://brandwitty.com
  * Description: Automatic jewellery price calculation based on metal rates (Gold, Silver, Diamond, Platinum) with support for making charges, wastage, GST, and discounts
- * Version: 1.3.0
+ * Version: 1.4.0
  * Author: Brandwitty
  * Author URI: https://brandwitty.com
  * Text Domain: jewellery-price-calc
@@ -22,7 +22,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('JPC_VERSION', '1.3.0');
+define('JPC_VERSION', '1.4.0');
 define('JPC_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('JPC_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('JPC_PLUGIN_BASENAME', plugin_basename(__FILE__));
@@ -79,12 +79,23 @@ class Jewellery_Price_Calculator {
         // Core files
         require_once JPC_PLUGIN_DIR . 'includes/class-jpc-database.php';
         require_once JPC_PLUGIN_DIR . 'includes/class-jpc-admin.php';
+        
+        // Metal management
         require_once JPC_PLUGIN_DIR . 'includes/class-jpc-metal-groups.php';
         require_once JPC_PLUGIN_DIR . 'includes/class-jpc-metals.php';
-        require_once JPC_PLUGIN_DIR . 'includes/class-jpc-diamonds.php';
+        
+        // Diamond management (new structure)
+        require_once JPC_PLUGIN_DIR . 'includes/class-jpc-diamond-groups.php';
+        require_once JPC_PLUGIN_DIR . 'includes/class-jpc-diamond-types.php';
+        require_once JPC_PLUGIN_DIR . 'includes/class-jpc-diamond-certifications.php';
+        require_once JPC_PLUGIN_DIR . 'includes/class-jpc-diamonds.php'; // Legacy support
         require_once JPC_PLUGIN_DIR . 'includes/class-jpc-diamond-pricing.php';
+        
+        // Product and pricing
         require_once JPC_PLUGIN_DIR . 'includes/class-jpc-product-meta.php';
         require_once JPC_PLUGIN_DIR . 'includes/class-jpc-price-calculator.php';
+        
+        // Frontend and utilities
         require_once JPC_PLUGIN_DIR . 'includes/class-jpc-frontend.php';
         require_once JPC_PLUGIN_DIR . 'includes/class-jpc-shortcodes.php';
         require_once JPC_PLUGIN_DIR . 'includes/class-jpc-bulk-import-export.php';
@@ -100,12 +111,23 @@ class Jewellery_Price_Calculator {
         
         // Initialize components
         JPC_Admin::get_instance();
+        
+        // Metal management
         JPC_Metal_Groups::get_instance();
         JPC_Metals::get_instance();
-        JPC_Diamonds::get_instance();
+        
+        // Diamond management
+        JPC_Diamond_Groups::get_instance();
+        JPC_Diamond_Types::get_instance();
+        JPC_Diamond_Certifications::get_instance();
+        JPC_Diamonds::get_instance(); // Legacy support
         JPC_Diamond_Pricing::get_instance();
+        
+        // Product and pricing
         JPC_Product_Meta::get_instance();
         JPC_Price_Calculator::get_instance();
+        
+        // Frontend
         JPC_Frontend::get_instance();
         JPC_Shortcodes::get_instance();
         JPC_Bulk_Import_Export::get_instance();
