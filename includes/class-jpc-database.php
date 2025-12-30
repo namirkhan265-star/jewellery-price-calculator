@@ -192,7 +192,14 @@ class JPC_Database {
         // Check if data already exists
         $count = $wpdb->get_var("SELECT COUNT(*) FROM `$table_groups`");
         if ($count > 0) {
-            error_log('JPC: Default data already exists');
+            error_log('JPC: Default data already exists, checking diamond data...');
+            
+            // Check if diamond data exists
+            $diamond_groups_count = $wpdb->get_var("SELECT COUNT(*) FROM `$table_diamond_groups`");
+            if ($diamond_groups_count == 0) {
+                error_log('JPC: Diamond groups empty, inserting default diamond data...');
+                self::insert_diamond_default_data();
+            }
             return;
         }
         
@@ -221,36 +228,104 @@ class JPC_Database {
             $wpdb->insert($table_metals, $metal);
         }
         
+        // Insert diamond data
+        self::insert_diamond_default_data();
+    }
+    
+    /**
+     * Insert default diamond data (groups, types, certifications)
+     */
+    private static function insert_diamond_default_data() {
+        global $wpdb;
+        
+        $table_diamond_groups = $wpdb->prefix . 'jpc_diamond_groups';
+        $table_diamond_types = $wpdb->prefix . 'jpc_diamond_types';
+        $table_diamond_certs = $wpdb->prefix . 'jpc_diamond_certifications';
+        
         // Insert default diamond groups
-        $diamond_groups = JPC_Diamond_Groups::get_default_groups();
+        $diamond_groups = array(
+            array(
+                'name' => 'Natural Diamond',
+                'slug' => 'natural-diamond',
+                'description' => 'Naturally mined diamonds formed over billions of years deep within the Earth'
+            ),
+            array(
+                'name' => 'Lab Grown Diamond',
+                'slug' => 'lab-grown-diamond',
+                'description' => 'Laboratory-created diamonds with identical properties to natural diamonds'
+            ),
+            array(
+                'name' => 'Moissanite',
+                'slug' => 'moissanite',
+                'description' => 'Silicon carbide gemstone with brilliant fire and diamond-like appearance'
+            ),
+        );
+        
         foreach ($diamond_groups as $group) {
             $wpdb->insert($table_diamond_groups, $group);
+            error_log('JPC: Inserted diamond group: ' . $group['name']);
         }
         
-        // Insert default diamond types
-        $diamond_types = JPC_Diamond_Types::get_default_types();
-        foreach ($diamond_types as $type) {
-            // Get group ID by slug
-            $group = $wpdb->get_row($wpdb->prepare(
-                "SELECT id FROM `$table_diamond_groups` WHERE slug = %s",
-                $type['group_slug']
-            ));
+        // Insert default diamond types (carat ranges)
+        $diamond_types = array(
+            // Natural Diamond ranges
+            array('diamond_group_id' => 1, 'carat_from' => 0.000, 'carat_to' => 0.500, 'price_per_carat' => 25000.00, 'display_name' => 'Natural Diamond (0.00-0.50ct)'),
+            array('diamond_group_id' => 1, 'carat_from' => 0.500, 'carat_to' => 1.000, 'price_per_carat' => 32500.00, 'display_name' => 'Natural Diamond (0.50-1.00ct)'),
+            array('diamond_group_id' => 1, 'carat_from' => 1.000, 'carat_to' => 2.000, 'price_per_carat' => 45000.00, 'display_name' => 'Natural Diamond (1.00-2.00ct)'),
+            array('diamond_group_id' => 1, 'carat_from' => 2.000, 'carat_to' => 3.000, 'price_per_carat' => 62500.00, 'display_name' => 'Natural Diamond (2.00-3.00ct)'),
+            array('diamond_group_id' => 1, 'carat_from' => 3.000, 'carat_to' => 999.990, 'price_per_carat' => 87500.00, 'display_name' => 'Natural Diamond (3.00ct+)'),
             
-            if ($group) {
-                $wpdb->insert($table_diamond_types, array(
-                    'diamond_group_id' => $group->id,
-                    'carat_from' => $type['carat_from'],
-                    'carat_to' => $type['carat_to'],
-                    'price_per_carat' => $type['price_per_carat'],
-                    'display_name' => $type['display_name'],
-                ));
-            }
+            // Lab Grown Diamond ranges
+            array('diamond_group_id' => 2, 'carat_from' => 0.000, 'carat_to' => 0.500, 'price_per_carat' => 15000.00, 'display_name' => 'Lab Grown Diamond (0.00-0.50ct)'),
+            array('diamond_group_id' => 2, 'carat_from' => 0.500, 'carat_to' => 1.000, 'price_per_carat' => 19500.00, 'display_name' => 'Lab Grown Diamond (0.50-1.00ct)'),
+            array('diamond_group_id' => 2, 'carat_from' => 1.000, 'carat_to' => 2.000, 'price_per_carat' => 27000.00, 'display_name' => 'Lab Grown Diamond (1.00-2.00ct)'),
+            array('diamond_group_id' => 2, 'carat_from' => 2.000, 'carat_to' => 999.990, 'price_per_carat' => 37500.00, 'display_name' => 'Lab Grown Diamond (2.00ct+)'),
+            
+            // Moissanite ranges
+            array('diamond_group_id' => 3, 'carat_from' => 0.000, 'carat_to' => 1.000, 'price_per_carat' => 5000.00, 'display_name' => 'Moissanite (0.00-1.00ct)'),
+            array('diamond_group_id' => 3, 'carat_from' => 1.000, 'carat_to' => 999.990, 'price_per_carat' => 6500.00, 'display_name' => 'Moissanite (1.00ct+)'),
+        );
+        
+        foreach ($diamond_types as $type) {
+            $wpdb->insert($table_diamond_types, $type);
+            error_log('JPC: Inserted diamond type: ' . $type['display_name']);
         }
         
         // Insert default certifications
-        $certifications = JPC_Diamond_Certifications::get_default_certifications();
+        $certifications = array(
+            array(
+                'name' => 'GIA',
+                'slug' => 'gia',
+                'adjustment_type' => 'percentage',
+                'adjustment_value' => 20.00,
+                'description' => 'Gemological Institute of America - Premium certification with highest industry standards'
+            ),
+            array(
+                'name' => 'IGI',
+                'slug' => 'igi',
+                'adjustment_type' => 'percentage',
+                'adjustment_value' => 15.00,
+                'description' => 'International Gemological Institute - Widely recognized certification'
+            ),
+            array(
+                'name' => 'HRD',
+                'slug' => 'hrd',
+                'adjustment_type' => 'percentage',
+                'adjustment_value' => 18.00,
+                'description' => 'HRD Antwerp - High quality European certification'
+            ),
+            array(
+                'name' => 'None',
+                'slug' => 'none',
+                'adjustment_type' => 'percentage',
+                'adjustment_value' => 0.00,
+                'description' => 'No certification - Base price without premium'
+            ),
+        );
+        
         foreach ($certifications as $cert) {
             $wpdb->insert($table_diamond_certs, $cert);
+            error_log('JPC: Inserted certification: ' . $cert['name']);
         }
     }
     
@@ -303,5 +378,22 @@ class JPC_Database {
             $wpdb->query("DROP TABLE IF EXISTS `$table`");
             error_log("JPC: Dropped table: $table");
         }
+    }
+    
+    /**
+     * Force insert diamond default data (for manual trigger)
+     */
+    public static function force_insert_diamond_data() {
+        global $wpdb;
+        
+        // Clear existing diamond data
+        $wpdb->query("TRUNCATE TABLE `{$wpdb->prefix}jpc_diamond_groups`");
+        $wpdb->query("TRUNCATE TABLE `{$wpdb->prefix}jpc_diamond_types`");
+        $wpdb->query("TRUNCATE TABLE `{$wpdb->prefix}jpc_diamond_certifications`");
+        
+        // Insert fresh data
+        self::insert_diamond_default_data();
+        
+        return true;
     }
 }
