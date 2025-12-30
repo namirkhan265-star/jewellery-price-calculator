@@ -73,13 +73,31 @@ error_log('JPC Diamonds Page: Found ' . $diamond_count . ' diamonds');
                             <label for="carat"><?php _e('Carat Weight', 'jewellery-price-calc'); ?></label>
                         </th>
                         <td>
-                            <select id="carat" name="carat" class="regular-text" required>
-                                <option value=""><?php _e('Select Carat', 'jewellery-price-calc'); ?></option>
-                                <?php foreach ($carat_sizes as $size): ?>
-                                    <option value="<?php echo esc_attr($size); ?>"><?php echo esc_html($size); ?> ct</option>
-                                <?php endforeach; ?>
-                            </select>
-                            <p class="description"><?php _e('Diamond carat weight', 'jewellery-price-calc'); ?></p>
+                            <div style="margin-bottom: 10px;">
+                                <label style="display: inline-flex; align-items: center; margin-right: 20px;">
+                                    <input type="radio" name="carat_input_type" value="dropdown" checked style="margin-right: 5px;">
+                                    <?php _e('Select from list', 'jewellery-price-calc'); ?>
+                                </label>
+                                <label style="display: inline-flex; align-items: center;">
+                                    <input type="radio" name="carat_input_type" value="manual" style="margin-right: 5px;">
+                                    <?php _e('Enter manually', 'jewellery-price-calc'); ?>
+                                </label>
+                            </div>
+                            
+                            <div id="carat-dropdown-container">
+                                <select id="carat" name="carat" class="regular-text">
+                                    <option value=""><?php _e('Select Carat', 'jewellery-price-calc'); ?></option>
+                                    <?php foreach ($carat_sizes as $size): ?>
+                                        <option value="<?php echo esc_attr($size); ?>"><?php echo esc_html($size); ?> ct</option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <p class="description"><?php _e('Select from predefined carat weights', 'jewellery-price-calc'); ?></p>
+                            </div>
+                            
+                            <div id="carat-manual-container" style="display: none;">
+                                <input type="number" id="carat_manual" name="carat_manual" class="regular-text" step="0.01" min="0.01" max="10" placeholder="e.g., 0.85">
+                                <p class="description"><?php _e('Enter custom carat weight (e.g., 0.85, 1.23, 2.47)', 'jewellery-price-calc'); ?></p>
+                            </div>
                         </td>
                     </tr>
                     
@@ -243,11 +261,28 @@ error_log('JPC Diamonds Page: Found ' . $diamond_count . ' diamonds');
                         <label for="edit_carat"><?php _e('Carat Weight', 'jewellery-price-calc'); ?></label>
                     </th>
                     <td>
-                        <select id="edit_carat" name="carat" class="regular-text" required>
-                            <?php foreach ($carat_sizes as $size): ?>
-                                <option value="<?php echo esc_attr($size); ?>"><?php echo esc_html($size); ?> ct</option>
-                            <?php endforeach; ?>
-                        </select>
+                        <div style="margin-bottom: 10px;">
+                            <label style="display: inline-flex; align-items: center; margin-right: 20px;">
+                                <input type="radio" name="edit_carat_input_type" value="dropdown" checked style="margin-right: 5px;">
+                                <?php _e('Select from list', 'jewellery-price-calc'); ?>
+                            </label>
+                            <label style="display: inline-flex; align-items: center;">
+                                <input type="radio" name="edit_carat_input_type" value="manual" style="margin-right: 5px;">
+                                <?php _e('Enter manually', 'jewellery-price-calc'); ?>
+                            </label>
+                        </div>
+                        
+                        <div id="edit-carat-dropdown-container">
+                            <select id="edit_carat" name="carat" class="regular-text">
+                                <?php foreach ($carat_sizes as $size): ?>
+                                    <option value="<?php echo esc_attr($size); ?>"><?php echo esc_html($size); ?> ct</option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        
+                        <div id="edit-carat-manual-container" style="display: none;">
+                            <input type="number" id="edit_carat_manual" name="carat_manual" class="regular-text" step="0.01" min="0.01" max="10" placeholder="e.g., 0.85">
+                        </div>
                     </td>
                 </tr>
                 
@@ -299,10 +334,51 @@ error_log('JPC Diamonds Page: Found ' . $diamond_count . ' diamonds');
 <script>
 jQuery(document).ready(function($) {
     
+    // Toggle between dropdown and manual carat input (Add form)
+    $('input[name="carat_input_type"]').on('change', function() {
+        if ($(this).val() === 'manual') {
+            $('#carat-dropdown-container').hide();
+            $('#carat-manual-container').show();
+            $('#carat').prop('required', false);
+            $('#carat_manual').prop('required', true);
+        } else {
+            $('#carat-dropdown-container').show();
+            $('#carat-manual-container').hide();
+            $('#carat').prop('required', true);
+            $('#carat_manual').prop('required', false);
+        }
+        // Trigger price calculation
+        calculatePrice();
+    });
+    
+    // Toggle between dropdown and manual carat input (Edit form)
+    $('input[name="edit_carat_input_type"]').on('change', function() {
+        if ($(this).val() === 'manual') {
+            $('#edit-carat-dropdown-container').hide();
+            $('#edit-carat-manual-container').show();
+            $('#edit_carat').prop('required', false);
+            $('#edit_carat_manual').prop('required', true);
+        } else {
+            $('#edit-carat-dropdown-container').show();
+            $('#edit-carat-manual-container').hide();
+            $('#edit_carat').prop('required', true);
+            $('#edit_carat_manual').prop('required', false);
+        }
+    });
+    
+    // Get current carat value (from dropdown or manual input)
+    function getCurrentCarat() {
+        if ($('input[name="carat_input_type"]:checked').val() === 'manual') {
+            return $('#carat_manual').val();
+        } else {
+            return $('#carat').val();
+        }
+    }
+    
     // Auto-calculate price when group, carat, or certification changes
     function calculatePrice() {
         var group = $('#diamond_type').val();
-        var carat = $('#carat').val();
+        var carat = getCurrentCarat();
         var cert = $('#certification').val();
         
         if (!group || !carat || !cert) {
@@ -359,7 +435,7 @@ jQuery(document).ready(function($) {
         });
     }
     
-    $('#diamond_type, #carat, #certification').on('change', calculatePrice);
+    $('#diamond_type, #carat, #certification, #carat_manual').on('change keyup', calculatePrice);
     
     // Sync diamonds from new system
     $('#jpc-sync-diamonds').on('click', function() {
@@ -397,11 +473,13 @@ jQuery(document).ready(function($) {
     $('#jpc-add-diamond-form').on('submit', function(e) {
         e.preventDefault();
         
+        var carat = getCurrentCarat();
+        
         var formData = {
             action: 'jpc_add_diamond',
             nonce: '<?php echo wp_create_nonce('jpc_admin_nonce'); ?>',
             type: $('#diamond_type').val(),
-            carat: $('#carat').val(),
+            carat: carat,
             certification: $('#certification').val(),
             price_per_carat: $('#price_per_carat').val(),
             display_name: $('#display_name').val()
@@ -428,12 +506,27 @@ jQuery(document).ready(function($) {
     // Edit diamond
     $('.jpc-edit-diamond').on('click', function() {
         var $btn = $(this);
+        var caratValue = parseFloat($btn.data('carat'));
+        
         $('#edit_diamond_id').val($btn.data('id'));
         $('#edit_diamond_type').val($btn.data('type'));
-        $('#edit_carat').val($btn.data('carat'));
         $('#edit_certification').val($btn.data('certification'));
         $('#edit_price_per_carat').val($btn.data('price'));
         $('#edit_display_name').val($btn.data('display-name'));
+        
+        // Check if carat exists in dropdown
+        var caratExists = $('#edit_carat option[value="' + caratValue + '"]').length > 0;
+        
+        if (caratExists) {
+            // Use dropdown
+            $('input[name="edit_carat_input_type"][value="dropdown"]').prop('checked', true).trigger('change');
+            $('#edit_carat').val(caratValue);
+        } else {
+            // Use manual input
+            $('input[name="edit_carat_input_type"][value="manual"]').prop('checked', true).trigger('change');
+            $('#edit_carat_manual').val(caratValue);
+        }
+        
         $('#jpc-edit-diamond-modal').fadeIn();
     });
     
@@ -441,12 +534,19 @@ jQuery(document).ready(function($) {
     $('#jpc-edit-diamond-form').on('submit', function(e) {
         e.preventDefault();
         
+        var carat;
+        if ($('input[name="edit_carat_input_type"]:checked').val() === 'manual') {
+            carat = $('#edit_carat_manual').val();
+        } else {
+            carat = $('#edit_carat').val();
+        }
+        
         var formData = {
             action: 'jpc_update_diamond',
             nonce: '<?php echo wp_create_nonce('jpc_admin_nonce'); ?>',
             id: $('#edit_diamond_id').val(),
             type: $('#edit_diamond_type').val(),
-            carat: $('#edit_carat').val(),
+            carat: carat,
             certification: $('#edit_certification').val(),
             price_per_carat: $('#edit_price_per_carat').val(),
             display_name: $('#edit_display_name').val()
@@ -500,11 +600,12 @@ jQuery(document).ready(function($) {
         });
     });
     
-    // Modal close
+    // Close modal
     $('.jpc-modal-close').on('click', function() {
         $('.jpc-modal').fadeOut();
     });
     
+    // Close modal on outside click
     $(window).on('click', function(e) {
         if ($(e.target).hasClass('jpc-modal')) {
             $('.jpc-modal').fadeOut();
@@ -514,15 +615,6 @@ jQuery(document).ready(function($) {
 </script>
 
 <style>
-.spin {
-    animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-}
-
 .jpc-modal {
     position: fixed;
     z-index: 100000;
@@ -531,7 +623,7 @@ jQuery(document).ready(function($) {
     width: 100%;
     height: 100%;
     overflow: auto;
-    background-color: rgba(0,0,0,0.5);
+    background-color: rgba(0,0,0,0.4);
 }
 
 .jpc-modal-content {
@@ -550,12 +642,20 @@ jQuery(document).ready(function($) {
     float: right;
     font-size: 28px;
     font-weight: bold;
-    line-height: 20px;
     cursor: pointer;
 }
 
 .jpc-modal-close:hover,
 .jpc-modal-close:focus {
     color: #000;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.spin {
+    animation: spin 1s linear infinite;
 }
 </style>
