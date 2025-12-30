@@ -168,7 +168,8 @@ jQuery(document).ready(function($) {
         html += '<div class="jpc-price-summary">';
         
         if (data.discount > 0) {
-            const discountPercent = ((data.discount / (data.final_price + data.discount)) * 100).toFixed(1);
+            // Use the actual discount_percentage from data instead of calculating
+            const discountPercent = data.discount_percentage ? parseFloat(data.discount_percentage).toFixed(1) : ((data.discount / (data.final_price + data.discount)) * 100).toFixed(1);
             html += '<div class="jpc-price-row jpc-before-discount">';
             html += '<span class="label">Price Before Discount:</span>';
             html += '<span class="value">₹' + formatNumber(data.final_price + data.discount) + '</span>';
