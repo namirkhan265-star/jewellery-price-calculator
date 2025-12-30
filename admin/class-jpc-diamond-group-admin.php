@@ -28,7 +28,7 @@ class JPC_Diamond_Group_Admin {
         $group = JPC_Diamond_Group::get_instance();
         $groups = $group->get_all();
         
-        include JPC_PLUGIN_DIR . 'templates/admin-diamond-groups.php';
+        include JPC_PLUGIN_DIR . 'templates/admin/diamond-groups.php';
     }
     
     public function handle_add_group() {
