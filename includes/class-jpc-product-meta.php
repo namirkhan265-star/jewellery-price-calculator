@@ -179,17 +179,18 @@ class JPC_Product_Meta {
             }
         }
         
-        // Calculate subtotal before discount and tax
-        $subtotal = $metal_price + $diamond_price + $making_charge_amount + $wastage_charge_amount + $pearl_cost + $stone_cost + $extra_fee;
+                // Calculate subtotal before discount and tax
+        $subtotal_before_discount = $metal_price + $diamond_price + $making_charge_amount + $wastage_charge_amount + $pearl_cost + $stone_cost + $extra_fee;
         
         // Apply discount BEFORE GST
         $discount_amount = 0;
+        $subtotal_after_discount = $subtotal_before_discount;
         if ($discount_percentage > 0) {
-            $discount_amount = ($subtotal * $discount_percentage) / 100;
-            $subtotal -= $discount_amount;
+            $discount_amount = ($subtotal_before_discount * $discount_percentage) / 100;
+            $subtotal_after_discount = $subtotal_before_discount - $discount_amount;
         }
         
-        // Calculate GST on discounted amount
+        // Calculate GST
         $gst_amount = 0;
         $gst_percentage = 0;
         $gst_label = get_option('jpc_gst_label', 'GST');
@@ -197,20 +198,41 @@ class JPC_Product_Meta {
         
         if ($gst_enabled === 'yes' || $gst_enabled === '1' || $gst_enabled === 1 || $gst_enabled === true) {
             $gst_percentage = floatval(get_option('jpc_gst_value', 5));
-            $gst_amount = ($subtotal * $gst_percentage) / 100;
+            // GST on discounted amount for final price
+            $gst_amount = ($subtotal_after_discount * $gst_percentage) / 100;
         }
         
-        // Calculate final price
-        $final_price = $subtotal + $gst_amount;
+        // Calculate final price (after discount, with GST)
+        $final_price = $subtotal_after_discount + $gst_amount;
+        
+        // Calculate price before discount (full subtotal + GST on full subtotal)
+        $gst_on_full_subtotal = 0;
+        if ($gst_enabled === 'yes' || $gst_enabled === '1' || $gst_enabled === 1 || $gst_enabled === true) {
+            $gst_on_full_subtotal = ($subtotal_before_discount * $gst_percentage) / 100;
+        }
+        $price_before_discount = $subtotal_before_discount + $gst_on_full_subtotal;
         
         // Apply rounding
         $rounding = get_option('jpc_price_rounding', 'default');
         $final_price = $this->apply_rounding($final_price, $rounding);
+        $price_before_discount = $this->apply_rounding($price_before_discount, $rounding);
         
         wp_send_json_success(array(
             'metal_price' => $metal_price,
             'diamond_price' => $diamond_price,
             'making_charge' => $making_charge_amount,
+            'wastage_charge' => $wastage_charge_amount,
+            'pearl_cost' => $pearl_cost,
+            'stone_cost' => $stone_cost,
+            'extra_fee' => $extra_fee,
+            'discount' => $discount_amount,
+            'discount_percentage' => $discount_percentage,
+            'subtotal' => $subtotal_after_discount,
+            'gst' => $gst_amount,
+            'gst_percentage' => $gst_percentage,
+            'gst_label' => $gst_label,
+            'final_price' => $final_price,
+            'price_before_discount' => $price_before_discount,
             'wastage_charge' => $wastage_charge_amount,
             'pearl_cost' => $pearl_cost,
             'stone_cost' => $stone_cost,
