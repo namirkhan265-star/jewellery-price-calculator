@@ -7,32 +7,29 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-// Get discount percentage - try multiple methods
+// Get discount percentage from WooCommerce product prices
 $product_id = get_the_ID();
+$product = wc_get_product($product_id);
 $discount_percentage = 0;
 
-// Method 1: Get from product meta
-$discount_percentage = floatval(get_post_meta($product_id, '_jpc_discount_percentage', true));
-
-// Method 2: If not in meta, calculate from WooCommerce regular and sale price
-if ($discount_percentage == 0) {
-    $product = wc_get_product($product_id);
-    if ($product) {
-        $regular_price = floatval($product->get_regular_price());
-        $sale_price = floatval($product->get_sale_price());
-        
-        if ($regular_price > 0 && $sale_price > 0 && $sale_price < $regular_price) {
-            $discount_percentage = (($regular_price - $sale_price) / $regular_price) * 100;
-        }
+if ($product) {
+    $regular_price = floatval($product->get_regular_price());
+    $sale_price = floatval($product->get_sale_price());
+    
+    // Calculate percentage from WooCommerce prices (which include GST)
+    if ($regular_price > 0 && $sale_price > 0 && $sale_price < $regular_price) {
+        $discount_percentage = (($regular_price - $sale_price) / $regular_price) * 100;
     }
 }
 
-// Method 3: If still not found, calculate from breakup discount amount
+// Fallback: If WooCommerce prices don't have discount, calculate from breakup
 if ($discount_percentage == 0 && !empty($breakup['discount']) && $breakup['discount'] > 0) {
-    $price_before_discount = $breakup['subtotal'] + $breakup['discount'];
+    // Calculate percentage based on the price WITH GST (to match WooCommerce)
+    $subtotal_with_gst = $breakup['subtotal'] + $breakup['gst'];
+    $price_before_discount_with_gst = $subtotal_with_gst + $breakup['discount'];
     
-    if ($price_before_discount > 0) {
-        $discount_percentage = ($breakup['discount'] / $price_before_discount) * 100;
+    if ($price_before_discount_with_gst > 0) {
+        $discount_percentage = ($breakup['discount'] / $price_before_discount_with_gst) * 100;
     }
 }
 ?>
@@ -94,7 +91,7 @@ if ($discount_percentage == 0 && !empty($breakup['discount']) && $breakup['disco
                 <td>
                     <?php _e('Discount', 'jewellery-price-calc'); ?>
                     <?php if ($discount_percentage > 0): ?>
-                        <span class="discount-percentage">(<?php echo number_format($discount_percentage, 0); ?>% OFF)</span>
+                        <span class="discount-percentage">(<?php echo round($discount_percentage); ?>% OFF)</span>
                     <?php endif; ?>
                 </td>
                 <td class="discount-amount">- <?php echo JPC_Frontend::format_price($breakup['discount']); ?></td>
