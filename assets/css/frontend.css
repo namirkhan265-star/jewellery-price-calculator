@@ -70,6 +70,35 @@
     background: #f0f0f0;
     border-radius: 4px;
     font-weight: 600;
+    list-style: none; /* Remove default marker */
+    position: relative;
+    padding-left: 30px;
+}
+
+/* Custom + / - indicator for accordion */
+.jpc-detailed-breakup summary:before {
+    content: '+';
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 20px;
+    font-weight: bold;
+    color: #333;
+    transition: transform 0.3s ease;
+}
+
+.jpc-detailed-breakup[open] summary:before {
+    content: '−'; /* Minus sign when open */
+}
+
+/* Hide default marker in all browsers */
+.jpc-detailed-breakup summary::-webkit-details-marker {
+    display: none;
+}
+
+.jpc-detailed-breakup summary::marker {
+    display: none;
 }
 
 .jpc-detailed-breakup summary:hover {
@@ -81,6 +110,47 @@
     border: 1px solid #e0e0e0;
     border-top: none;
     border-radius: 0 0 4px 4px;
+}
+
+/* Fix for sticky product details - prevent overlap */
+.product .summary.entry-summary,
+.woocommerce div.product div.summary {
+    position: relative !important; /* Override any sticky positioning */
+    top: auto !important;
+    z-index: auto !important;
+}
+
+/* Ensure product tabs don't get stuck */
+.woocommerce-tabs {
+    position: relative !important;
+    z-index: 1 !important;
+}
+
+/* Discount Badge on Product Page */
+.jpc-discount-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+    color: #fff;
+    padding: 8px 15px;
+    border-radius: 25px;
+    font-weight: 700;
+    font-size: 14px;
+    margin: 10px 0;
+    box-shadow: 0 2px 8px rgba(253, 160, 133, 0.4);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+.jpc-discount-badge .discount-icon {
+    margin-right: 5px;
 }
 
 /* Metal Rates Display */
@@ -194,6 +264,11 @@
     .jpc-metal-rates-table td {
         padding: 8px;
     }
+    
+    .jpc-discount-badge {
+        font-size: 12px;
+        padding: 6px 12px;
+    }
 }
 
 /* Print Styles */
@@ -208,5 +283,10 @@
     
     .jpc-detailed-breakup-content {
         display: block !important;
+    }
+    
+    .jpc-discount-badge {
+        background: #f6d365 !important;
+        color: #000 !important;
     }
 }
