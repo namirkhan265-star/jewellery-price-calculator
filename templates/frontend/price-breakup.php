@@ -16,7 +16,7 @@ $discount_amount = $regular_price - $sale_price;
 ?>
 
 <div class="jpc-price-breakup">
-    <h3><?php _e('Price Breakup', 'jewellery-price-calc'); ?></h3>
+    <h3><?php _e('PRICE BREAKUP', 'jewellery-price-calc'); ?></h3>
     
     <table class="jpc-price-breakup-table">
         <tbody>
@@ -88,9 +88,20 @@ $discount_amount = $regular_price - $sale_price;
             </tr>
             <?php endif; ?>
             
-            <tr class="total-row">
-                <td><strong><?php _e('Total', 'jewellery-price-calc'); ?></strong></td>
-                <td><strong><?php echo wc_price($sale_price); ?></strong></td>
+            <tr style="border-top: 2px solid #000; padding-top: 10px;">
+                <td colspan="2">&nbsp;</td>
+            </tr>
+            
+            <!-- REGULAR PRICE (Before Discount) -->
+            <tr class="regular-price-row">
+                <td><strong><?php _e('Regular Price', 'jewellery-price-calc'); ?></strong></td>
+                <td><strong style="text-decoration: line-through; color: #999;"><?php echo wc_price($regular_price); ?></strong></td>
+            </tr>
+            
+            <!-- SALE PRICE (After Discount) -->
+            <tr class="sale-price-row">
+                <td><strong style="color: #d63638; font-size: 1.1em;"><?php _e('Sale Price', 'jewellery-price-calc'); ?></strong></td>
+                <td><strong style="color: #d63638; font-size: 1.2em;"><?php echo wc_price($sale_price); ?></strong></td>
             </tr>
         </tbody>
     </table>
