@@ -295,6 +295,17 @@ class JPC_Diamonds {
         global $wpdb;
         $table = $wpdb->prefix . 'jpc_diamonds';
         
+        // First check if diamond exists
+        $exists = $wpdb->get_var($wpdb->prepare(
+            "SELECT id FROM `$table` WHERE id = %d",
+            $id
+        ));
+        
+        if (!$exists) {
+            error_log('JPC: Diamond ID ' . $id . ' not found');
+            return false;
+        }
+        
         $update_data = array(
             'type' => sanitize_text_field($data['type']),
             'carat' => floatval($data['carat']),
@@ -303,7 +314,18 @@ class JPC_Diamonds {
             'display_name' => sanitize_text_field($data['display_name']),
         );
         
-        return $wpdb->update($table, $update_data, array('id' => $id));
+        error_log('JPC: Updating diamond ID ' . $id . ' with data: ' . print_r($update_data, true));
+        
+        $result = $wpdb->update($table, $update_data, array('id' => $id));
+        
+        // $result can be 0 (no rows changed), false (error), or number of rows affected
+        if ($result === false) {
+            error_log('JPC: Failed to update diamond. Error: ' . $wpdb->last_error);
+            return false;
+        }
+        
+        error_log('JPC: Diamond updated successfully. Rows affected: ' . $result);
+        return true; // Return true even if 0 rows changed (data was same)
     }
     
     /**
@@ -410,9 +432,15 @@ class JPC_Diamonds {
             'display_name' => sanitize_text_field($_POST['display_name']),
         );
         
-        if (self::update($id, $data)) {
+        error_log('JPC AJAX: Received update diamond request for ID ' . $id . ': ' . print_r($data, true));
+        
+        $result = self::update($id, $data);
+        
+        if ($result) {
+            error_log('JPC AJAX: Diamond updated successfully');
             wp_send_json_success(array('message' => 'Diamond updated successfully'));
         } else {
+            error_log('JPC AJAX: Failed to update diamond');
             wp_send_json_error(array('message' => 'Failed to update diamond'));
         }
     }
