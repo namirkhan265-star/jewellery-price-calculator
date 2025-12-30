@@ -6,7 +6,21 @@
 if (!defined('ABSPATH')) {
     exit;
 }
+
+// Calculate discount percentage if discount exists
+$discount_percentage = 0;
+if ($breakup['discount'] > 0 && $breakup['subtotal'] > 0) {
+    $price_before_discount = $breakup['subtotal'] + $breakup['discount'];
+    $discount_percentage = ($breakup['discount'] / $price_before_discount) * 100;
+}
 ?>
+
+<?php if ($discount_percentage > 0): ?>
+<div class="jpc-discount-badge">
+    <span class="discount-icon">🎉</span>
+    <?php printf(__('You Save: %.0f%% Off', 'jewellery-price-calc'), $discount_percentage); ?>
+</div>
+<?php endif; ?>
 
 <details class="jpc-detailed-breakup">
     <summary><?php _e('View Detailed Price Breakup', 'jewellery-price-calc'); ?></summary>
@@ -18,6 +32,13 @@ if (!defined('ABSPATH')) {
                 <tr>
                     <td><?php _e('Metal Price', 'jewellery-price-calc'); ?></td>
                     <td><?php echo JPC_Frontend::format_price($breakup['metal_price']); ?></td>
+                </tr>
+                <?php endif; ?>
+                
+                <?php if ($breakup['diamond_price'] > 0): ?>
+                <tr>
+                    <td><?php _e('Diamond Price', 'jewellery-price-calc'); ?></td>
+                    <td><?php echo JPC_Frontend::format_price($breakup['diamond_price']); ?></td>
                 </tr>
                 <?php endif; ?>
                 
@@ -56,15 +77,31 @@ if (!defined('ABSPATH')) {
                 </tr>
                 <?php endif; ?>
                 
+                <?php if ($breakup['discount'] > 0): ?>
+                <tr>
+                    <td><strong><?php _e('Subtotal (Before Discount)', 'jewellery-price-calc'); ?></strong></td>
+                    <td><strong><?php echo JPC_Frontend::format_price($breakup['subtotal'] + $breakup['discount']); ?></strong></td>
+                </tr>
+                <?php else: ?>
                 <tr>
                     <td><strong><?php _e('Subtotal', 'jewellery-price-calc'); ?></strong></td>
                     <td><strong><?php echo JPC_Frontend::format_price($breakup['subtotal']); ?></strong></td>
                 </tr>
+                <?php endif; ?>
                 
                 <?php if ($breakup['discount'] > 0): ?>
                 <tr class="discount-row">
-                    <td><?php _e('Discount', 'jewellery-price-calc'); ?></td>
-                    <td>-<?php echo JPC_Frontend::format_price($breakup['discount']); ?></td>
+                    <td>
+                        <?php _e('Discount', 'jewellery-price-calc'); ?>
+                        <?php if ($discount_percentage > 0): ?>
+                            <span style="color: #46b450; font-weight: 600;">(<?php printf('%.0f%%', $discount_percentage); ?>)</span>
+                        <?php endif; ?>
+                    </td>
+                    <td style="color: #46b450;">-<?php echo JPC_Frontend::format_price($breakup['discount']); ?></td>
+                </tr>
+                <tr>
+                    <td><strong><?php _e('Subtotal (After Discount)', 'jewellery-price-calc'); ?></strong></td>
+                    <td><strong><?php echo JPC_Frontend::format_price($breakup['subtotal']); ?></strong></td>
                 </tr>
                 <?php endif; ?>
                 
