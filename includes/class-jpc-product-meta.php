@@ -21,6 +21,7 @@ class JPC_Product_Meta {
     private function __construct() {
         add_action('add_meta_boxes', array($this, 'add_meta_boxes'));
         add_action('save_post_product', array($this, 'save_product_meta'), 10);
+        add_action('woocommerce_process_product_meta', array($this, 'save_woocommerce_prices'), 20); // Hook after WooCommerce
         add_action('woocommerce_product_after_variable_attributes', array($this, 'add_variation_fields'), 10, 3);
         add_action('woocommerce_save_product_variation', array($this, 'save_variation_fields'), 10, 2);
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_scripts'));
@@ -53,6 +54,47 @@ class JPC_Product_Meta {
             'ajax_url' => admin_url('admin-ajax.php'),
             'nonce' => wp_create_nonce('jpc_live_calc_nonce'),
         ));
+    }
+    
+    /**
+     * Save WooCommerce prices after calculation
+     * This ensures the regular and sale prices are properly saved
+     */
+    public function save_woocommerce_prices($post_id) {
+        // Check if we have JPC data
+        $metal_id = get_post_meta($post_id, '_jpc_metal_id', true);
+        if (!$metal_id) {
+            return; // Not a JPC product
+        }
+        
+        // Get the discount percentage
+        $discount_percentage = get_post_meta($post_id, '_jpc_discount_percentage', true);
+        
+        // Get the regular price (this should be set by WooCommerce already)
+        $regular_price = get_post_meta($post_id, '_regular_price', true);
+        
+        if (!$regular_price || $regular_price <= 0) {
+            return; // No price to work with
+        }
+        
+        // If there's a discount, calculate and set sale price
+        if ($discount_percentage > 0) {
+            // Calculate the discounted price
+            $sale_price = $regular_price * (1 - ($discount_percentage / 100));
+            $sale_price = round($sale_price, 2);
+            
+            // Update sale price
+            update_post_meta($post_id, '_sale_price', $sale_price);
+            update_post_meta($post_id, '_price', $sale_price); // Active price
+            
+            error_log("JPC: Set sale price for product $post_id: Regular=$regular_price, Sale=$sale_price, Discount=$discount_percentage%");
+        } else {
+            // No discount - clear sale price
+            delete_post_meta($post_id, '_sale_price');
+            update_post_meta($post_id, '_price', $regular_price); // Active price = regular price
+            
+            error_log("JPC: Cleared sale price for product $post_id: Regular=$regular_price");
+        }
     }
     
     /**
