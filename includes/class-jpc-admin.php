@@ -101,10 +101,40 @@ class JPC_Admin {
             array($this, 'render_metals')
         );
         
+        // NEW: Diamond Groups submenu
         add_submenu_page(
             'jewellery-price-calc',
-            __('Diamonds', 'jewellery-price-calc'),
-            __('Diamonds', 'jewellery-price-calc'),
+            __('Diamond Groups', 'jewellery-price-calc'),
+            __('Diamond Groups', 'jewellery-price-calc'),
+            'manage_woocommerce',
+            'jpc-diamond-groups',
+            array($this, 'render_diamond_groups')
+        );
+        
+        // NEW: Diamond Types submenu
+        add_submenu_page(
+            'jewellery-price-calc',
+            __('Diamond Types', 'jewellery-price-calc'),
+            __('Diamond Types', 'jewellery-price-calc'),
+            'manage_woocommerce',
+            'jpc-diamond-types',
+            array($this, 'render_diamond_types')
+        );
+        
+        // NEW: Diamond Certifications submenu
+        add_submenu_page(
+            'jewellery-price-calc',
+            __('Diamond Certifications', 'jewellery-price-calc'),
+            __('Certifications', 'jewellery-price-calc'),
+            'manage_woocommerce',
+            'jpc-diamond-certifications',
+            array($this, 'render_diamond_certifications')
+        );
+        
+        add_submenu_page(
+            'jewellery-price-calc',
+            __('Diamonds (Legacy)', 'jewellery-price-calc'),
+            __('Diamonds (Legacy)', 'jewellery-price-calc'),
             'manage_woocommerce',
             'jpc-diamonds',
             array($this, 'render_diamonds')
@@ -221,7 +251,28 @@ class JPC_Admin {
     }
     
     /**
-     * Render diamonds page
+     * Render diamond groups page
+     */
+    public function render_diamond_groups() {
+        include JPC_PLUGIN_DIR . 'templates/admin/diamond-groups.php';
+    }
+    
+    /**
+     * Render diamond types page
+     */
+    public function render_diamond_types() {
+        include JPC_PLUGIN_DIR . 'templates/admin/diamond-types.php';
+    }
+    
+    /**
+     * Render diamond certifications page
+     */
+    public function render_diamond_certifications() {
+        include JPC_PLUGIN_DIR . 'templates/admin/diamond-certifications.php';
+    }
+    
+    /**
+     * Render diamonds page (legacy)
      */
     public function render_diamonds() {
         include JPC_PLUGIN_DIR . 'templates/admin/diamonds.php';
