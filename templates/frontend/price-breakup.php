@@ -1,15 +1,18 @@
 <?php
 /**
- * Frontend Price Breakup Template - Simple Version
+ * Frontend Price Breakup Template - Uses Backend Data
  */
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
-// Get discount percentage from product meta
+// Get all data from backend
 $product_id = get_the_ID();
 $discount_percentage = floatval(get_post_meta($product_id, '_jpc_discount_percentage', true));
+$regular_price = floatval(get_post_meta($product_id, '_regular_price', true));
+$sale_price = floatval(get_post_meta($product_id, '_sale_price', true));
+$discount_amount = $regular_price - $sale_price;
 ?>
 
 <div class="jpc-price-breakup">
@@ -64,17 +67,17 @@ $discount_percentage = floatval(get_post_meta($product_id, '_jpc_discount_percen
             </tr>
             <?php endif; ?>
             
-            <?php if (!empty($breakup['discount']) && $breakup['discount'] > 0): ?>
-            <tr class="discount-row">
+            <?php if ($discount_percentage > 0 && $discount_amount > 0): ?>
+            <tr class="discount-row" style="color: #d63638;">
                 <td>
                     <?php _e('Discount', 'jewellery-price-calc'); ?>
-                    <?php if ($discount_percentage > 0): ?>
-                        <span class="discount-percentage" style="color: #d63638; font-weight: bold;">
-                            (<?php echo number_format($discount_percentage, 0); ?>% OFF)
-                        </span>
-                    <?php endif; ?>
+                    <span style="color: #d63638; font-weight: bold;">
+                        (<?php echo number_format($discount_percentage, 0); ?>% OFF)
+                    </span>
                 </td>
-                <td class="discount-amount">- <?php echo JPC_Frontend::format_price($breakup['discount']); ?></td>
+                <td style="color: #d63638; font-weight: bold;">
+                    - <?php echo wc_price($discount_amount); ?>
+                </td>
             </tr>
             <?php endif; ?>
             
@@ -87,15 +90,15 @@ $discount_percentage = floatval(get_post_meta($product_id, '_jpc_discount_percen
             
             <tr class="total-row">
                 <td><strong><?php _e('Total', 'jewellery-price-calc'); ?></strong></td>
-                <td><strong><?php echo JPC_Frontend::format_price($breakup['final_price']); ?></strong></td>
+                <td><strong><?php echo wc_price($sale_price); ?></strong></td>
             </tr>
         </tbody>
     </table>
     
-    <?php if ($discount_percentage > 0 && !empty($breakup['discount'])): ?>
+    <?php if ($discount_percentage > 0 && $discount_amount > 0): ?>
     <div class="jpc-savings-badge" style="margin-top: 15px; padding: 10px; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 4px; text-align: center;">
         <strong style="color: #155724; font-size: 1.1em;">
-            🎉 You Save: <?php echo JPC_Frontend::format_price($breakup['discount']); ?> 
+            🎉 You Save: <?php echo wc_price($discount_amount); ?> 
             (<?php echo number_format($discount_percentage, 0); ?>% OFF)
         </strong>
     </div>
