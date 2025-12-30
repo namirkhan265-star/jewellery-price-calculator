@@ -27,82 +27,12 @@ class JPC_Price_Calculator {
         // Also hook into save_post as a fallback
         add_action('save_post_product', array($this, 'calculate_and_update_price'), 30);
         
-        // DYNAMIC PRICING: Hook into price display filters
-        add_filter('woocommerce_product_get_price', array($this, 'get_dynamic_sale_price'), 99, 2);
-        add_filter('woocommerce_product_get_regular_price', array($this, 'get_dynamic_regular_price'), 99, 2);
-        add_filter('woocommerce_product_get_sale_price', array($this, 'get_dynamic_sale_price'), 99, 2);
-        add_filter('woocommerce_product_variation_get_price', array($this, 'get_dynamic_sale_price'), 99, 2);
-        add_filter('woocommerce_product_variation_get_regular_price', array($this, 'get_dynamic_regular_price'), 99, 2);
-        add_filter('woocommerce_product_variation_get_sale_price', array($this, 'get_dynamic_sale_price'), 99, 2);
+        // DISABLED DYNAMIC PRICING - Use stored database values instead
+        // Dynamic pricing was causing incorrect regular price display (₹293,240 instead of ₹307,902)
+        // Now prices are calculated ONCE on save and stored in database
         
         // Update price breakup dynamically
         add_filter('woocommerce_get_price_html', array($this, 'update_price_breakup_on_display'), 10, 2);
-    }
-    
-    /**
-     * Get dynamic regular price (before discount) based on current metal rates
-     */
-    public function get_dynamic_regular_price($price, $product) {
-        // Skip if in admin (except for AJAX requests)
-        if (is_admin() && !wp_doing_ajax()) {
-            return $price;
-        }
-        
-        // Skip if no product
-        if (!$product) {
-            return $price;
-        }
-        
-        $product_id = $product->get_id();
-        
-        // Check if this product uses JPC
-        $metal_id = get_post_meta($product_id, '_jpc_metal_id', true);
-        
-        if (!$metal_id) {
-            return $price; // Not a JPC product, return original price
-        }
-        
-        // Calculate real-time price BEFORE discount
-        $prices = self::calculate_product_prices($product_id);
-        
-        if ($prices !== false && isset($prices['regular_price'])) {
-            return $prices['regular_price'];
-        }
-        
-        return $price;
-    }
-    
-    /**
-     * Get dynamic sale price (after discount) based on current metal rates
-     */
-    public function get_dynamic_sale_price($price, $product) {
-        // Skip if in admin (except for AJAX requests)
-        if (is_admin() && !wp_doing_ajax()) {
-            return $price;
-        }
-        
-        // Skip if no product
-        if (!$product) {
-            return $price;
-        }
-        
-        $product_id = $product->get_id();
-        
-        // Check if this product uses JPC
-        $metal_id = get_post_meta($product_id, '_jpc_metal_id', true);
-        
-        if (!$metal_id) {
-            return $price; // Not a JPC product, return original price
-        }
-        
-        // Calculate real-time price AFTER discount
-        $prices = self::calculate_product_prices($product_id);
-        
-        if ($prices !== false && isset($prices['sale_price'])) {
-            return $prices['sale_price'];
-        }
-        
-        return $price;
     }
     
     /**
