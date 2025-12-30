@@ -183,7 +183,9 @@ class JPC_Price_Calculator {
             'regular_price' => $regular_price,  // Price before discount (with GST on full amount)
             'sale_price' => $sale_price,        // Price after discount (with GST on discounted amount)
             'discount_amount' => $discount_amount,
-            'discount_percentage' => $discount_percentage
+            'discount_percentage' => $discount_percentage,
+            'gst_on_full' => $gst_amount_on_full,
+            'gst_on_discounted' => $gst_amount_on_discounted
         );
     }
     
@@ -265,8 +267,18 @@ class JPC_Price_Calculator {
         $stone_cost = floatval(get_post_meta($product_id, '_jpc_stone_cost', true));
         $extra_fee = floatval(get_post_meta($product_id, '_jpc_extra_fee', true));
         
-        // Get prices
+        // Get prices with GST
         $prices = self::calculate_product_prices($product_id);
+        
+        // Determine which GST to show in breakup
+        $gst_to_display = 0;
+        if ($prices['discount_percentage'] > 0) {
+            // If there's a discount, show GST on discounted amount
+            $gst_to_display = $prices['gst_on_discounted'];
+        } else {
+            // No discount, show GST on full amount
+            $gst_to_display = $prices['gst_on_full'];
+        }
         
         // Store price breakup for display
         $breakup = array(
@@ -278,8 +290,10 @@ class JPC_Price_Calculator {
             'stone_cost' => $stone_cost,
             'extra_fee' => $extra_fee,
             'discount' => $prices['discount_amount'],
+            'gst' => $gst_to_display,  // CRITICAL: Store GST in breakup
+            'gst_on_full' => $prices['gst_on_full'],  // For reference
+            'gst_on_discounted' => $prices['gst_on_discounted'],  // For reference
             'subtotal' => $prices['sale_price'],
-            'gst' => 0, // Will be calculated in display
             'final_price' => $prices['sale_price'],
         );
         
