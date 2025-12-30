@@ -1,6 +1,7 @@
 <?php
 /**
  * Database Handler
+ * Creates and manages all plugin database tables
  */
 
 if (!defined('ABSPATH')) {
@@ -16,8 +17,6 @@ class JPC_Database {
         global $wpdb;
         
         $charset_collate = $wpdb->get_charset_collate();
-        
-        // Ensure we're using the correct table prefix
         $prefix = $wpdb->prefix;
         
         // Metal Groups Table
@@ -51,7 +50,51 @@ class JPC_Database {
             KEY `metal_group_id` (`metal_group_id`)
         ) $charset_collate;";
         
-        // Diamonds Table
+        // Diamond Groups Table (NEW)
+        $table_diamond_groups = $prefix . 'jpc_diamond_groups';
+        $sql_diamond_groups = "CREATE TABLE IF NOT EXISTS `$table_diamond_groups` (
+            `id` bigint(20) NOT NULL AUTO_INCREMENT,
+            `name` varchar(100) NOT NULL,
+            `slug` varchar(100) NOT NULL,
+            `description` text,
+            `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+            `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (`id`),
+            UNIQUE KEY `slug` (`slug`)
+        ) $charset_collate;";
+        
+        // Diamond Types Table (NEW - replaces old diamonds table)
+        $table_diamond_types = $prefix . 'jpc_diamond_types';
+        $sql_diamond_types = "CREATE TABLE IF NOT EXISTS `$table_diamond_types` (
+            `id` bigint(20) NOT NULL AUTO_INCREMENT,
+            `diamond_group_id` bigint(20) NOT NULL,
+            `carat_from` decimal(10,3) NOT NULL,
+            `carat_to` decimal(10,3) NOT NULL,
+            `price_per_carat` decimal(10,2) NOT NULL DEFAULT 0,
+            `display_name` varchar(200) NOT NULL,
+            `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+            `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (`id`),
+            KEY `diamond_group_id` (`diamond_group_id`),
+            KEY `carat_range` (`carat_from`, `carat_to`)
+        ) $charset_collate;";
+        
+        // Diamond Certifications Table (NEW)
+        $table_diamond_certs = $prefix . 'jpc_diamond_certifications';
+        $sql_diamond_certs = "CREATE TABLE IF NOT EXISTS `$table_diamond_certs` (
+            `id` bigint(20) NOT NULL AUTO_INCREMENT,
+            `name` varchar(100) NOT NULL,
+            `slug` varchar(100) NOT NULL,
+            `adjustment_type` varchar(20) NOT NULL DEFAULT 'percentage',
+            `adjustment_value` decimal(10,2) NOT NULL DEFAULT 0,
+            `description` text,
+            `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+            `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (`id`),
+            UNIQUE KEY `slug` (`slug`)
+        ) $charset_collate;";
+        
+        // Old Diamonds Table (keep for backward compatibility)
         $table_diamonds = $prefix . 'jpc_diamonds';
         $sql_diamonds = "CREATE TABLE IF NOT EXISTS `$table_diamonds` (
             `id` bigint(20) NOT NULL AUTO_INCREMENT,
@@ -101,17 +144,23 @@ class JPC_Database {
         // Execute queries
         $result1 = dbDelta($sql_groups);
         $result2 = dbDelta($sql_metals);
-        $result3 = dbDelta($sql_diamonds);
-        $result4 = dbDelta($sql_history);
-        $result5 = dbDelta($sql_product_log);
+        $result3 = dbDelta($sql_diamond_groups);
+        $result4 = dbDelta($sql_diamond_types);
+        $result5 = dbDelta($sql_diamond_certs);
+        $result6 = dbDelta($sql_diamonds);
+        $result7 = dbDelta($sql_history);
+        $result8 = dbDelta($sql_product_log);
         
         // Log results
         error_log('JPC Table Creation Results:');
-        error_log('Groups: ' . print_r($result1, true));
+        error_log('Metal Groups: ' . print_r($result1, true));
         error_log('Metals: ' . print_r($result2, true));
-        error_log('Diamonds: ' . print_r($result3, true));
-        error_log('History: ' . print_r($result4, true));
-        error_log('Product Log: ' . print_r($result5, true));
+        error_log('Diamond Groups: ' . print_r($result3, true));
+        error_log('Diamond Types: ' . print_r($result4, true));
+        error_log('Diamond Certifications: ' . print_r($result5, true));
+        error_log('Diamonds (Legacy): ' . print_r($result6, true));
+        error_log('History: ' . print_r($result7, true));
+        error_log('Product Log: ' . print_r($result8, true));
         
         // Check if tables were created
         if (self::tables_exist()) {
@@ -129,14 +178,16 @@ class JPC_Database {
     }
     
     /**
-     * Insert default metal groups and metals
+     * Insert default data
      */
     private static function insert_default_data() {
         global $wpdb;
         
         $table_groups = $wpdb->prefix . 'jpc_metal_groups';
         $table_metals = $wpdb->prefix . 'jpc_metals';
-        $table_diamonds = $wpdb->prefix . 'jpc_diamonds';
+        $table_diamond_groups = $wpdb->prefix . 'jpc_diamond_groups';
+        $table_diamond_types = $wpdb->prefix . 'jpc_diamond_types';
+        $table_diamond_certs = $wpdb->prefix . 'jpc_diamond_certifications';
         
         // Check if data already exists
         $count = $wpdb->get_var("SELECT COUNT(*) FROM `$table_groups`");
@@ -154,12 +205,7 @@ class JPC_Database {
         );
         
         foreach ($groups as $group) {
-            $result = $wpdb->insert($table_groups, $group);
-            if ($wpdb->last_error) {
-                error_log('JPC Insert Group Error: ' . $wpdb->last_error);
-            } else {
-                error_log('JPC: Inserted group: ' . $group['name']);
-            }
+            $wpdb->insert($table_groups, $group);
         }
         
         // Insert default metals
@@ -172,30 +218,39 @@ class JPC_Database {
         );
         
         foreach ($metals as $metal) {
-            $result = $wpdb->insert($table_metals, $metal);
-            if ($wpdb->last_error) {
-                error_log('JPC Insert Metal Error: ' . $wpdb->last_error);
-            } else {
-                error_log('JPC: Inserted metal: ' . $metal['display_name']);
+            $wpdb->insert($table_metals, $metal);
+        }
+        
+        // Insert default diamond groups
+        $diamond_groups = JPC_Diamond_Groups::get_default_groups();
+        foreach ($diamond_groups as $group) {
+            $wpdb->insert($table_diamond_groups, $group);
+        }
+        
+        // Insert default diamond types
+        $diamond_types = JPC_Diamond_Types::get_default_types();
+        foreach ($diamond_types as $type) {
+            // Get group ID by slug
+            $group = $wpdb->get_row($wpdb->prepare(
+                "SELECT id FROM `$table_diamond_groups` WHERE slug = %s",
+                $type['group_slug']
+            ));
+            
+            if ($group) {
+                $wpdb->insert($table_diamond_types, array(
+                    'diamond_group_id' => $group->id,
+                    'carat_from' => $type['carat_from'],
+                    'carat_to' => $type['carat_to'],
+                    'price_per_carat' => $type['price_per_carat'],
+                    'display_name' => $type['display_name'],
+                ));
             }
         }
         
-        // Insert default diamonds
-        $diamonds = array(
-            array('type' => 'natural', 'carat' => 0.50, 'certification' => 'gia', 'price_per_carat' => 50000.00, 'display_name' => '0.50ct Natural Diamond (GIA)'),
-            array('type' => 'natural', 'carat' => 1.00, 'certification' => 'gia', 'price_per_carat' => 95000.00, 'display_name' => '1.00ct Natural Diamond (GIA)'),
-            array('type' => 'lab_grown', 'carat' => 0.50, 'certification' => 'igi', 'price_per_carat' => 25000.00, 'display_name' => '0.50ct Lab Grown Diamond (IGI)'),
-            array('type' => 'lab_grown', 'carat' => 1.00, 'certification' => 'igi', 'price_per_carat' => 45000.00, 'display_name' => '1.00ct Lab Grown Diamond (IGI)'),
-            array('type' => 'moissanite', 'carat' => 1.00, 'certification' => 'none', 'price_per_carat' => 15000.00, 'display_name' => '1.00ct Moissanite'),
-        );
-        
-        foreach ($diamonds as $diamond) {
-            $result = $wpdb->insert($table_diamonds, $diamond);
-            if ($wpdb->last_error) {
-                error_log('JPC Insert Diamond Error: ' . $wpdb->last_error);
-            } else {
-                error_log('JPC: Inserted diamond: ' . $diamond['display_name']);
-            }
+        // Insert default certifications
+        $certifications = JPC_Diamond_Certifications::get_default_certifications();
+        foreach ($certifications as $cert) {
+            $wpdb->insert($table_diamond_certs, $cert);
         }
     }
     
@@ -208,6 +263,9 @@ class JPC_Database {
         $tables = array(
             $wpdb->prefix . 'jpc_metal_groups',
             $wpdb->prefix . 'jpc_metals',
+            $wpdb->prefix . 'jpc_diamond_groups',
+            $wpdb->prefix . 'jpc_diamond_types',
+            $wpdb->prefix . 'jpc_diamond_certifications',
             $wpdb->prefix . 'jpc_diamonds',
             $wpdb->prefix . 'jpc_price_history',
             $wpdb->prefix . 'jpc_product_price_log',
@@ -233,6 +291,9 @@ class JPC_Database {
         $tables = array(
             $wpdb->prefix . 'jpc_product_price_log',
             $wpdb->prefix . 'jpc_price_history',
+            $wpdb->prefix . 'jpc_diamond_certifications',
+            $wpdb->prefix . 'jpc_diamond_types',
+            $wpdb->prefix . 'jpc_diamond_groups',
             $wpdb->prefix . 'jpc_diamonds',
             $wpdb->prefix . 'jpc_metals',
             $wpdb->prefix . 'jpc_metal_groups',
