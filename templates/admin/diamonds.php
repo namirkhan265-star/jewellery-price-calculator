@@ -1,6 +1,7 @@
 <?php
 /**
- * Diamonds Management Page Template
+ * Diamonds Management Page Template (Legacy)
+ * Integrates with new 3-tab diamond system
  */
 
 if (!defined('ABSPATH')) {
@@ -19,15 +20,30 @@ error_log('JPC Diamonds Page: Found ' . $diamond_count . ' diamonds');
 
 <div class="wrap jpc-admin-wrap">
     <h1>
-        <?php _e('Manage Diamonds', 'jewellery-price-calc'); ?>
+        <?php _e('Manage Diamonds (Legacy)', 'jewellery-price-calc'); ?>
         <a href="<?php echo admin_url('admin.php?page=jpc-diamonds'); ?>" class="page-title-action">
             <?php _e('Refresh', 'jewellery-price-calc'); ?>
         </a>
+        <button type="button" id="jpc-sync-diamonds" class="page-title-action" style="background: #2196f3; color: white; border-color: #2196f3;">
+            <span class="dashicons dashicons-update" style="margin-top: 3px;"></span>
+            <?php _e('Sync from New System', 'jewellery-price-calc'); ?>
+        </button>
     </h1>
     
-    <!-- Debug Info -->
-    <div class="notice notice-info" style="margin: 15px 0;">
-        <p><strong>Debug:</strong> Currently showing <?php echo $diamond_count; ?> diamonds in database.</p>
+    <!-- Info Notice -->
+    <div class="notice notice-info" style="margin: 15px 0; padding: 15px; background: #e7f3ff; border-left: 4px solid #2196f3;">
+        <h3 style="margin-top: 0;">
+            <span class="dashicons dashicons-info" style="color: #2196f3;"></span>
+            About This Page
+        </h3>
+        <p><strong>This is the Legacy Diamonds page.</strong> It shows individual diamond entries for backward compatibility.</p>
+        <p><strong>New System:</strong> Use the 3-tab system for better management:</p>
+        <ul style="margin-left: 20px;">
+            <li>📊 <a href="<?php echo admin_url('admin.php?page=jpc-diamond-groups'); ?>"><strong>Diamond Groups</strong></a> - Manage diamond categories (Natural, Lab Grown, etc.)</li>
+            <li>💎 <a href="<?php echo admin_url('admin.php?page=jpc-diamond-types'); ?>"><strong>Diamond Types</strong></a> - Set carat-based pricing ranges</li>
+            <li>🏆 <a href="<?php echo admin_url('admin.php?page=jpc-diamond-certifications'); ?>"><strong>Certifications</strong></a> - Manage certification premiums</li>
+        </ul>
+        <p><strong>Auto-Pricing:</strong> When you add a diamond below, the price is automatically calculated from the 3-tab system. You can override it manually if needed.</p>
     </div>
     
     <div class="jpc-admin-content">
@@ -39,16 +55,16 @@ error_log('JPC Diamonds Page: Found ' . $diamond_count . ' diamonds');
                 <table class="form-table">
                     <tr>
                         <th scope="row">
-                            <label for="diamond_type"><?php _e('Diamond Type', 'jewellery-price-calc'); ?></label>
+                            <label for="diamond_type"><?php _e('Diamond Group', 'jewellery-price-calc'); ?></label>
                         </th>
                         <td>
                             <select id="diamond_type" name="type" class="regular-text" required>
-                                <option value=""><?php _e('Select Type', 'jewellery-price-calc'); ?></option>
+                                <option value=""><?php _e('Select Diamond Group', 'jewellery-price-calc'); ?></option>
                                 <?php foreach ($types as $key => $label): ?>
                                     <option value="<?php echo esc_attr($key); ?>"><?php echo esc_html($label); ?></option>
                                 <?php endforeach; ?>
                             </select>
-                            <p class="description"><?php _e('Natural, Lab Grown, or Moissanite', 'jewellery-price-calc'); ?></p>
+                            <p class="description"><?php _e('From Diamond Groups tab', 'jewellery-price-calc'); ?></p>
                         </td>
                     </tr>
                     
@@ -78,7 +94,18 @@ error_log('JPC Diamonds Page: Found ' . $diamond_count . ' diamonds');
                                     <option value="<?php echo esc_attr($key); ?>"><?php echo esc_html($label); ?></option>
                                 <?php endforeach; ?>
                             </select>
-                            <p class="description"><?php _e('GIA, IGI, HRD, or None', 'jewellery-price-calc'); ?></p>
+                            <p class="description"><?php _e('From Certifications tab', 'jewellery-price-calc'); ?></p>
+                        </td>
+                    </tr>
+                    
+                    <tr id="price-calculation-row" style="display: none;">
+                        <th scope="row">
+                            <label><?php _e('Calculated Price', 'jewellery-price-calc'); ?></label>
+                        </th>
+                        <td>
+                            <div id="price-calculation-result" style="padding: 15px; background: #f0f9ff; border-left: 4px solid #2196f3; margin-bottom: 10px;">
+                                <p style="margin: 0;"><strong>Calculating...</strong></p>
+                            </div>
                         </td>
                     </tr>
                     
@@ -98,75 +125,84 @@ error_log('JPC Diamonds Page: Found ' . $diamond_count . ' diamonds');
                         </th>
                         <td>
                             <input type="number" id="price_per_carat" name="price_per_carat" class="regular-text" step="0.01" min="0" required>
-                            <p class="description"><?php _e('Price per carat in rupees', 'jewellery-price-calc'); ?></p>
+                            <p class="description">
+                                <span class="dashicons dashicons-info" style="color: #2196f3;"></span>
+                                <?php _e('Auto-filled from calculation. You can override this value if needed.', 'jewellery-price-calc'); ?>
+                            </p>
                         </td>
                     </tr>
                 </table>
                 
                 <p class="submit">
-                    <button type="submit" class="button button-primary"><?php _e('Add Diamond', 'jewellery-price-calc'); ?></button>
+                    <button type="submit" class="button button-primary">
+                        <span class="dashicons dashicons-plus-alt" style="margin-top: 3px;"></span>
+                        <?php _e('Add Diamond', 'jewellery-price-calc'); ?>
+                    </button>
                 </p>
             </form>
         </div>
         
-        <!-- Existing Diamonds -->
+        <!-- Existing Diamonds List -->
         <div class="jpc-card">
             <h2><?php _e('Existing Diamonds', 'jewellery-price-calc'); ?> (<?php echo $diamond_count; ?>)</h2>
             
             <?php if (empty($diamonds)): ?>
                 <div class="notice notice-warning inline">
-                    <p><?php _e('No diamonds found. Add your first diamond above.', 'jewellery-price-calc'); ?></p>
+                    <p>
+                        <strong><?php _e('No diamonds found!', 'jewellery-price-calc'); ?></strong><br>
+                        <?php _e('Add diamonds using the form above, or click "Sync from New System" to auto-generate from your Diamond Groups, Types, and Certifications.', 'jewellery-price-calc'); ?>
+                    </p>
                 </div>
             <?php else: ?>
-                <!-- Filter by Type -->
-                <div style="margin-bottom: 20px;">
-                    <label for="filter-type"><?php _e('Filter by Type:', 'jewellery-price-calc'); ?></label>
-                    <select id="filter-type" style="margin-left: 10px;">
-                        <option value=""><?php _e('All Types', 'jewellery-price-calc'); ?></option>
-                        <?php foreach ($types as $key => $label): ?>
-                            <option value="<?php echo esc_attr($key); ?>"><?php echo esc_html($label); ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                
-                <table class="wp-list-table widefat fixed striped" id="diamonds-table">
+                <table class="wp-list-table widefat fixed striped">
                     <thead>
                         <tr>
                             <th><?php _e('ID', 'jewellery-price-calc'); ?></th>
+                            <th><?php _e('Display Name', 'jewellery-price-calc'); ?></th>
                             <th><?php _e('Type', 'jewellery-price-calc'); ?></th>
                             <th><?php _e('Carat', 'jewellery-price-calc'); ?></th>
                             <th><?php _e('Certification', 'jewellery-price-calc'); ?></th>
-                            <th><?php _e('Display Name', 'jewellery-price-calc'); ?></th>
                             <th><?php _e('Price/Carat', 'jewellery-price-calc'); ?></th>
                             <th><?php _e('Total Price', 'jewellery-price-calc'); ?></th>
                             <th><?php _e('Actions', 'jewellery-price-calc'); ?></th>
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach ($diamonds as $diamond): ?>
-                        <tr data-type="<?php echo esc_attr($diamond->type); ?>">
-                            <td><?php echo esc_html($diamond->id); ?></td>
+                        <?php foreach ($diamonds as $diamond): 
+                            $total_price = floatval($diamond->price_per_carat) * floatval($diamond->carat);
+                        ?>
+                        <tr>
+                            <td><?php echo $diamond->id; ?></td>
+                            <td><strong><?php echo esc_html($diamond->display_name); ?></strong></td>
                             <td>
-                                <span class="diamond-type-badge diamond-type-<?php echo esc_attr($diamond->type); ?>">
-                                    <?php echo esc_html($types[$diamond->type]); ?>
-                                </span>
+                                <?php 
+                                $type_label = isset($types[$diamond->type]) ? $types[$diamond->type] : $diamond->type;
+                                echo esc_html($type_label); 
+                                ?>
                             </td>
-                            <td><?php echo esc_html($diamond->carat); ?> ct</td>
+                            <td><?php echo number_format($diamond->carat, 2); ?> ct</td>
                             <td>
-                                <span class="cert-badge cert-<?php echo esc_attr($diamond->certification); ?>">
-                                    <?php echo esc_html(strtoupper($diamond->certification)); ?>
-                                </span>
+                                <?php 
+                                $cert_label = isset($certifications[$diamond->certification]) ? $certifications[$diamond->certification] : $diamond->certification;
+                                echo esc_html($cert_label); 
+                                ?>
                             </td>
-                            <td><?php echo esc_html($diamond->display_name); ?></td>
-                            <td>₹<?php echo number_format($diamond->price_per_carat, 2); ?></td>
+                            <td><strong>₹<?php echo number_format($diamond->price_per_carat, 2); ?></strong></td>
+                            <td><strong>₹<?php echo number_format($total_price, 2); ?></strong></td>
                             <td>
-                                <strong>₹<?php echo number_format($diamond->price_per_carat * $diamond->carat, 2); ?></strong>
-                            </td>
-                            <td>
-                                <button class="button button-small jpc-edit-diamond" data-id="<?php echo esc_attr($diamond->id); ?>">
+                                <button type="button" class="button button-small jpc-edit-diamond" 
+                                        data-id="<?php echo $diamond->id; ?>"
+                                        data-type="<?php echo esc_attr($diamond->type); ?>"
+                                        data-carat="<?php echo esc_attr($diamond->carat); ?>"
+                                        data-certification="<?php echo esc_attr($diamond->certification); ?>"
+                                        data-price="<?php echo esc_attr($diamond->price_per_carat); ?>"
+                                        data-display-name="<?php echo esc_attr($diamond->display_name); ?>">
+                                    <span class="dashicons dashicons-edit"></span>
                                     <?php _e('Edit', 'jewellery-price-calc'); ?>
                                 </button>
-                                <button class="button button-small jpc-delete-diamond" data-id="<?php echo esc_attr($diamond->id); ?>">
+                                <button type="button" class="button button-small button-link-delete jpc-delete-diamond" 
+                                        data-id="<?php echo $diamond->id; ?>">
+                                    <span class="dashicons dashicons-trash"></span>
                                     <?php _e('Delete', 'jewellery-price-calc'); ?>
                                 </button>
                             </td>
@@ -175,23 +211,6 @@ error_log('JPC Diamonds Page: Found ' . $diamond_count . ' diamonds');
                     </tbody>
                 </table>
             <?php endif; ?>
-        </div>
-        
-        <!-- Quick Add Presets -->
-        <div class="jpc-card">
-            <h2><?php _e('Quick Add Common Diamonds', 'jewellery-price-calc'); ?></h2>
-            <p><?php _e('Click to quickly add common diamond configurations:', 'jewellery-price-calc'); ?></p>
-            
-            <div class="quick-add-buttons">
-                <button class="button" onclick="quickAddDiamond('natural', '0.50', 'gia', '50000')">0.50ct Natural (GIA)</button>
-                <button class="button" onclick="quickAddDiamond('natural', '1.00', 'gia', '95000')">1.00ct Natural (GIA)</button>
-                <button class="button" onclick="quickAddDiamond('natural', '2.00', 'gia', '180000')">2.00ct Natural (GIA)</button>
-                <button class="button" onclick="quickAddDiamond('lab_grown', '0.50', 'igi', '25000')">0.50ct Lab Grown (IGI)</button>
-                <button class="button" onclick="quickAddDiamond('lab_grown', '1.00', 'igi', '45000')">1.00ct Lab Grown (IGI)</button>
-                <button class="button" onclick="quickAddDiamond('lab_grown', '2.00', 'igi', '85000')">2.00ct Lab Grown (IGI)</button>
-                <button class="button" onclick="quickAddDiamond('moissanite', '1.00', 'none', '15000')">1.00ct Moissanite</button>
-                <button class="button" onclick="quickAddDiamond('moissanite', '2.00', 'none', '28000')">2.00ct Moissanite</button>
-            </div>
         </div>
     </div>
 </div>
@@ -202,13 +221,13 @@ error_log('JPC Diamonds Page: Found ' . $diamond_count . ' diamonds');
         <span class="jpc-modal-close">&times;</span>
         <h2><?php _e('Edit Diamond', 'jewellery-price-calc'); ?></h2>
         
-        <form id="jpc-edit-diamond-form" method="post">
+        <form id="jpc-edit-diamond-form">
             <input type="hidden" id="edit_diamond_id" name="id">
             
             <table class="form-table">
                 <tr>
                     <th scope="row">
-                        <label for="edit_diamond_type"><?php _e('Diamond Type', 'jewellery-price-calc'); ?></label>
+                        <label for="edit_diamond_type"><?php _e('Diamond Group', 'jewellery-price-calc'); ?></label>
                     </th>
                     <td>
                         <select id="edit_diamond_type" name="type" class="regular-text" required>
@@ -260,46 +279,251 @@ error_log('JPC Diamonds Page: Found ' . $diamond_count . ' diamonds');
                     </th>
                     <td>
                         <input type="number" id="edit_price_per_carat" name="price_per_carat" class="regular-text" step="0.01" min="0" required>
+                        <p class="description"><?php _e('You can manually override the calculated price', 'jewellery-price-calc'); ?></p>
                     </td>
                 </tr>
             </table>
             
             <p class="submit">
-                <button type="submit" class="button button-primary"><?php _e('Update Diamond', 'jewellery-price-calc'); ?></button>
-                <button type="button" class="button jpc-modal-close"><?php _e('Cancel', 'jewellery-price-calc'); ?></button>
+                <button type="submit" class="button button-primary">
+                    <?php _e('Update Diamond', 'jewellery-price-calc'); ?>
+                </button>
+                <button type="button" class="button jpc-modal-close">
+                    <?php _e('Cancel', 'jewellery-price-calc'); ?>
+                </button>
             </p>
         </form>
     </div>
 </div>
 
+<script>
+jQuery(document).ready(function($) {
+    
+    // Auto-calculate price when group, carat, or certification changes
+    function calculatePrice() {
+        var group = $('#diamond_type').val();
+        var carat = $('#carat').val();
+        var cert = $('#certification').val();
+        
+        if (!group || !carat || !cert) {
+            $('#price-calculation-row').hide();
+            return;
+        }
+        
+        $('#price-calculation-row').show();
+        $('#price-calculation-result').html('<p style="margin: 0;"><strong>Calculating...</strong></p>');
+        
+        $.ajax({
+            url: ajaxurl,
+            type: 'POST',
+            data: {
+                action: 'jpc_calculate_diamond_price',
+                nonce: '<?php echo wp_create_nonce('jpc_admin_nonce'); ?>',
+                group_slug: group,
+                carat: carat,
+                cert_slug: cert
+            },
+            success: function(response) {
+                if (response.success) {
+                    var data = response.data;
+                    var html = '<div style="margin-bottom: 10px;">';
+                    html += '<p style="margin: 5px 0;"><strong>Base Price:</strong> ₹' + parseFloat(data.base_price).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + '/carat</p>';
+                    html += '<p style="margin: 5px 0;"><strong>Certification Adjustment:</strong> ';
+                    if (data.adjustment_type === 'percentage') {
+                        html += (data.certification_adjustment >= 0 ? '+' : '') + data.certification_adjustment + '%';
+                    } else {
+                        html += (data.certification_adjustment >= 0 ? '+' : '') + '₹' + parseFloat(data.certification_adjustment).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                    }
+                    html += '</p>';
+                    html += '<p style="margin: 5px 0;"><strong>Final Price/Carat:</strong> <span style="color: #2196f3; font-size: 16px;">₹' + parseFloat(data.final_price_per_carat).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + '</span></p>';
+                    html += '<p style="margin: 5px 0;"><strong>Total Price:</strong> <span style="color: #4caf50; font-size: 16px;">₹' + parseFloat(data.total_price).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + '</span></p>';
+                    html += '<p style="margin: 5px 0; font-size: 12px; color: #666;"><em>Carat Range: ' + data.carat_range + 'ct</em></p>';
+                    html += '</div>';
+                    
+                    $('#price-calculation-result').html(html);
+                    $('#price_per_carat').val(data.final_price_per_carat.toFixed(2));
+                    
+                    // Auto-generate display name if empty
+                    if (!$('#display_name').val()) {
+                        var groupName = $('#diamond_type option:selected').text();
+                        var certName = $('#certification option:selected').text();
+                        $('#display_name').val(carat + 'ct ' + groupName + ' (' + certName + ')');
+                    }
+                } else {
+                    $('#price-calculation-result').html('<p style="margin: 0; color: #d32f2f;"><strong>Error:</strong> ' + response.data.error + '</p>');
+                }
+            },
+            error: function() {
+                $('#price-calculation-result').html('<p style="margin: 0; color: #d32f2f;"><strong>Error:</strong> Failed to calculate price</p>');
+            }
+        });
+    }
+    
+    $('#diamond_type, #carat, #certification').on('change', calculatePrice);
+    
+    // Sync diamonds from new system
+    $('#jpc-sync-diamonds').on('click', function() {
+        if (!confirm('This will create diamond entries from your Diamond Groups, Types, and Certifications. Continue?')) {
+            return;
+        }
+        
+        var $btn = $(this);
+        $btn.prop('disabled', true).html('<span class="dashicons dashicons-update spin"></span> Syncing...');
+        
+        $.ajax({
+            url: ajaxurl,
+            type: 'POST',
+            data: {
+                action: 'jpc_sync_legacy_diamonds',
+                nonce: '<?php echo wp_create_nonce('jpc_admin_nonce'); ?>'
+            },
+            success: function(response) {
+                if (response.success) {
+                    alert(response.data.message);
+                    location.reload();
+                } else {
+                    alert('Error: ' + response.data.message);
+                    $btn.prop('disabled', false).html('<span class="dashicons dashicons-update"></span> Sync from New System');
+                }
+            },
+            error: function() {
+                alert('Failed to sync diamonds');
+                $btn.prop('disabled', false).html('<span class="dashicons dashicons-update"></span> Sync from New System');
+            }
+        });
+    });
+    
+    // Add diamond
+    $('#jpc-add-diamond-form').on('submit', function(e) {
+        e.preventDefault();
+        
+        var formData = {
+            action: 'jpc_add_diamond',
+            nonce: '<?php echo wp_create_nonce('jpc_admin_nonce'); ?>',
+            type: $('#diamond_type').val(),
+            carat: $('#carat').val(),
+            certification: $('#certification').val(),
+            price_per_carat: $('#price_per_carat').val(),
+            display_name: $('#display_name').val()
+        };
+        
+        $.ajax({
+            url: ajaxurl,
+            type: 'POST',
+            data: formData,
+            success: function(response) {
+                if (response.success) {
+                    alert('Diamond added successfully!');
+                    location.reload();
+                } else {
+                    alert('Error: ' + response.data.message);
+                }
+            },
+            error: function() {
+                alert('Failed to add diamond');
+            }
+        });
+    });
+    
+    // Edit diamond
+    $('.jpc-edit-diamond').on('click', function() {
+        var $btn = $(this);
+        $('#edit_diamond_id').val($btn.data('id'));
+        $('#edit_diamond_type').val($btn.data('type'));
+        $('#edit_carat').val($btn.data('carat'));
+        $('#edit_certification').val($btn.data('certification'));
+        $('#edit_price_per_carat').val($btn.data('price'));
+        $('#edit_display_name').val($btn.data('display-name'));
+        $('#jpc-edit-diamond-modal').fadeIn();
+    });
+    
+    // Update diamond
+    $('#jpc-edit-diamond-form').on('submit', function(e) {
+        e.preventDefault();
+        
+        var formData = {
+            action: 'jpc_update_diamond',
+            nonce: '<?php echo wp_create_nonce('jpc_admin_nonce'); ?>',
+            id: $('#edit_diamond_id').val(),
+            type: $('#edit_diamond_type').val(),
+            carat: $('#edit_carat').val(),
+            certification: $('#edit_certification').val(),
+            price_per_carat: $('#edit_price_per_carat').val(),
+            display_name: $('#edit_display_name').val()
+        };
+        
+        $.ajax({
+            url: ajaxurl,
+            type: 'POST',
+            data: formData,
+            success: function(response) {
+                if (response.success) {
+                    alert('Diamond updated successfully!');
+                    location.reload();
+                } else {
+                    alert('Error: ' + response.data.message);
+                }
+            },
+            error: function() {
+                alert('Failed to update diamond');
+            }
+        });
+    });
+    
+    // Delete diamond
+    $('.jpc-delete-diamond').on('click', function() {
+        if (!confirm('Are you sure you want to delete this diamond?')) {
+            return;
+        }
+        
+        var id = $(this).data('id');
+        
+        $.ajax({
+            url: ajaxurl,
+            type: 'POST',
+            data: {
+                action: 'jpc_delete_diamond',
+                nonce: '<?php echo wp_create_nonce('jpc_admin_nonce'); ?>',
+                id: id
+            },
+            success: function(response) {
+                if (response.success) {
+                    alert('Diamond deleted successfully!');
+                    location.reload();
+                } else {
+                    alert('Error: ' + response.data.message);
+                }
+            },
+            error: function() {
+                alert('Failed to delete diamond');
+            }
+        });
+    });
+    
+    // Modal close
+    $('.jpc-modal-close').on('click', function() {
+        $('.jpc-modal').fadeOut();
+    });
+    
+    $(window).on('click', function(e) {
+        if ($(e.target).hasClass('jpc-modal')) {
+            $('.jpc-modal').fadeOut();
+        }
+    });
+});
+</script>
+
 <style>
-.diamond-type-badge {
-    padding: 4px 8px;
-    border-radius: 3px;
-    font-size: 12px;
-    font-weight: bold;
+.spin {
+    animation: spin 1s linear infinite;
 }
-.diamond-type-natural { background: #e3f2fd; color: #1976d2; }
-.diamond-type-lab_grown { background: #f3e5f5; color: #7b1fa2; }
-.diamond-type-moissanite { background: #fff3e0; color: #f57c00; }
 
-.cert-badge {
-    padding: 3px 6px;
-    border-radius: 2px;
-    font-size: 11px;
-    font-weight: bold;
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
 }
-.cert-gia { background: #4caf50; color: white; }
-.cert-igi { background: #2196f3; color: white; }
-.cert-hrd { background: #ff9800; color: white; }
-.cert-none { background: #9e9e9e; color: white; }
 
-.quick-add-buttons { display: flex; gap: 10px; flex-wrap: wrap; }
-.quick-add-buttons .button { margin: 0; }
-
-/* Modal Styles */
 .jpc-modal {
-    display: none;
     position: fixed;
     z-index: 100000;
     left: 0;
@@ -317,8 +541,8 @@ error_log('JPC Diamonds Page: Found ' . $diamond_count . ' diamonds');
     border: 1px solid #888;
     width: 80%;
     max-width: 600px;
-    border-radius: 5px;
-    position: relative;
+    border-radius: 4px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 }
 
 .jpc-modal-close {
@@ -326,8 +550,8 @@ error_log('JPC Diamonds Page: Found ' . $diamond_count . ' diamonds');
     float: right;
     font-size: 28px;
     font-weight: bold;
-    cursor: pointer;
     line-height: 20px;
+    cursor: pointer;
 }
 
 .jpc-modal-close:hover,
@@ -335,38 +559,3 @@ error_log('JPC Diamonds Page: Found ' . $diamond_count . ' diamonds');
     color: #000;
 }
 </style>
-
-<script>
-function quickAddDiamond(type, carat, cert, price) {
-    const types = <?php echo json_encode($types); ?>;
-    const certs = <?php echo json_encode($certifications); ?>;
-    
-    document.getElementById('diamond_type').value = type;
-    document.getElementById('carat').value = carat;
-    document.getElementById('certification').value = cert;
-    document.getElementById('price_per_carat').value = price;
-    document.getElementById('display_name').value = carat + 'ct ' + types[type] + ' (' + certs[cert] + ')';
-    
-    // Scroll to form
-    document.getElementById('jpc-add-diamond-form').scrollIntoView({ behavior: 'smooth' });
-}
-
-// Filter diamonds by type
-document.addEventListener('DOMContentLoaded', function() {
-    const filterSelect = document.getElementById('filter-type');
-    if (filterSelect) {
-        filterSelect.addEventListener('change', function() {
-            const filterValue = this.value;
-            const rows = document.querySelectorAll('#diamonds-table tbody tr');
-            
-            rows.forEach(row => {
-                if (!filterValue || row.dataset.type === filterValue) {
-                    row.style.display = '';
-                } else {
-                    row.style.display = 'none';
-                }
-            });
-        });
-    }
-});
-</script>
