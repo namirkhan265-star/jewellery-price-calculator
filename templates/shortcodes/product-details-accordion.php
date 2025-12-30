@@ -277,6 +277,12 @@ $has_tags = !empty($tags);
                 <span class="jpc-detail-label"><strong>Total</strong></span>
                 <span class="jpc-detail-value"><strong>₹ <?php echo number_format($price_breakup['final_price'], 0); ?>/-</strong></span>
             </div>
+            
+            <?php if (!empty($price_breakup['discount']) && $discount_percentage > 0): ?>
+            <div class="jpc-savings-badge">
+                🎉 <strong>You Save: ₹ <?php echo number_format($price_breakup['discount'], 0); ?>/- (<?php echo number_format($discount_percentage, 0); ?>% OFF)</strong>
+            </div>
+            <?php endif; ?>
         </div>
     </div>
     <?php endif; ?>
@@ -437,6 +443,23 @@ $has_tags = !empty($tags);
     color: #333;
 }
 
+.jpc-savings-badge {
+    margin-top: 15px;
+    padding: 12px 15px;
+    background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+    border: 1px solid #c3e6cb;
+    border-radius: 6px;
+    text-align: center;
+    color: #155724;
+    font-size: 14px;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+}
+
 .jpc-tags-list {
     font-size: 13px;
     line-height: 1.8;
@@ -467,6 +490,11 @@ $has_tags = !empty($tags);
     .jpc-total-row .jpc-detail-label,
     .jpc-total-row .jpc-detail-value {
         font-size: 14px;
+    }
+    
+    .jpc-savings-badge {
+        font-size: 13px;
+        padding: 10px 12px;
     }
 }
 </style>
