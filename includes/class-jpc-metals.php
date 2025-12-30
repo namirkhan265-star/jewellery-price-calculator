@@ -23,6 +23,8 @@ class JPC_Metals {
         add_action('wp_ajax_jpc_update_metal', array($this, 'ajax_update_metal'));
         add_action('wp_ajax_jpc_delete_metal', array($this, 'ajax_delete_metal'));
         add_action('wp_ajax_jpc_bulk_update_prices', array($this, 'ajax_bulk_update_prices'));
+        add_action('wp_ajax_jpc_get_price_history', array($this, 'ajax_get_price_history'));
+        add_action('wp_ajax_jpc_delete_price_history', array($this, 'ajax_delete_price_history'));
     }
     
     /**
@@ -104,7 +106,7 @@ class JPC_Metals {
         
         // Log price change if price was updated
         if ($result && $old_price != $data['price_per_unit']) {
-            self::log_price_change($id, $old_price, $data['price_per_unit']);
+            self::log_price_change($id, $old_price, $data['price_per_unit'], 'metal');
             
             // Update all products using this metal
             self::update_product_prices($id);
@@ -131,18 +133,46 @@ class JPC_Metals {
     }
     
     /**
-     * Log price change
+     * Log price change (supports both metals and diamonds)
      */
-    private static function log_price_change($metal_id, $old_price, $new_price) {
+    public static function log_price_change($item_id, $old_price, $new_price, $item_type = 'metal') {
         global $wpdb;
         $table = $wpdb->prefix . 'jpc_price_history';
         
-        $wpdb->insert($table, array(
-            'metal_id' => $metal_id,
+        // Check if table has item_type column, if not add it
+        $columns = $wpdb->get_col("DESCRIBE $table");
+        if (!in_array('item_type', $columns)) {
+            $wpdb->query("ALTER TABLE $table ADD COLUMN `item_type` varchar(20) DEFAULT 'metal' AFTER `metal_id`");
+            $wpdb->query("ALTER TABLE $table ADD COLUMN `diamond_id` bigint(20) DEFAULT NULL AFTER `item_type`");
+            $wpdb->query("ALTER TABLE $table ADD COLUMN `item_name` varchar(200) DEFAULT NULL AFTER `diamond_id`");
+        }
+        
+        // Get item name
+        $item_name = '';
+        if ($item_type === 'metal') {
+            $metal = self::get_by_id($item_id);
+            $item_name = $metal ? $metal->display_name : 'Unknown Metal';
+        } elseif ($item_type === 'diamond') {
+            $diamond = JPC_Diamonds::get_by_id($item_id);
+            $item_name = $diamond ? $diamond->display_name : 'Unknown Diamond';
+        }
+        
+        $insert_data = array(
             'old_price' => $old_price,
             'new_price' => $new_price,
             'changed_by' => get_current_user_id(),
-        ));
+            'item_type' => $item_type,
+            'item_name' => $item_name,
+        );
+        
+        if ($item_type === 'metal') {
+            $insert_data['metal_id'] = $item_id;
+        } elseif ($item_type === 'diamond') {
+            $insert_data['diamond_id'] = $item_id;
+            $insert_data['metal_id'] = 0; // Set to 0 for diamonds
+        }
+        
+        $wpdb->insert($table, $insert_data);
     }
     
     /**
@@ -174,22 +204,156 @@ class JPC_Metals {
     }
     
     /**
-     * Get price history
+     * Get price history with filters
      */
-    public static function get_price_history($limit = 50) {
+    public static function get_price_history($args = array()) {
         global $wpdb;
         $table = $wpdb->prefix . 'jpc_price_history';
-        $metals_table = $wpdb->prefix . 'jpc_metals';
         $users_table = $wpdb->users;
         
-        return $wpdb->get_results($wpdb->prepare("
-            SELECT h.*, m.display_name as metal_name, u.display_name as user_name
+        $defaults = array(
+            'limit' => 50,
+            'offset' => 0,
+            'item_type' => 'all', // all, metal, diamond
+            'date_from' => null,
+            'date_to' => null,
+        );
+        
+        $args = wp_parse_args($args, $defaults);
+        
+        $where = array('1=1');
+        
+        // Filter by item type
+        if ($args['item_type'] !== 'all') {
+            $where[] = $wpdb->prepare("h.item_type = %s", $args['item_type']);
+        }
+        
+        // Filter by date range
+        if ($args['date_from']) {
+            $where[] = $wpdb->prepare("h.changed_at >= %s", $args['date_from']);
+        }
+        
+        if ($args['date_to']) {
+            $where[] = $wpdb->prepare("h.changed_at <= %s", $args['date_to'] . ' 23:59:59');
+        }
+        
+        $where_clause = implode(' AND ', $where);
+        
+        $query = $wpdb->prepare("
+            SELECT h.*, u.display_name as user_name
             FROM $table h
-            LEFT JOIN $metals_table m ON h.metal_id = m.id
             LEFT JOIN $users_table u ON h.changed_by = u.ID
+            WHERE $where_clause
             ORDER BY h.changed_at DESC
-            LIMIT %d
-        ", $limit));
+            LIMIT %d OFFSET %d
+        ", $args['limit'], $args['offset']);
+        
+        return $wpdb->get_results($query);
+    }
+    
+    /**
+     * Get price history count
+     */
+    public static function get_price_history_count($args = array()) {
+        global $wpdb;
+        $table = $wpdb->prefix . 'jpc_price_history';
+        
+        $defaults = array(
+            'item_type' => 'all',
+            'date_from' => null,
+            'date_to' => null,
+        );
+        
+        $args = wp_parse_args($args, $defaults);
+        
+        $where = array('1=1');
+        
+        if ($args['item_type'] !== 'all') {
+            $where[] = $wpdb->prepare("item_type = %s", $args['item_type']);
+        }
+        
+        if ($args['date_from']) {
+            $where[] = $wpdb->prepare("changed_at >= %s", $args['date_from']);
+        }
+        
+        if ($args['date_to']) {
+            $where[] = $wpdb->prepare("changed_at <= %s", $args['date_to'] . ' 23:59:59');
+        }
+        
+        $where_clause = implode(' AND ', $where);
+        
+        return $wpdb->get_var("SELECT COUNT(*) FROM $table WHERE $where_clause");
+    }
+    
+    /**
+     * Delete price history entries
+     */
+    public static function delete_price_history($ids) {
+        global $wpdb;
+        $table = $wpdb->prefix . 'jpc_price_history';
+        
+        if (!is_array($ids)) {
+            $ids = array($ids);
+        }
+        
+        $ids = array_map('intval', $ids);
+        $placeholders = implode(',', array_fill(0, count($ids), '%d'));
+        
+        return $wpdb->query($wpdb->prepare("DELETE FROM $table WHERE id IN ($placeholders)", $ids));
+    }
+    
+    /**
+     * AJAX: Get price history
+     */
+    public function ajax_get_price_history() {
+        check_ajax_referer('jpc_admin_nonce', 'nonce');
+        
+        if (!current_user_can('manage_woocommerce')) {
+            wp_send_json_error(array('message' => __('Permission denied', 'jewellery-price-calc')));
+        }
+        
+        $args = array(
+            'limit' => isset($_POST['limit']) ? intval($_POST['limit']) : 50,
+            'offset' => isset($_POST['offset']) ? intval($_POST['offset']) : 0,
+            'item_type' => isset($_POST['item_type']) ? sanitize_text_field($_POST['item_type']) : 'all',
+            'date_from' => isset($_POST['date_from']) ? sanitize_text_field($_POST['date_from']) : null,
+            'date_to' => isset($_POST['date_to']) ? sanitize_text_field($_POST['date_to']) : null,
+        );
+        
+        $history = self::get_price_history($args);
+        $total = self::get_price_history_count($args);
+        
+        wp_send_json_success(array(
+            'history' => $history,
+            'total' => $total,
+        ));
+    }
+    
+    /**
+     * AJAX: Delete price history
+     */
+    public function ajax_delete_price_history() {
+        check_ajax_referer('jpc_admin_nonce', 'nonce');
+        
+        if (!current_user_can('manage_woocommerce')) {
+            wp_send_json_error(array('message' => __('Permission denied', 'jewellery-price-calc')));
+        }
+        
+        $ids = isset($_POST['ids']) ? $_POST['ids'] : array();
+        
+        if (empty($ids)) {
+            wp_send_json_error(array('message' => __('No entries selected', 'jewellery-price-calc')));
+        }
+        
+        $result = self::delete_price_history($ids);
+        
+        if ($result) {
+            wp_send_json_success(array(
+                'message' => sprintf(__('%d history entries deleted successfully', 'jewellery-price-calc'), $result)
+            ));
+        } else {
+            wp_send_json_error(array('message' => __('Failed to delete history entries', 'jewellery-price-calc')));
+        }
     }
     
     /**
