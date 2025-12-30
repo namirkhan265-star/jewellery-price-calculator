@@ -2,6 +2,8 @@ jQuery(document).ready(function($) {
     'use strict';
     
     let currentCalculatedPrice = 0;
+    let currentDiscountedPrice = 0;
+    let currentDiscountAmount = 0;
     
     // Debounce function to avoid too many AJAX calls
     function debounce(func, wait) {
@@ -62,7 +64,18 @@ jQuery(document).ready(function($) {
             success: function(response) {
                 if (response.success) {
                     currentCalculatedPrice = response.data.final_price;
+                    currentDiscountAmount = response.data.discount || 0;
+                    
+                    // Calculate price before discount for regular price
+                    currentDiscountedPrice = currentCalculatedPrice;
+                    const priceBeforeDiscount = currentDiscountAmount > 0 ? 
+                        currentCalculatedPrice + currentDiscountAmount : 
+                        currentCalculatedPrice;
+                    
                     displayPriceBreakup(response.data);
+                    
+                    // Auto-update WooCommerce price fields
+                    autoUpdatePriceFields(priceBeforeDiscount, currentDiscountedPrice, currentDiscountAmount);
                 } else {
                     $('.jpc-price-breakup-admin').html('<p style="color: red;">' + response.data.message + '</p>');
                 }
@@ -73,11 +86,37 @@ jQuery(document).ready(function($) {
         });
     }
     
-    // Apply calculated price to product price field
+    // Auto-update WooCommerce price fields
+    function autoUpdatePriceFields(regularPrice, salePrice, discountAmount) {
+        const formattedRegularPrice = regularPrice.toFixed(2);
+        const formattedSalePrice = salePrice.toFixed(2);
+        
+        // Update regular price
+        $('#_regular_price').val(formattedRegularPrice);
+        
+        // Update sale price if there's a discount
+        if (discountAmount > 0) {
+            $('#_sale_price').val(formattedSalePrice);
+            
+            // Show sale price field if hidden
+            $('.sale_price_dates_fields').show();
+        } else {
+            // Clear sale price if no discount
+            $('#_sale_price').val('');
+        }
+        
+        // Trigger WooCommerce price update
+        $('#_regular_price, #_sale_price').trigger('change');
+    }
+    
+    // Apply calculated price to product price field (manual button)
     function applyPriceToProduct() {
         if (currentCalculatedPrice > 0) {
-            const formattedPrice = currentCalculatedPrice.toFixed(2);
-            $('#_regular_price').val(formattedPrice);
+            const priceBeforeDiscount = currentDiscountAmount > 0 ? 
+                currentCalculatedPrice + currentDiscountAmount : 
+                currentCalculatedPrice;
+            
+            autoUpdatePriceFields(priceBeforeDiscount, currentCalculatedPrice, currentDiscountAmount);
             
             // Show success message
             const $button = $('.jpc-apply-price-btn');
@@ -125,7 +164,7 @@ jQuery(document).ready(function($) {
         }
         
         if (data.discount > 0) {
-            html += '<tr><td>Discount:</td><td>-₹' + formatNumber(data.discount) + '</td></tr>';
+            html += '<tr style="color: #46b450;"><td>Discount:</td><td>-₹' + formatNumber(data.discount) + '</td></tr>';
         }
         
         // Always show GST line if GST is enabled (even if 0)
@@ -141,6 +180,16 @@ jQuery(document).ready(function($) {
         
         html += '<p style="margin-top: 15px;">';
         html += '<button type="button" class="button button-primary jpc-apply-price-btn">Apply to Product Price</button>';
+        html += '</p>';
+        
+        html += '<p class="description" style="margin-top: 10px; color: #666;">';
+        if (data.discount > 0) {
+            html += '✓ Regular Price and Sale Price will be updated automatically<br>';
+            html += '✓ Regular Price: ₹' + formatNumber(data.final_price + data.discount) + '<br>';
+            html += '✓ Sale Price: ₹' + formatNumber(data.final_price);
+        } else {
+            html += '✓ Regular Price will be updated automatically';
+        }
         html += '</p>';
         
         $('.jpc-price-breakup-admin').html(html);
