@@ -92,8 +92,35 @@ class JPC_Product_Meta {
             error_log("JPC: Product $post_id - Regular: {$prices['regular_price']} (No discount)");
         }
         
-        // Clear WooCommerce transients to refresh price display
+        // AGGRESSIVE CACHE CLEARING
+        // Clear WooCommerce product transients
         wc_delete_product_transients($post_id);
+        
+        // Clear WooCommerce object cache
+        wp_cache_delete($post_id, 'post_meta');
+        wp_cache_delete($post_id, 'posts');
+        
+        // Clear WooCommerce product cache
+        $cache_key = WC_Cache_Helper::get_cache_prefix('product_' . $post_id);
+        wp_cache_delete($cache_key, 'products');
+        
+        // Force WooCommerce to reload product data
+        clean_post_cache($post_id);
+        
+        // Clear any page cache plugins
+        if (function_exists('wp_cache_flush')) {
+            wp_cache_flush();
+        }
+        
+        // Clear WP Rocket cache if active
+        if (function_exists('rocket_clean_post')) {
+            rocket_clean_post($post_id);
+        }
+        
+        // Clear W3 Total Cache if active
+        if (function_exists('w3tc_flush_post')) {
+            w3tc_flush_post($post_id);
+        }
     }
     
     /**
