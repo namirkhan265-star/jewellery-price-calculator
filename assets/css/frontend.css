@@ -59,50 +59,83 @@
     font-size: 14px;
 }
 
-/* Detailed Breakup */
+/* Detailed Breakup - FIXED ACCORDION */
 .jpc-detailed-breakup {
     margin: 20px 0;
 }
 
 .jpc-detailed-breakup summary {
     cursor: pointer;
-    padding: 10px;
+    padding: 12px 15px;
     background: #f0f0f0;
     border-radius: 4px;
     font-weight: 600;
-    list-style: none; /* Remove default marker */
+    list-style: none !important; /* Force remove default marker */
     position: relative;
-    padding-left: 30px;
+    padding-left: 40px;
+    user-select: none;
+    transition: background 0.3s ease;
 }
 
-/* Custom + / - indicator for accordion */
-.jpc-detailed-breakup summary:before {
-    content: '+';
-    position: absolute;
-    left: 10px;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 20px;
-    font-weight: bold;
-    color: #333;
-    transition: transform 0.3s ease;
-}
-
-.jpc-detailed-breakup[open] summary:before {
-    content: '−'; /* Minus sign when open */
-}
-
-/* Hide default marker in all browsers */
+/* CRITICAL: Hide ALL default markers */
 .jpc-detailed-breakup summary::-webkit-details-marker {
-    display: none;
+    display: none !important;
 }
 
 .jpc-detailed-breakup summary::marker {
-    display: none;
+    display: none !important;
+    content: '' !important;
+}
+
+.jpc-detailed-breakup summary::before {
+    display: none !important;
+}
+
+.jpc-detailed-breakup summary::after {
+    display: none !important;
+}
+
+/* Custom + indicator when CLOSED (default state) */
+.jpc-detailed-breakup:not([open]) summary::before {
+    content: '+' !important;
+    display: block !important;
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 22px;
+    font-weight: bold;
+    color: #333;
+    line-height: 1;
+    width: 20px;
+    height: 20px;
+    text-align: center;
+}
+
+/* Custom − indicator when OPEN */
+.jpc-detailed-breakup[open] summary::before {
+    content: '−' !important;
+    display: block !important;
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 22px;
+    font-weight: bold;
+    color: #333;
+    line-height: 1;
+    width: 20px;
+    height: 20px;
+    text-align: center;
 }
 
 .jpc-detailed-breakup summary:hover {
     background: #e0e0e0;
+}
+
+.jpc-detailed-breakup summary:focus {
+    outline: 2px solid #2271b1;
+    outline-offset: 2px;
 }
 
 .jpc-detailed-breakup-content {
@@ -110,6 +143,7 @@
     border: 1px solid #e0e0e0;
     border-top: none;
     border-radius: 0 0 4px 4px;
+    background: #fff;
 }
 
 /* Fix for sticky product details - prevent overlap */
@@ -131,26 +165,29 @@
     display: inline-block;
     background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
     color: #fff;
-    padding: 8px 15px;
+    padding: 10px 18px;
     border-radius: 25px;
     font-weight: 700;
-    font-size: 14px;
+    font-size: 15px;
     margin: 10px 0;
-    box-shadow: 0 2px 8px rgba(253, 160, 133, 0.4);
+    box-shadow: 0 4px 12px rgba(253, 160, 133, 0.4);
     animation: pulse 2s infinite;
 }
 
 @keyframes pulse {
     0%, 100% {
         transform: scale(1);
+        box-shadow: 0 4px 12px rgba(253, 160, 133, 0.4);
     }
     50% {
         transform: scale(1.05);
+        box-shadow: 0 6px 16px rgba(253, 160, 133, 0.6);
     }
 }
 
 .jpc-discount-badge .discount-icon {
     margin-right: 5px;
+    font-size: 16px;
 }
 
 /* Metal Rates Display */
@@ -249,44 +286,43 @@
 /* Responsive */
 @media screen and (max-width: 768px) {
     .jpc-price-breakup {
-        padding: 10px;
+        padding: 12px;
+    }
+    
+    .jpc-price-breakup h3 {
+        font-size: 16px;
     }
     
     .jpc-price-breakup-table td {
         font-size: 14px;
     }
     
-    .jpc-metal-rates-table {
+    .jpc-detailed-breakup summary {
         font-size: 14px;
+        padding: 10px 12px 10px 35px;
     }
     
-    .jpc-metal-rates-table th,
-    .jpc-metal-rates-table td {
-        padding: 8px;
+    .jpc-detailed-breakup:not([open]) summary::before,
+    .jpc-detailed-breakup[open] summary::before {
+        font-size: 18px;
+        left: 10px;
     }
     
     .jpc-discount-badge {
-        font-size: 12px;
-        padding: 6px 12px;
+        font-size: 13px;
+        padding: 8px 15px;
     }
 }
 
-/* Print Styles */
-@media print {
-    .jpc-price-breakup {
-        border: 1px solid #000;
-    }
-    
-    .jpc-detailed-breakup summary {
-        display: none;
-    }
-    
-    .jpc-detailed-breakup-content {
-        display: block !important;
-    }
-    
-    .jpc-discount-badge {
-        background: #f6d365 !important;
-        color: #000 !important;
-    }
+/* Additional specificity to override theme styles */
+details.jpc-detailed-breakup summary {
+    list-style-type: none !important;
+}
+
+details.jpc-detailed-breakup summary::-webkit-details-marker {
+    display: none !important;
+}
+
+details.jpc-detailed-breakup summary::marker {
+    display: none !important;
 }
