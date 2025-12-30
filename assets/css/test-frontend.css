@@ -1,0 +1,30 @@
+/* TEST FILE - Check if this loads */
+/* If you see this comment, the file upload is working */
+/* Version: 1.6.4 TEST */
+
+.test-elementor-fix {
+    content: 'WORKING';
+}
+
+/* CRITICAL: Elementor Accordion Fix */
+.elementor-accordion .elementor-tab-title .he-accordion-icon::before,
+.he-accordion-item .he-accordion-title .he-accordion-icon::before,
+span.he-accordion-icon::before {
+    content: '+' !important;
+    font-family: Arial, sans-serif !important;
+    font-size: 24px !important;
+    font-weight: bold !important;
+    line-height: 1 !important;
+    display: inline-block !important;
+}
+
+.elementor-accordion .elementor-tab-title.elementor-active .he-accordion-icon::before,
+.he-accordion-item.active .he-accordion-title .he-accordion-icon::before,
+.elementor-active span.he-accordion-icon::before {
+    content: '−' !important;
+    font-family: Arial, sans-serif !important;
+    font-size: 24px !important;
+    font-weight: bold !important;
+    line-height: 1 !important;
+    display: inline-block !important;
+}
