@@ -65,13 +65,12 @@ jQuery(document).ready(function($) {
             success: function(response) {
                 if (response.success) {
                     currentCalculatedPrice = response.data.final_price;
-                    if (response.success) {
-    currentCalculatedPrice = response.data.final_price;
-    currentDiscountAmount = response.data.discount || 0;
-    
-    // Use price_before_discount from backend if available
-    currentDiscountedPrice = currentCalculatedPrice;
-    currentPriceBeforeDiscount = response.data.price_before_discount || currentCalculatedPrice;
+                    currentDiscountAmount = response.data.discount || 0;
+                    
+                    // Use price_before_discount from backend if available
+                    currentDiscountedPrice = currentCalculatedPrice;
+                    currentPriceBeforeDiscount = response.data.price_before_discount || currentCalculatedPrice;
+                    
                     displayPriceBreakup(response.data);
                     
                     // Auto-update WooCommerce price fields
@@ -167,11 +166,13 @@ jQuery(document).ready(function($) {
         html += '<div class="jpc-price-summary">';
         
         if (data.discount > 0) {
-            // Use the actual discount_percentage from data instead of calculating
-            const discountPercent = data.discount_percentage ? parseFloat(data.discount_percentage).toFixed(1) : ((data.discount / (data.final_price + data.discount)) * 100).toFixed(1);
+            // Use price_before_discount from backend
+            const priceBeforeDiscount = data.price_before_discount || (data.final_price + data.discount);
+            const discountPercent = data.discount_percentage ? parseFloat(data.discount_percentage).toFixed(1) : '0.0';
+            
             html += '<div class="jpc-price-row jpc-before-discount">';
             html += '<span class="label">Price Before Discount:</span>';
-            html += '<span class="value">₹' + formatNumber(data.final_price + data.discount) + '</span>';
+            html += '<span class="value">₹' + formatNumber(priceBeforeDiscount) + '</span>';
             html += '</div>';
             
             html += '<div class="jpc-price-row jpc-discount-row">';
@@ -252,9 +253,10 @@ jQuery(document).ready(function($) {
         // Help Text
         html += '<div class="jpc-help-text">';
         if (data.discount > 0) {
+            const priceBeforeDiscount = data.price_before_discount || (data.final_price + data.discount);
             html += '<p><strong>📌 Price Mapping:</strong></p>';
             html += '<ul>';
-            html += '<li><strong>Regular Price:</strong> ₹' + formatNumber(data.final_price + data.discount) + ' (before discount)</li>';
+            html += '<li><strong>Regular Price:</strong> ₹' + formatNumber(priceBeforeDiscount) + ' (before discount)</li>';
             html += '<li><strong>Sale Price:</strong> ₹' + formatNumber(data.final_price) + ' (after discount)</li>';
             html += '</ul>';
             html += '<p class="note">💡 Prices are auto-updated. Use manual sync buttons if needed.</p>';
