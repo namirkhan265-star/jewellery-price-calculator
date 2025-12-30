@@ -3,7 +3,7 @@
  * Plugin Name: Jewellery Price Calculator
  * Plugin URI: https://brandwitty.com
  * Description: Automatic jewellery price calculation based on metal rates (Gold, Silver, Diamond, Platinum) with support for making charges, wastage, GST, and discounts
- * Version: 1.2.1
+ * Version: 1.3.0
  * Author: Brandwitty
  * Author URI: https://brandwitty.com
  * Text Domain: jewellery-price-calc
@@ -22,7 +22,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('JPC_VERSION', '1.2.1');
+define('JPC_VERSION', '1.3.0');
 define('JPC_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('JPC_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('JPC_PLUGIN_BASENAME', plugin_basename(__FILE__));
@@ -76,14 +76,15 @@ class Jewellery_Price_Calculator {
      * Load required files
      */
     private function load_dependencies() {
-        // Admin files
+        // Core files
+        require_once JPC_PLUGIN_DIR . 'includes/class-jpc-database.php';
         require_once JPC_PLUGIN_DIR . 'includes/class-jpc-admin.php';
         require_once JPC_PLUGIN_DIR . 'includes/class-jpc-metal-groups.php';
         require_once JPC_PLUGIN_DIR . 'includes/class-jpc-metals.php';
         require_once JPC_PLUGIN_DIR . 'includes/class-jpc-diamonds.php';
+        require_once JPC_PLUGIN_DIR . 'includes/class-jpc-diamond-pricing.php';
         require_once JPC_PLUGIN_DIR . 'includes/class-jpc-product-meta.php';
         require_once JPC_PLUGIN_DIR . 'includes/class-jpc-price-calculator.php';
-        require_once JPC_PLUGIN_DIR . 'includes/class-jpc-database.php';
         require_once JPC_PLUGIN_DIR . 'includes/class-jpc-frontend.php';
         require_once JPC_PLUGIN_DIR . 'includes/class-jpc-shortcodes.php';
         require_once JPC_PLUGIN_DIR . 'includes/class-jpc-bulk-import-export.php';
@@ -102,6 +103,7 @@ class Jewellery_Price_Calculator {
         JPC_Metal_Groups::get_instance();
         JPC_Metals::get_instance();
         JPC_Diamonds::get_instance();
+        JPC_Diamond_Pricing::get_instance();
         JPC_Product_Meta::get_instance();
         JPC_Price_Calculator::get_instance();
         JPC_Frontend::get_instance();
