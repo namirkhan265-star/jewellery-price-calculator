@@ -1,37 +1,73 @@
 <?php
 /**
  * Frontend Price Breakup Template
+ * Shows detailed price breakdown including price before and after discount
  */
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
-// Get discount percentage from WooCommerce product prices
+// Get product and calculate prices
 $product_id = get_the_ID();
 $product = wc_get_product($product_id);
-$discount_percentage = 0;
 
-if ($product) {
-    $regular_price = floatval($product->get_regular_price());
-    $sale_price = floatval($product->get_sale_price());
-    
-    // Calculate percentage from WooCommerce prices (which include GST)
-    if ($regular_price > 0 && $sale_price > 0 && $sale_price < $regular_price) {
-        $discount_percentage = (($regular_price - $sale_price) / $regular_price) * 100;
+// Get discount percentage from product meta
+$discount_percentage = floatval(get_post_meta($product_id, '_jpc_discount_percentage', true));
+
+// Calculate prices using JPC calculator
+$prices = JPC_Price_Calculator::calculate_product_prices($product_id);
+
+// Calculate subtotal before discount (sum of all components)
+$subtotal_before_discount = $breakup['metal_price'];
+
+if (!empty($breakup['diamond_price'])) {
+    $subtotal_before_discount += $breakup['diamond_price'];
+}
+if (!empty($breakup['making_charge'])) {
+    $subtotal_before_discount += $breakup['making_charge'];
+}
+if (!empty($breakup['wastage_charge'])) {
+    $subtotal_before_discount += $breakup['wastage_charge'];
+}
+if (!empty($breakup['pearl_cost'])) {
+    $subtotal_before_discount += $breakup['pearl_cost'];
+}
+if (!empty($breakup['stone_cost'])) {
+    $subtotal_before_discount += $breakup['stone_cost'];
+}
+if (!empty($breakup['extra_fee'])) {
+    $subtotal_before_discount += $breakup['extra_fee'];
+}
+
+// Calculate GST on full amount (before discount)
+$gst_percentage = floatval(get_option('jpc_gst_value', 5));
+$metal_group = JPC_Metal_Groups::get_by_id($metal->metal_group_id);
+if ($metal_group) {
+    $metal_group_name = strtolower($metal_group->name);
+    $metal_gst = get_option('jpc_gst_' . $metal_group_name);
+    if ($metal_gst !== false && $metal_gst !== '') {
+        $gst_percentage = floatval($metal_gst);
     }
 }
 
-// Fallback: If WooCommerce prices don't have discount, calculate from breakup
-if ($discount_percentage == 0 && !empty($breakup['discount']) && $breakup['discount'] > 0) {
-    // Calculate percentage based on the price WITH GST (to match WooCommerce)
-    $subtotal_with_gst = $breakup['subtotal'] + $breakup['gst'];
-    $price_before_discount_with_gst = $subtotal_with_gst + $breakup['discount'];
-    
-    if ($price_before_discount_with_gst > 0) {
-        $discount_percentage = ($breakup['discount'] / $price_before_discount_with_gst) * 100;
-    }
+$gst_on_full_amount = ($subtotal_before_discount * $gst_percentage) / 100;
+$price_before_discount = $subtotal_before_discount + $gst_on_full_amount;
+
+// Calculate discount amount
+$discount_amount = 0;
+if ($discount_percentage > 0) {
+    $discount_amount = ($subtotal_before_discount * $discount_percentage) / 100;
 }
+
+// Calculate subtotal after discount
+$subtotal_after_discount = $subtotal_before_discount - $discount_amount;
+
+// Calculate GST on discounted amount
+$gst_on_discounted_amount = ($subtotal_after_discount * $gst_percentage) / 100;
+
+// Final price
+$final_price = $subtotal_after_discount + $gst_on_discounted_amount;
 ?>
 
 <div class="jpc-price-breakup">
@@ -39,6 +75,7 @@ if ($discount_percentage == 0 && !empty($breakup['discount']) && $breakup['disco
     
     <table class="jpc-price-breakup-table">
         <tbody>
+            <!-- Component Breakdown -->
             <tr>
                 <td><?php echo esc_html($metal->display_name); ?></td>
                 <td><?php echo JPC_Frontend::format_price($breakup['metal_price']); ?></td>
@@ -86,29 +123,65 @@ if ($discount_percentage == 0 && !empty($breakup['discount']) && $breakup['disco
             </tr>
             <?php endif; ?>
             
-            <?php if (!empty($breakup['discount']) && $breakup['discount'] > 0): ?>
-            <tr class="discount-row">
+            <!-- Subtotal Before Discount -->
+            <tr class="subtotal-row">
+                <td><strong><?php _e('Subtotal', 'jewellery-price-calc'); ?></strong></td>
+                <td><strong><?php echo JPC_Frontend::format_price($subtotal_before_discount); ?></strong></td>
+            </tr>
+            
+            <!-- GST on Full Amount -->
+            <tr class="gst-row">
+                <td><?php echo get_option('jpc_gst_label', 'GST'); ?> (<?php echo $gst_percentage; ?>%)</td>
+                <td><?php echo JPC_Frontend::format_price($gst_on_full_amount); ?></td>
+            </tr>
+            
+            <!-- Price Before Discount (Highlighted) -->
+            <tr class="price-before-discount-row" style="background: #f0f0f0; font-weight: bold;">
+                <td><strong><?php _e('Price Before Discount', 'jewellery-price-calc'); ?></strong></td>
+                <td><strong><?php echo JPC_Frontend::format_price($price_before_discount); ?></strong></td>
+            </tr>
+            
+            <!-- Discount -->
+            <?php if ($discount_percentage > 0 && $discount_amount > 0): ?>
+            <tr class="discount-row" style="color: #d63638;">
                 <td>
                     <?php _e('Discount', 'jewellery-price-calc'); ?>
-                    <?php if ($discount_percentage > 0): ?>
-                        <span class="discount-percentage">(<?php echo round($discount_percentage); ?>% OFF)</span>
-                    <?php endif; ?>
+                    <span class="discount-percentage" style="color: #d63638; font-weight: bold;">
+                        (<?php echo number_format($discount_percentage, 0); ?>% OFF)
+                    </span>
                 </td>
-                <td class="discount-amount">- <?php echo JPC_Frontend::format_price($breakup['discount']); ?></td>
+                <td class="discount-amount" style="color: #d63638; font-weight: bold;">
+                    - <?php echo JPC_Frontend::format_price($discount_amount); ?>
+                </td>
+            </tr>
+            
+            <!-- Subtotal After Discount -->
+            <tr class="subtotal-after-discount-row">
+                <td><?php _e('Subtotal After Discount', 'jewellery-price-calc'); ?></td>
+                <td><?php echo JPC_Frontend::format_price($subtotal_after_discount); ?></td>
+            </tr>
+            
+            <!-- GST on Discounted Amount -->
+            <tr class="gst-discounted-row">
+                <td><?php echo get_option('jpc_gst_label', 'GST'); ?> (<?php echo $gst_percentage; ?>%)</td>
+                <td><?php echo JPC_Frontend::format_price($gst_on_discounted_amount); ?></td>
             </tr>
             <?php endif; ?>
             
-            <?php if (!empty($breakup['gst']) && $breakup['gst'] > 0): ?>
-            <tr class="gst-row">
-                <td><?php echo get_option('jpc_gst_label', 'GST'); ?></td>
-                <td><?php echo JPC_Frontend::format_price($breakup['gst']); ?></td>
-            </tr>
-            <?php endif; ?>
-            
-            <tr class="total-row">
-                <td><strong><?php _e('Total', 'jewellery-price-calc'); ?></strong></td>
-                <td><strong><?php echo JPC_Frontend::format_price($breakup['final_price']); ?></strong></td>
+            <!-- Final Price -->
+            <tr class="total-row" style="background: #2271b1; color: white; font-size: 1.1em;">
+                <td><strong><?php _e('Final Price', 'jewellery-price-calc'); ?></strong></td>
+                <td><strong><?php echo JPC_Frontend::format_price($final_price); ?></strong></td>
             </tr>
         </tbody>
     </table>
+    
+    <?php if ($discount_percentage > 0): ?>
+    <div class="jpc-savings-badge" style="margin-top: 15px; padding: 10px; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 4px; text-align: center;">
+        <strong style="color: #155724; font-size: 1.1em;">
+            🎉 You Save: <?php echo JPC_Frontend::format_price($discount_amount); ?> 
+            (<?php echo number_format($discount_percentage, 0); ?>% OFF)
+        </strong>
+    </div>
+    <?php endif; ?>
 </div>
