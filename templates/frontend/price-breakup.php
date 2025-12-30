@@ -1,18 +1,28 @@
 <?php
 /**
- * Frontend Price Breakup Template - Uses Backend Data
+ * Frontend Price Breakup Template - Uses Backend Stored Data ONLY
  */
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
-// Get all data from backend
+// Get product ID
 $product_id = get_the_ID();
-$discount_percentage = floatval(get_post_meta($product_id, '_jpc_discount_percentage', true));
+
+// Get STORED prices from database (calculated by backend)
 $regular_price = floatval(get_post_meta($product_id, '_regular_price', true));
 $sale_price = floatval(get_post_meta($product_id, '_sale_price', true));
+$discount_percentage = floatval(get_post_meta($product_id, '_jpc_discount_percentage', true));
+
+// Calculate discount amount
 $discount_amount = $regular_price - $sale_price;
+
+// If no sale price, use regular price
+if (empty($sale_price)) {
+    $sale_price = $regular_price;
+    $discount_amount = 0;
+}
 ?>
 
 <div class="jpc-price-breakup">
@@ -88,21 +98,23 @@ $discount_amount = $regular_price - $sale_price;
             </tr>
             <?php endif; ?>
             
-            <tr style="border-top: 2px solid #000; padding-top: 10px;">
-                <td colspan="2">&nbsp;</td>
+            <tr style="border-top: 2px solid #000;">
+                <td colspan="2" style="padding-top: 10px;">&nbsp;</td>
             </tr>
             
-            <!-- REGULAR PRICE (Before Discount) -->
+            <!-- REGULAR PRICE - Directly from database -->
             <tr class="regular-price-row">
                 <td><strong><?php _e('Regular Price', 'jewellery-price-calc'); ?></strong></td>
-                <td><strong style="text-decoration: line-through; color: #999;"><?php echo wc_price($regular_price); ?></strong></td>
+                <td><strong style="<?php echo ($discount_percentage > 0) ? 'text-decoration: line-through; color: #999;' : ''; ?>"><?php echo wc_price($regular_price); ?></strong></td>
             </tr>
             
-            <!-- SALE PRICE (After Discount) -->
+            <?php if ($discount_percentage > 0 && $discount_amount > 0): ?>
+            <!-- SALE PRICE - Only show if there's a discount -->
             <tr class="sale-price-row">
                 <td><strong style="color: #d63638; font-size: 1.1em;"><?php _e('Sale Price', 'jewellery-price-calc'); ?></strong></td>
                 <td><strong style="color: #d63638; font-size: 1.2em;"><?php echo wc_price($sale_price); ?></strong></td>
             </tr>
+            <?php endif; ?>
         </tbody>
     </table>
     
@@ -115,3 +127,14 @@ $discount_amount = $regular_price - $sale_price;
     </div>
     <?php endif; ?>
 </div>
+
+<!-- DEBUG INFO (Remove in production) -->
+<?php if (current_user_can('manage_options')): ?>
+<div style="background: #f0f0f0; padding: 10px; margin-top: 10px; font-size: 11px; border: 1px solid #ccc;">
+    <strong>DEBUG (Admin Only):</strong><br>
+    Regular Price from DB: ₹<?php echo number_format($regular_price, 2); ?><br>
+    Sale Price from DB: ₹<?php echo number_format($sale_price, 2); ?><br>
+    Discount %: <?php echo $discount_percentage; ?>%<br>
+    Discount Amount: ₹<?php echo number_format($discount_amount, 2); ?>
+</div>
+<?php endif; ?>
