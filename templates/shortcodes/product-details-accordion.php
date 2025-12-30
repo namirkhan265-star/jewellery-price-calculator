@@ -63,9 +63,30 @@ $discount_percentage = floatval(get_post_meta($product_id, '_jpc_discount_percen
 $regular_price = 0;
 $sale_price = 0;
 if ($price_breakup && is_array($price_breakup)) {
-    // Regular price = final price + discount (price before discount was applied)
     if (!empty($price_breakup['discount'])) {
-        $regular_price = $price_breakup['final_price'] + $price_breakup['discount'];
+        // Calculate subtotal before discount (sum of all components)
+        $subtotal_before_discount = 0;
+        $subtotal_before_discount += !empty($price_breakup['metal_price']) ? floatval($price_breakup['metal_price']) : 0;
+        $subtotal_before_discount += !empty($price_breakup['diamond_price']) ? floatval($price_breakup['diamond_price']) : 0;
+        $subtotal_before_discount += !empty($price_breakup['making_charge']) ? floatval($price_breakup['making_charge']) : 0;
+        $subtotal_before_discount += !empty($price_breakup['wastage_charge']) ? floatval($price_breakup['wastage_charge']) : 0;
+        $subtotal_before_discount += !empty($price_breakup['pearl_cost']) ? floatval($price_breakup['pearl_cost']) : 0;
+        $subtotal_before_discount += !empty($price_breakup['stone_cost']) ? floatval($price_breakup['stone_cost']) : 0;
+        $subtotal_before_discount += !empty($price_breakup['extra_fee']) ? floatval($price_breakup['extra_fee']) : 0;
+        
+        // Calculate GST on the pre-discount subtotal
+        // GST rate can be determined from the actual GST and final price
+        $current_gst = !empty($price_breakup['gst']) ? floatval($price_breakup['gst']) : 0;
+        $price_after_discount = $subtotal_before_discount - floatval($price_breakup['discount']);
+        
+        // Calculate GST rate from current values
+        $gst_rate = ($price_after_discount > 0) ? ($current_gst / $price_after_discount) : 0;
+        
+        // Calculate GST on pre-discount subtotal
+        $gst_on_regular_price = $subtotal_before_discount * $gst_rate;
+        
+        // Regular price = subtotal before discount + GST on that subtotal
+        $regular_price = $subtotal_before_discount + $gst_on_regular_price;
         $sale_price = $price_breakup['final_price'];
     }
 }
@@ -288,7 +309,7 @@ $has_tags = !empty($tags);
             <div class="jpc-price-summary">
                 <div class="jpc-detail-row jpc-regular-price-row">
                     <span class="jpc-detail-label">Regular Price</span>
-                    <span class="jpc-detail-value jpc-strikethrough">₹ <?php echo number_format($regular_price, 2); ?>/-</span>
+                    <span class="jpc-detail-value jpc-strikethrough">₹ <?php echo number_format($regular_price, 0); ?>/-</span>
                 </div>
                 <div class="jpc-detail-row jpc-sale-price-row">
                     <span class="jpc-detail-label"><strong>Sale Price</strong></span>
