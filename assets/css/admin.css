@@ -174,6 +174,8 @@
 
 .jpc-price-breakup-admin h4 {
     margin-top: 0;
+    color: #2271b1;
+    font-size: 16px;
 }
 
 .jpc-price-breakup-admin table {
@@ -189,6 +191,225 @@
     border-top: 2px solid #333;
 }
 
+/* Enhanced Live Calculator Styles */
+.jpc-live-calc-wrapper {
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    padding: 20px;
+}
+
+.jpc-live-calc-wrapper h4 {
+    margin: 0 0 15px 0;
+    color: #1d2327;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+/* Price Summary Box */
+.jpc-price-summary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.jpc-price-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.2);
+}
+
+.jpc-price-row:last-child {
+    border-bottom: none;
+}
+
+.jpc-price-row .label {
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.jpc-price-row .value {
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.jpc-price-row.jpc-before-discount .value {
+    text-decoration: line-through;
+    opacity: 0.8;
+}
+
+.jpc-price-row.jpc-discount-row .value.discount {
+    color: #4ade80;
+    font-size: 16px;
+}
+
+.jpc-price-row.jpc-after-discount,
+.jpc-price-row.jpc-final-price {
+    padding-top: 12px;
+    margin-top: 8px;
+    border-top: 2px solid rgba(255,255,255,0.3);
+}
+
+.jpc-price-row .value.highlight {
+    font-size: 24px;
+    color: #fbbf24;
+}
+
+/* Breakdown Details */
+.jpc-breakdown-details {
+    margin: 20px 0;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.jpc-breakdown-details summary {
+    padding: 12px 15px;
+    background: #f0f0f1;
+    cursor: pointer;
+    font-weight: 600;
+    list-style: none;
+    position: relative;
+    padding-left: 35px;
+}
+
+.jpc-breakdown-details summary:before {
+    content: '+';
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 18px;
+    font-weight: bold;
+    color: #2271b1;
+}
+
+.jpc-breakdown-details[open] summary:before {
+    content: '−';
+}
+
+.jpc-breakdown-details summary::-webkit-details-marker {
+    display: none;
+}
+
+.jpc-breakdown-details summary::marker {
+    display: none;
+}
+
+.jpc-breakdown-details summary:hover {
+    background: #e5e5e5;
+}
+
+.jpc-breakdown-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.jpc-breakdown-table tr {
+    border-bottom: 1px solid #f0f0f1;
+}
+
+.jpc-breakdown-table tr:last-child {
+    border-bottom: none;
+}
+
+.jpc-breakdown-table td {
+    padding: 10px 15px;
+}
+
+.jpc-breakdown-table td:first-child {
+    color: #50575e;
+    font-weight: 500;
+}
+
+.jpc-breakdown-table td:last-child {
+    text-align: right;
+    font-weight: 600;
+    color: #1d2327;
+}
+
+.jpc-breakdown-table .discount-row td {
+    color: #46b450;
+}
+
+.jpc-breakdown-table .gst-row td {
+    color: #666;
+    font-size: 13px;
+}
+
+.jpc-breakdown-table .total-row {
+    background: #f9f9f9;
+    border-top: 2px solid #2271b1;
+}
+
+.jpc-breakdown-table .total-row td {
+    padding: 12px 15px;
+    font-size: 16px;
+    color: #2271b1;
+}
+
+/* Action Buttons */
+.jpc-action-buttons {
+    display: flex;
+    gap: 10px;
+    margin: 20px 0;
+    flex-wrap: wrap;
+}
+
+.jpc-action-buttons .button {
+    flex: 1;
+    min-width: 150px;
+    text-align: center;
+}
+
+.jpc-action-buttons .button-primary {
+    background: #2271b1;
+    border-color: #2271b1;
+}
+
+.jpc-action-buttons .button-primary:hover {
+    background: #135e96;
+    border-color: #135e96;
+}
+
+/* Help Text */
+.jpc-help-text {
+    background: #f0f6fc;
+    border-left: 4px solid #2271b1;
+    padding: 15px;
+    margin: 20px 0 0 0;
+    border-radius: 4px;
+}
+
+.jpc-help-text p {
+    margin: 0 0 10px 0;
+    color: #1d2327;
+}
+
+.jpc-help-text p:last-child {
+    margin-bottom: 0;
+}
+
+.jpc-help-text ul {
+    margin: 10px 0;
+    padding-left: 20px;
+}
+
+.jpc-help-text li {
+    margin: 5px 0;
+    color: #50575e;
+}
+
+.jpc-help-text .note {
+    font-size: 13px;
+    color: #646970;
+    font-style: italic;
+}
+
 /* Responsive */
 @media screen and (max-width: 782px) {
     .jpc-modal-content {
@@ -201,6 +422,22 @@
         display: block;
         width: 100%;
         padding: 10px 0;
+    }
+    
+    .jpc-action-buttons {
+        flex-direction: column;
+    }
+    
+    .jpc-action-buttons .button {
+        width: 100%;
+    }
+    
+    .jpc-price-row .value {
+        font-size: 16px;
+    }
+    
+    .jpc-price-row .value.highlight {
+        font-size: 20px;
     }
 }
 
