@@ -59,28 +59,8 @@
     font-size: 14px;
 }
 
-/* FIX ELEMENTOR ACCORDION ICONS */
-/* Target Elementor's accordion wrapper */
-.elementor-accordion .elementor-tab-title .he-accordion-icon::before,
-.he-accordion-item .he-accordion-title .he-accordion-icon::before,
-span.he-accordion-icon::before {
-    content: '+' !important;
-    font-family: Arial, sans-serif !important;
-    font-size: 24px !important;
-    font-weight: bold !important;
-    line-height: 1 !important;
-}
-
-/* When accordion is active/open */
-.elementor-accordion .elementor-tab-title.elementor-active .he-accordion-icon::before,
-.he-accordion-item.active .he-accordion-title .he-accordion-icon::before,
-.elementor-active span.he-accordion-icon::before {
-    content: '−' !important;
-    font-family: Arial, sans-serif !important;
-    font-size: 24px !important;
-    font-weight: bold !important;
-    line-height: 1 !important;
-}
+/* REMOVED ELEMENTOR ACCORDION FIX - It was affecting WooCommerce tabs */
+/* Users should add custom CSS to their theme if needed */
 
 /* STANDARD ACCORDION FIX (for non-Elementor themes) */
 details.jpc-detailed-breakup {
