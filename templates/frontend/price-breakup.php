@@ -7,25 +7,18 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-// Calculate discount percentage if discount exists
-$discount_percentage = 0;
-$price_before_discount = 0;
+// Get discount percentage from product meta
+$product_id = get_the_ID();
+$discount_percentage = floatval(get_post_meta($product_id, '_jpc_discount_percentage', true));
 
-if (!empty($breakup['discount']) && $breakup['discount'] > 0) {
+// If discount percentage is not set but discount amount exists, calculate it
+if ($discount_percentage == 0 && !empty($breakup['discount']) && $breakup['discount'] > 0) {
     // Calculate the price BEFORE discount was applied
-    // Since discount was subtracted from subtotal, we add it back
     $price_before_discount = $breakup['subtotal'] + $breakup['discount'];
     
     if ($price_before_discount > 0) {
         $discount_percentage = ($breakup['discount'] / $price_before_discount) * 100;
     }
-}
-
-// Calculate the REGULAR price (before discount, with GST)
-$regular_price_with_gst = $breakup['subtotal'] + $breakup['gst'];
-if (!empty($breakup['discount']) && $breakup['discount'] > 0) {
-    // If there's a discount, add it back to get the regular price
-    $regular_price_with_gst = ($breakup['subtotal'] + $breakup['discount']) + (($breakup['subtotal'] + $breakup['discount']) * ($breakup['gst'] / $breakup['subtotal']));
 }
 ?>
 
@@ -86,10 +79,10 @@ if (!empty($breakup['discount']) && $breakup['discount'] > 0) {
                 <td>
                     <?php _e('Discount', 'jewellery-price-calc'); ?>
                     <?php if ($discount_percentage > 0): ?>
-                        <span style="color: #46b450; font-weight: 700; font-size: 14px;"> (<?php printf('%.0f%%', $discount_percentage); ?> OFF)</span>
+                        <span class="discount-percentage">(<?php printf('%.0f%%', $discount_percentage); ?> OFF)</span>
                     <?php endif; ?>
                 </td>
-                <td style="color: #46b450; font-weight: 700;">- <?php echo JPC_Frontend::format_price($breakup['discount']); ?></td>
+                <td class="discount-amount">- <?php echo JPC_Frontend::format_price($breakup['discount']); ?></td>
             </tr>
             <?php endif; ?>
             
