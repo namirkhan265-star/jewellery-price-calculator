@@ -28,6 +28,57 @@ define('JPC_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('JPC_PLUGIN_BASENAME', plugin_basename(__FILE__));
 
 /**
+ * Check PHP version before loading
+ */
+function jpc_check_php_version() {
+    if (version_compare(PHP_VERSION, '7.4', '<')) {
+        add_action('admin_notices', 'jpc_php_version_notice');
+        return false;
+    }
+    return true;
+}
+
+/**
+ * PHP version notice
+ */
+function jpc_php_version_notice() {
+    ?>
+    <div class="error">
+        <p><?php printf(__('Jewellery Price Calculator requires PHP 7.4 or higher. You are running PHP %s. Please upgrade PHP.', 'jewellery-price-calc'), PHP_VERSION); ?></p>
+    </div>
+    <?php
+}
+
+/**
+ * Check if WooCommerce is active
+ */
+function jpc_is_woocommerce_active() {
+    return in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_option('active_plugins')));
+}
+
+/**
+ * WooCommerce missing notice
+ */
+function jpc_woocommerce_missing_notice() {
+    ?>
+    <div class="error">
+        <p><?php _e('Jewellery Price Calculator requires WooCommerce to be installed and active.', 'jewellery-price-calc'); ?></p>
+    </div>
+    <?php
+}
+
+// Check PHP version first
+if (!jpc_check_php_version()) {
+    return;
+}
+
+// Check WooCommerce
+if (!jpc_is_woocommerce_active()) {
+    add_action('admin_notices', 'jpc_woocommerce_missing_notice');
+    return;
+}
+
+/**
  * Main Plugin Class
  */
 class Jewellery_Price_Calculator {
@@ -48,12 +99,6 @@ class Jewellery_Price_Calculator {
      * Constructor
      */
     private function __construct() {
-        // Check if WooCommerce is active
-        if (!$this->is_woocommerce_active()) {
-            add_action('admin_notices', array($this, 'woocommerce_missing_notice'));
-            return;
-        }
-        
         // Load plugin files
         $this->load_dependencies();
         
@@ -62,44 +107,52 @@ class Jewellery_Price_Calculator {
     }
     
     /**
-     * Check if WooCommerce is active
-     */
-    private function is_woocommerce_active() {
-        return in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_option('active_plugins')));
-    }
-    
-    /**
-     * WooCommerce missing notice
-     */
-    public function woocommerce_missing_notice() {
-        ?>
-        <div class="error">
-            <p><?php _e('Jewellery Price Calculator requires WooCommerce to be installed and active.', 'jewellery-price-calc'); ?></p>
-        </div>
-        <?php
-    }
-    
-    /**
      * Load plugin dependencies
      */
     private function load_dependencies() {
-        // Core classes
-        require_once JPC_PLUGIN_DIR . 'includes/class-jpc-database.php';
-        require_once JPC_PLUGIN_DIR . 'includes/class-jpc-metal.php';
-        require_once JPC_PLUGIN_DIR . 'includes/class-jpc-diamond.php';
-        require_once JPC_PLUGIN_DIR . 'includes/class-jpc-diamond-group.php';
-        require_once JPC_PLUGIN_DIR . 'includes/class-jpc-calculator.php';
-        require_once JPC_PLUGIN_DIR . 'includes/class-jpc-product-meta.php';
-        require_once JPC_PLUGIN_DIR . 'includes/class-jpc-settings.php';
-        require_once JPC_PLUGIN_DIR . 'includes/class-jpc-frontend.php';
-        require_once JPC_PLUGIN_DIR . 'includes/class-jpc-price-history.php';
+        // Check if files exist before requiring
+        $required_files = array(
+            'includes/class-jpc-database.php',
+            'includes/class-jpc-metal.php',
+            'includes/class-jpc-diamond.php',
+            'includes/class-jpc-diamond-group.php',
+            'includes/class-jpc-calculator.php',
+            'includes/class-jpc-product-meta.php',
+            'includes/class-jpc-settings.php',
+            'includes/class-jpc-frontend.php',
+            'includes/class-jpc-price-history.php'
+        );
+        
+        foreach ($required_files as $file) {
+            $file_path = JPC_PLUGIN_DIR . $file;
+            if (!file_exists($file_path)) {
+                add_action('admin_notices', function() use ($file) {
+                    ?>
+                    <div class="error">
+                        <p><?php printf(__('Jewellery Price Calculator: Missing required file: %s', 'jewellery-price-calc'), $file); ?></p>
+                    </div>
+                    <?php
+                });
+                return;
+            }
+            require_once $file_path;
+        }
         
         // Admin classes
         if (is_admin()) {
-            require_once JPC_PLUGIN_DIR . 'admin/class-jpc-admin.php';
-            require_once JPC_PLUGIN_DIR . 'admin/class-jpc-metal-admin.php';
-            require_once JPC_PLUGIN_DIR . 'admin/class-jpc-diamond-admin.php';
-            require_once JPC_PLUGIN_DIR . 'admin/class-jpc-diamond-group-admin.php';
+            $admin_files = array(
+                'admin/class-jpc-admin.php',
+                'admin/class-jpc-metal-admin.php',
+                'admin/class-jpc-diamond-admin.php',
+                'admin/class-jpc-diamond-group-admin.php'
+            );
+            
+            foreach ($admin_files as $file) {
+                $file_path = JPC_PLUGIN_DIR . $file;
+                if (file_exists($file_path)) {
+                    require_once $file_path;
+                }
+            }
         }
     }
     
@@ -126,20 +179,44 @@ class Jewellery_Price_Calculator {
      * Initialize plugin classes
      */
     public function init_classes() {
-        JPC_Metal::get_instance();
-        JPC_Diamond::get_instance();
-        JPC_Diamond_Group::get_instance();
-        JPC_Calculator::get_instance();
-        JPC_Product_Meta::get_instance();
-        JPC_Settings::get_instance();
-        JPC_Frontend::get_instance();
-        JPC_Price_History::get_instance();
+        if (class_exists('JPC_Metal')) {
+            JPC_Metal::get_instance();
+        }
+        if (class_exists('JPC_Diamond')) {
+            JPC_Diamond::get_instance();
+        }
+        if (class_exists('JPC_Diamond_Group')) {
+            JPC_Diamond_Group::get_instance();
+        }
+        if (class_exists('JPC_Calculator')) {
+            JPC_Calculator::get_instance();
+        }
+        if (class_exists('JPC_Product_Meta')) {
+            JPC_Product_Meta::get_instance();
+        }
+        if (class_exists('JPC_Settings')) {
+            JPC_Settings::get_instance();
+        }
+        if (class_exists('JPC_Frontend')) {
+            JPC_Frontend::get_instance();
+        }
+        if (class_exists('JPC_Price_History')) {
+            JPC_Price_History::get_instance();
+        }
         
         if (is_admin()) {
-            JPC_Admin::get_instance();
-            JPC_Metal_Admin::get_instance();
-            JPC_Diamond_Admin::get_instance();
-            JPC_Diamond_Group_Admin::get_instance();
+            if (class_exists('JPC_Admin')) {
+                JPC_Admin::get_instance();
+            }
+            if (class_exists('JPC_Metal_Admin')) {
+                JPC_Metal_Admin::get_instance();
+            }
+            if (class_exists('JPC_Diamond_Admin')) {
+                JPC_Diamond_Admin::get_instance();
+            }
+            if (class_exists('JPC_Diamond_Group_Admin')) {
+                JPC_Diamond_Group_Admin::get_instance();
+            }
         }
     }
     
@@ -187,7 +264,9 @@ class Jewellery_Price_Calculator {
      */
     public function activate() {
         // Create database tables
-        JPC_Database::create_tables();
+        if (class_exists('JPC_Database')) {
+            JPC_Database::create_tables();
+        }
         
         // Set default options
         $this->set_default_options();
@@ -224,10 +303,12 @@ class Jewellery_Price_Calculator {
     }
 }
 
-// Initialize plugin
+/**
+ * Initialize plugin
+ */
 function jewellery_price_calculator() {
     return Jewellery_Price_Calculator::get_instance();
 }
 
 // Start the plugin
-jewellery_price_calculator();
+add_action('plugins_loaded', 'jewellery_price_calculator', 10);
