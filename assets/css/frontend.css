@@ -59,7 +59,7 @@
     font-size: 14px;
 }
 
-/* Detailed Breakup - FIXED ACCORDION */
+/* Detailed Breakup - ACCORDION WITH PROPER +/- SIGNS */
 .jpc-detailed-breakup {
     margin: 20px 0;
 }
@@ -70,14 +70,14 @@
     background: #f0f0f0;
     border-radius: 4px;
     font-weight: 600;
-    list-style: none !important; /* Force remove default marker */
+    list-style: none !important;
     position: relative;
     padding-left: 40px;
     user-select: none;
     transition: background 0.3s ease;
 }
 
-/* CRITICAL: Hide ALL default markers */
+/* Hide default markers */
 .jpc-detailed-breakup summary::-webkit-details-marker {
     display: none !important;
 }
@@ -87,46 +87,30 @@
     content: '' !important;
 }
 
-.jpc-detailed-breakup summary::before {
-    display: none !important;
-}
-
-.jpc-detailed-breakup summary::after {
-    display: none !important;
-}
-
-/* Custom + indicator when CLOSED (default state) */
+/* Show + when CLOSED */
 .jpc-detailed-breakup:not([open]) summary::before {
-    content: '+' !important;
-    display: block !important;
+    content: '+';
     position: absolute;
     left: 12px;
     top: 50%;
     transform: translateY(-50%);
-    font-size: 22px;
+    font-size: 24px;
     font-weight: bold;
     color: #333;
     line-height: 1;
-    width: 20px;
-    height: 20px;
-    text-align: center;
 }
 
-/* Custom − indicator when OPEN */
+/* Show − when OPEN */
 .jpc-detailed-breakup[open] summary::before {
-    content: '−' !important;
-    display: block !important;
+    content: '−';
     position: absolute;
     left: 12px;
     top: 50%;
     transform: translateY(-50%);
-    font-size: 22px;
+    font-size: 24px;
     font-weight: bold;
     color: #333;
     line-height: 1;
-    width: 20px;
-    height: 20px;
-    text-align: center;
 }
 
 .jpc-detailed-breakup summary:hover {
@@ -149,7 +133,7 @@
 /* Fix for sticky product details - prevent overlap */
 .product .summary.entry-summary,
 .woocommerce div.product div.summary {
-    position: relative !important; /* Override any sticky positioning */
+    position: relative !important;
     top: auto !important;
     z-index: auto !important;
 }
@@ -251,13 +235,21 @@
     color: #fff;
     padding: 10px 0;
     overflow: hidden;
-    white-space: nowrap;
 }
 
 .jpc-metal-rates-marquee-content {
     display: inline-block;
     padding-left: 100%;
-    animation: jpc-marquee 20s linear infinite;
+    animation: marquee 30s linear infinite;
+}
+
+@keyframes marquee {
+    0% {
+        transform: translateX(0);
+    }
+    100% {
+        transform: translateX(-100%);
+    }
 }
 
 .jpc-metal-rates-marquee-item {
@@ -265,64 +257,59 @@
     padding: 0 30px;
 }
 
-.jpc-metal-rates-marquee-item .metal-name {
+/* Shortcode Styles */
+.jpc-shortcode-wrapper {
+    margin: 20px 0;
+}
+
+.jpc-calculator-form {
+    background: #f9f9f9;
+    padding: 20px;
+    border-radius: 4px;
+}
+
+.jpc-form-row {
+    margin-bottom: 15px;
+}
+
+.jpc-form-row label {
+    display: block;
+    margin-bottom: 5px;
     font-weight: 600;
 }
 
-.jpc-metal-rates-marquee-item .metal-price {
-    color: #ffd700;
-    margin-left: 10px;
+.jpc-form-row input,
+.jpc-form-row select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
 }
 
-@keyframes jpc-marquee {
-    0% {
-        transform: translate(0, 0);
-    }
-    100% {
-        transform: translate(-100%, 0);
-    }
+.jpc-calculate-btn {
+    background: #2271b1;
+    color: #fff;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 600;
 }
 
-/* Responsive */
-@media screen and (max-width: 768px) {
-    .jpc-price-breakup {
-        padding: 12px;
-    }
-    
-    .jpc-price-breakup h3 {
-        font-size: 16px;
-    }
-    
-    .jpc-price-breakup-table td {
-        font-size: 14px;
-    }
-    
-    .jpc-detailed-breakup summary {
-        font-size: 14px;
-        padding: 10px 12px 10px 35px;
-    }
-    
-    .jpc-detailed-breakup:not([open]) summary::before,
-    .jpc-detailed-breakup[open] summary::before {
-        font-size: 18px;
-        left: 10px;
-    }
-    
-    .jpc-discount-badge {
-        font-size: 13px;
-        padding: 8px 15px;
-    }
+.jpc-calculate-btn:hover {
+    background: #135e96;
 }
 
-/* Additional specificity to override theme styles */
-details.jpc-detailed-breakup summary {
-    list-style-type: none !important;
+.jpc-result {
+    margin-top: 20px;
+    padding: 15px;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
 }
 
-details.jpc-detailed-breakup summary::-webkit-details-marker {
-    display: none !important;
-}
-
-details.jpc-detailed-breakup summary::marker {
-    display: none !important;
+.jpc-result-price {
+    font-size: 24px;
+    font-weight: 700;
+    color: #46b450;
 }
