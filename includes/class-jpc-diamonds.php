@@ -334,7 +334,35 @@ class JPC_Diamonds {
     public static function delete($id) {
         global $wpdb;
         $table = $wpdb->prefix . 'jpc_diamonds';
-        return $wpdb->delete($table, array('id' => $id));
+        
+        error_log('JPC: Attempting to delete diamond ID: ' . $id);
+        
+        // First check if diamond exists
+        $exists = $wpdb->get_var($wpdb->prepare(
+            "SELECT id FROM `$table` WHERE id = %d",
+            $id
+        ));
+        
+        if (!$exists) {
+            error_log('JPC: Diamond ID ' . $id . ' not found');
+            return false;
+        }
+        
+        $result = $wpdb->delete($table, array('id' => $id));
+        
+        // $result can be false (error), 0 (no rows deleted), or number of rows deleted
+        if ($result === false) {
+            error_log('JPC: Failed to delete diamond. Error: ' . $wpdb->last_error);
+            return false;
+        }
+        
+        if ($result === 0) {
+            error_log('JPC: No rows deleted for diamond ID: ' . $id);
+            return false;
+        }
+        
+        error_log('JPC: Diamond deleted successfully. Rows affected: ' . $result);
+        return true;
     }
     
     /**
@@ -457,9 +485,15 @@ class JPC_Diamonds {
         
         $id = intval($_POST['id']);
         
-        if (self::delete($id)) {
+        error_log('JPC AJAX: Received delete diamond request for ID: ' . $id);
+        
+        $result = self::delete($id);
+        
+        if ($result) {
+            error_log('JPC AJAX: Diamond deleted successfully');
             wp_send_json_success(array('message' => 'Diamond deleted successfully'));
         } else {
+            error_log('JPC AJAX: Failed to delete diamond');
             wp_send_json_error(array('message' => 'Failed to delete diamond'));
         }
     }
@@ -514,33 +548,40 @@ class JPC_Diamonds {
                         $cert->slug
                     ));
                     
-                    if (!$exists) {
-                        $data = array(
-                            'type' => $group->slug,
-                            'carat' => $carat,
-                            'certification' => $cert->slug,
-                            'price_per_carat' => $calc['final_price_per_carat'],
-                            'display_name' => sprintf(
-                                '%s (%.2fct, %s)',
-                                $group->name,
-                                $carat,
-                                $cert->name
-                            )
-                        );
-                        
-                        if (self::add($data)) {
-                            $synced++;
-                        }
+                    if ($exists) {
+                        continue; // Skip if already exists
+                    }
+                    
+                    // Add diamond
+                    $data = array(
+                        'type' => $group->slug,
+                        'carat' => $carat,
+                        'certification' => $cert->slug,
+                        'price_per_carat' => $calc['final_price_per_carat'],
+                        'display_name' => $carat . 'ct ' . $group->name . ' (' . $cert->name . ')'
+                    );
+                    
+                    if (self::add($data)) {
+                        $synced++;
+                    } else {
+                        $errors[] = 'Failed to add: ' . $data['display_name'];
                     }
                 }
             }
         }
         
-        wp_send_json_success(array(
-            'message' => "Synced $synced diamonds",
-            'synced' => $synced,
-            'errors' => $errors
-        ));
+        if ($synced > 0) {
+            wp_send_json_success(array(
+                'message' => "Successfully synced $synced diamonds" . (!empty($errors) ? ' with ' . count($errors) . ' errors' : ''),
+                'synced' => $synced,
+                'errors' => $errors
+            ));
+        } else {
+            wp_send_json_error(array(
+                'message' => 'No diamonds synced' . (!empty($errors) ? ': ' . implode(', ', $errors) : ''),
+                'errors' => $errors
+            ));
+        }
     }
 }
 
