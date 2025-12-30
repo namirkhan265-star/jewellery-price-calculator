@@ -22,8 +22,34 @@ class JPC_Frontend {
         add_action('wp_enqueue_scripts', array($this, 'enqueue_frontend_assets'));
         add_action('woocommerce_single_product_summary', array($this, 'display_price_breakup'), 25);
         
-        // Add custom product tab for price breakup
-        add_filter('woocommerce_product_tabs', array($this, 'add_price_breakup_tab'), 98);
+        // FORCE OVERRIDE: Add custom product tab for price breakup with HIGHEST priority
+        add_filter('woocommerce_product_tabs', array($this, 'add_price_breakup_tab'), 999);
+        
+        // FORCE OVERRIDE: Remove any other price breakup tabs
+        add_filter('woocommerce_product_tabs', array($this, 'remove_theme_price_breakup_tabs'), 1);
+    }
+    
+    /**
+     * Remove theme's price breakup tabs
+     */
+    public function remove_theme_price_breakup_tabs($tabs) {
+        // Remove common theme tab keys
+        $remove_keys = array(
+            'price_breakup',
+            'price-breakup',
+            'pricebreakup',
+            'breakup',
+            'price_breakdown',
+            'price-breakdown'
+        );
+        
+        foreach ($remove_keys as $key) {
+            if (isset($tabs[$key])) {
+                unset($tabs[$key]);
+            }
+        }
+        
+        return $tabs;
     }
     
     /**
@@ -33,11 +59,20 @@ class JPC_Frontend {
         if (is_product()) {
             wp_enqueue_style('jpc-frontend-css', JPC_PLUGIN_URL . 'assets/css/frontend.css', array(), JPC_VERSION);
             wp_enqueue_script('jpc-frontend-js', JPC_PLUGIN_URL . 'assets/js/frontend.js', array('jquery'), JPC_VERSION, true);
+            
+            // Add inline CSS to hide theme's price breakup if it still shows
+            wp_add_inline_style('jpc-frontend-css', '
+                .theme-price-breakup,
+                .tikona-price-breakup,
+                .price-breakup-theme {
+                    display: none !important;
+                }
+            ');
         }
     }
     
     /**
-     * Add Price Breakup tab to WooCommerce product tabs
+     * Add Price Breakup tab to WooCommerce product tabs - FORCE OVERRIDE
      */
     public function add_price_breakup_tab($tabs) {
         global $product;
@@ -54,10 +89,17 @@ class JPC_Frontend {
             return $tabs;
         }
         
-        // Add or override the price breakup tab
+        // FORCE: Remove ALL existing price breakup tabs first
+        foreach ($tabs as $key => $tab) {
+            if (stripos($key, 'price') !== false || stripos($key, 'breakup') !== false) {
+                unset($tabs[$key]);
+            }
+        }
+        
+        // Add our tab with HIGHEST priority
         $tabs['jpc_price_breakup'] = array(
             'title'    => __('Price Breakup', 'jewellery-price-calc'),
-            'priority' => 25,
+            'priority' => 5, // Very high priority to show first
             'callback' => array($this, 'render_price_breakup_tab_content')
         );
         
@@ -65,7 +107,7 @@ class JPC_Frontend {
     }
     
     /**
-     * Render Price Breakup tab content - FETCH FROM BACKEND ONLY
+     * Render Price Breakup tab content - FETCH FROM DATABASE ONLY
      */
     public function render_price_breakup_tab_content() {
         global $product;
@@ -76,12 +118,17 @@ class JPC_Frontend {
         
         $product_id = $product->get_id();
         
-        // FETCH ALL DATA FROM BACKEND (DATABASE) - NO RECALCULATION
+        // FETCH ALL DATA FROM DATABASE - NO RECALCULATION
         $regular_price = floatval(get_post_meta($product_id, '_regular_price', true));
         $sale_price = floatval(get_post_meta($product_id, '_sale_price', true));
         $discount_percentage = floatval(get_post_meta($product_id, '_jpc_discount_percentage', true));
         $breakup = get_post_meta($product_id, '_jpc_price_breakup', true);
         $metal_id = get_post_meta($product_id, '_jpc_metal_id', true);
+        
+        // DEBUG: Show what we're fetching
+        echo '<!-- DEBUG: Regular Price from DB: ' . $regular_price . ' -->';
+        echo '<!-- DEBUG: Sale Price from DB: ' . $sale_price . ' -->';
+        echo '<!-- DEBUG: Discount %: ' . $discount_percentage . ' -->';
         
         // Get metal info
         $metal = JPC_Metals::get_by_id($metal_id);
@@ -102,8 +149,35 @@ class JPC_Frontend {
         }
         
         ?>
-        <div class="jpc-price-breakup-tab">
-            <h3><?php _e('PRICE BREAKUP', 'jewellery-price-calc'); ?></h3>
+        <div class="jpc-price-breakup-tab" style="padding: 20px; background: #fff;">
+            <h3 style="margin-bottom: 20px; font-size: 1.5em;"><?php _e('PRICE BREAKUP', 'jewellery-price-calc'); ?></h3>
+            
+            <!-- BIG DEBUG BOX -->
+            <div style="background: #fff3cd; border: 3px solid #ffc107; padding: 20px; margin-bottom: 20px; border-radius: 8px;">
+                <h4 style="color: #856404; margin: 0 0 10px 0;">🔍 DEBUG INFO (Database Values)</h4>
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr style="border-bottom: 1px solid #ddd;">
+                        <td style="padding: 8px;"><strong>Product ID:</strong></td>
+                        <td style="padding: 8px;"><?php echo $product_id; ?></td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #ddd;">
+                        <td style="padding: 8px;"><strong>Regular Price (DB):</strong></td>
+                        <td style="padding: 8px; font-size: 1.2em; color: #0066cc;"><strong>₹<?php echo number_format($regular_price, 2); ?></strong></td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #ddd;">
+                        <td style="padding: 8px;"><strong>Sale Price (DB):</strong></td>
+                        <td style="padding: 8px; font-size: 1.2em; color: #d63638;"><strong>₹<?php echo number_format($sale_price, 2); ?></strong></td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #ddd;">
+                        <td style="padding: 8px;"><strong>Discount %:</strong></td>
+                        <td style="padding: 8px;"><strong><?php echo $discount_percentage; ?>%</strong></td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px;"><strong>Discount Amount:</strong></td>
+                        <td style="padding: 8px;"><strong>₹<?php echo number_format($discount_amount, 2); ?></strong></td>
+                    </tr>
+                </table>
+            </div>
             
             <table class="jpc-price-breakup-table" style="width: 100%; border-collapse: collapse;">
                 <tbody>
@@ -137,30 +211,6 @@ class JPC_Frontend {
                     </tr>
                     <?php endif; ?>
                     
-                    <!-- Pearl Cost -->
-                    <?php if (!empty($breakup['pearl_cost']) && $breakup['pearl_cost'] > 0): ?>
-                    <tr style="border-bottom: 1px solid #ddd;">
-                        <td style="padding: 12px;"><?php _e('Pearl Cost', 'jewellery-price-calc'); ?></td>
-                        <td style="padding: 12px; text-align: right;"><?php echo wc_price($breakup['pearl_cost']); ?></td>
-                    </tr>
-                    <?php endif; ?>
-                    
-                    <!-- Stone Cost -->
-                    <?php if (!empty($breakup['stone_cost']) && $breakup['stone_cost'] > 0): ?>
-                    <tr style="border-bottom: 1px solid #ddd;">
-                        <td style="padding: 12px;"><?php _e('Stone Cost', 'jewellery-price-calc'); ?></td>
-                        <td style="padding: 12px; text-align: right;"><?php echo wc_price($breakup['stone_cost']); ?></td>
-                    </tr>
-                    <?php endif; ?>
-                    
-                    <!-- Extra Fee -->
-                    <?php if (!empty($breakup['extra_fee']) && $breakup['extra_fee'] > 0): ?>
-                    <tr style="border-bottom: 1px solid #ddd;">
-                        <td style="padding: 12px;"><?php _e('Extra Fee', 'jewellery-price-calc'); ?></td>
-                        <td style="padding: 12px; text-align: right;"><?php echo wc_price($breakup['extra_fee']); ?></td>
-                    </tr>
-                    <?php endif; ?>
-                    
                     <!-- Discount Row -->
                     <?php if ($discount_percentage > 0 && $discount_amount > 0): ?>
                     <tr style="border-bottom: 1px solid #ddd; color: #d63638;">
@@ -176,34 +226,26 @@ class JPC_Frontend {
                     </tr>
                     <?php endif; ?>
                     
-                    <!-- GST -->
-                    <?php if (!empty($breakup['gst']) && $breakup['gst'] > 0): ?>
-                    <tr style="border-bottom: 1px solid #ddd;">
-                        <td style="padding: 12px;"><?php echo get_option('jpc_gst_label', 'GST'); ?></td>
-                        <td style="padding: 12px; text-align: right;"><?php echo wc_price($breakup['gst']); ?></td>
-                    </tr>
-                    <?php endif; ?>
-                    
                     <!-- Separator -->
                     <tr style="border-top: 3px solid #000;">
                         <td colspan="2" style="padding: 10px;">&nbsp;</td>
                     </tr>
                     
                     <!-- REGULAR PRICE - FROM DATABASE -->
-                    <tr style="border-bottom: 1px solid #ddd;">
-                        <td style="padding: 12px;"><strong><?php _e('Regular Price', 'jewellery-price-calc'); ?></strong></td>
-                        <td style="padding: 12px; text-align: right;">
-                            <strong style="<?php echo ($discount_percentage > 0) ? 'text-decoration: line-through; color: #999;' : ''; ?>">
-                                <?php echo wc_price($regular_price); ?>
+                    <tr style="border-bottom: 1px solid #ddd; background: #f9f9f9;">
+                        <td style="padding: 15px;"><strong style="font-size: 1.1em;"><?php _e('Regular Price', 'jewellery-price-calc'); ?></strong></td>
+                        <td style="padding: 15px; text-align: right;">
+                            <strong style="font-size: 1.3em; <?php echo ($discount_percentage > 0) ? 'text-decoration: line-through; color: #999;' : 'color: #0066cc;'; ?>">
+                                ₹<?php echo number_format($regular_price, 2); ?>
                             </strong>
                         </td>
                     </tr>
                     
                     <!-- SALE PRICE - FROM DATABASE (only if discount exists) -->
                     <?php if ($discount_percentage > 0 && $discount_amount > 0): ?>
-                    <tr style="border-bottom: 1px solid #ddd;">
-                        <td style="padding: 12px;"><strong style="color: #d63638; font-size: 1.1em;"><?php _e('Sale Price', 'jewellery-price-calc'); ?></strong></td>
-                        <td style="padding: 12px; text-align: right;"><strong style="color: #d63638; font-size: 1.2em;"><?php echo wc_price($sale_price); ?></strong></td>
+                    <tr style="border-bottom: 1px solid #ddd; background: #f9f9f9;">
+                        <td style="padding: 15px;"><strong style="color: #d63638; font-size: 1.2em;"><?php _e('Sale Price', 'jewellery-price-calc'); ?></strong></td>
+                        <td style="padding: 15px; text-align: right;"><strong style="color: #d63638; font-size: 1.5em;">₹<?php echo number_format($sale_price, 2); ?></strong></td>
                     </tr>
                     <?php endif; ?>
                 </tbody>
@@ -211,9 +253,9 @@ class JPC_Frontend {
             
             <!-- Savings Badge -->
             <?php if ($discount_percentage > 0 && $discount_amount > 0): ?>
-            <div class="jpc-savings-badge" style="margin-top: 15px; padding: 15px; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 4px; text-align: center;">
-                <strong style="color: #155724; font-size: 1.1em;">
-                    🎉 You Save: <?php echo wc_price($discount_amount); ?> 
+            <div class="jpc-savings-badge" style="margin-top: 20px; padding: 20px; background: #d4edda; border: 2px solid #28a745; border-radius: 8px; text-align: center;">
+                <strong style="color: #155724; font-size: 1.3em;">
+                    🎉 You Save: ₹<?php echo number_format($discount_amount, 2); ?> 
                     (<?php echo number_format($discount_percentage, 0); ?>% OFF)
                 </strong>
             </div>
