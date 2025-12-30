@@ -65,14 +65,13 @@ jQuery(document).ready(function($) {
             success: function(response) {
                 if (response.success) {
                     currentCalculatedPrice = response.data.final_price;
-                    currentDiscountAmount = response.data.discount || 0;
-                    
-                    // Calculate price before discount for regular price
-                    currentDiscountedPrice = currentCalculatedPrice;
-                    currentPriceBeforeDiscount = currentDiscountAmount > 0 ? 
-                        currentCalculatedPrice + currentDiscountAmount : 
-                        currentCalculatedPrice;
-                    
+                    if (response.success) {
+    currentCalculatedPrice = response.data.final_price;
+    currentDiscountAmount = response.data.discount || 0;
+    
+    // Use price_before_discount from backend if available
+    currentDiscountedPrice = currentCalculatedPrice;
+    currentPriceBeforeDiscount = response.data.price_before_discount || currentCalculatedPrice;
                     displayPriceBreakup(response.data);
                     
                     // Auto-update WooCommerce price fields
