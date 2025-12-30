@@ -28,7 +28,7 @@ class JPC_Diamond_Admin {
         $diamond = JPC_Diamond::get_instance();
         $diamonds = $diamond->get_all();
         
-        include JPC_PLUGIN_DIR . 'templates/admin-diamonds.php';
+        include JPC_PLUGIN_DIR . 'templates/admin/diamonds.php';
     }
     
     public function handle_add_diamond() {
