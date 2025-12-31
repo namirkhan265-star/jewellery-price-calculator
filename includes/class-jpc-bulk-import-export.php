@@ -32,6 +32,7 @@ class JPC_Bulk_Import_Export {
         // Diamond exports - BOTH SYSTEMS
         add_filter('woocommerce_product_export_product_column_jpc_diamond_id', array($this, 'export_diamond_id'), 10, 2);
         add_filter('woocommerce_product_export_product_column_jpc_diamond_name', array($this, 'export_diamond_name'), 10, 2);
+        add_filter('woocommerce_product_export_product_column_jpc_diamond_group', array($this, 'export_diamond_group'), 10, 2);
         add_filter('woocommerce_product_export_product_column_jpc_diamond_type', array($this, 'export_diamond_type'), 10, 2);
         add_filter('woocommerce_product_export_product_column_jpc_diamond_carat', array($this, 'export_diamond_carat'), 10, 2);
         add_filter('woocommerce_product_export_product_column_jpc_diamond_certification', array($this, 'export_diamond_certification'), 10, 2);
@@ -61,9 +62,10 @@ class JPC_Bulk_Import_Export {
         $columns['jpc_metal_id'] = 'JPC Metal ID';
         $columns['jpc_metal_weight'] = 'JPC Metal Weight (grams)';
         
-        // BOTH diamond systems
-        $columns['jpc_diamond_id'] = 'JPC Diamond ID (Legacy)';
+        // BOTH diamond systems - with all details
+        $columns['jpc_diamond_id'] = 'JPC Diamond ID';
         $columns['jpc_diamond_name'] = 'JPC Diamond Name';
+        $columns['jpc_diamond_group'] = 'JPC Diamond Group';
         $columns['jpc_diamond_type'] = 'JPC Diamond Type';
         $columns['jpc_diamond_carat'] = 'JPC Diamond Carat';
         $columns['jpc_diamond_certification'] = 'JPC Diamond Certification';
@@ -108,9 +110,27 @@ class JPC_Bulk_Import_Export {
     public function export_diamond_name($value, $product) {
         $diamond_id = get_post_meta($product->get_id(), '_jpc_diamond_id', true);
         if ($diamond_id) {
-            $diamond = JPC_Diamonds::get_by_id($diamond_id);
+            global $wpdb;
+            $table = $wpdb->prefix . 'jpc_diamonds';
+            $diamond = $wpdb->get_row($wpdb->prepare("SELECT * FROM `$table` WHERE id = %d", $diamond_id));
             if ($diamond) {
                 return $diamond->display_name;
+            }
+        }
+        return '';
+    }
+    
+    /**
+     * Export diamond group (from legacy diamond table)
+     */
+    public function export_diamond_group($value, $product) {
+        $diamond_id = get_post_meta($product->get_id(), '_jpc_diamond_id', true);
+        if ($diamond_id) {
+            global $wpdb;
+            $table = $wpdb->prefix . 'jpc_diamonds';
+            $diamond = $wpdb->get_row($wpdb->prepare("SELECT * FROM `$table` WHERE id = %d", $diamond_id));
+            if ($diamond && !empty($diamond->group_name)) {
+                return $diamond->group_name;
             }
         }
         return '';
@@ -120,6 +140,7 @@ class JPC_Bulk_Import_Export {
      * Export diamond type (natural, lab_grown, moissanite)
      */
     public function export_diamond_type($value, $product) {
+        // First check if there's a direct type stored
         $type = get_post_meta($product->get_id(), '_jpc_diamond_type', true);
         if ($type) {
             return $type;
@@ -128,9 +149,11 @@ class JPC_Bulk_Import_Export {
         // Try to get from legacy diamond
         $diamond_id = get_post_meta($product->get_id(), '_jpc_diamond_id', true);
         if ($diamond_id) {
-            $diamond = JPC_Diamonds::get_by_id($diamond_id);
-            if ($diamond) {
-                return $diamond->type;
+            global $wpdb;
+            $table = $wpdb->prefix . 'jpc_diamonds';
+            $diamond = $wpdb->get_row($wpdb->prepare("SELECT * FROM `$table` WHERE id = %d", $diamond_id));
+            if ($diamond && !empty($diamond->type_name)) {
+                return $diamond->type_name;
             }
         }
         
@@ -141,6 +164,7 @@ class JPC_Bulk_Import_Export {
      * Export diamond carat
      */
     public function export_diamond_carat($value, $product) {
+        // First check if there's a direct carat stored
         $carat = get_post_meta($product->get_id(), '_jpc_diamond_carat', true);
         if ($carat) {
             return $carat;
@@ -149,8 +173,10 @@ class JPC_Bulk_Import_Export {
         // Try to get from legacy diamond
         $diamond_id = get_post_meta($product->get_id(), '_jpc_diamond_id', true);
         if ($diamond_id) {
-            $diamond = JPC_Diamonds::get_by_id($diamond_id);
-            if ($diamond) {
+            global $wpdb;
+            $table = $wpdb->prefix . 'jpc_diamonds';
+            $diamond = $wpdb->get_row($wpdb->prepare("SELECT * FROM `$table` WHERE id = %d", $diamond_id));
+            if ($diamond && !empty($diamond->carat)) {
                 return $diamond->carat;
             }
         }
@@ -162,6 +188,7 @@ class JPC_Bulk_Import_Export {
      * Export diamond certification
      */
     public function export_diamond_certification($value, $product) {
+        // First check if there's a direct certification stored
         $cert = get_post_meta($product->get_id(), '_jpc_diamond_certification', true);
         if ($cert) {
             return $cert;
@@ -170,9 +197,11 @@ class JPC_Bulk_Import_Export {
         // Try to get from legacy diamond
         $diamond_id = get_post_meta($product->get_id(), '_jpc_diamond_id', true);
         if ($diamond_id) {
-            $diamond = JPC_Diamonds::get_by_id($diamond_id);
-            if ($diamond) {
-                return $diamond->certification;
+            global $wpdb;
+            $table = $wpdb->prefix . 'jpc_diamonds';
+            $diamond = $wpdb->get_row($wpdb->prepare("SELECT * FROM `$table` WHERE id = %d", $diamond_id));
+            if ($diamond && !empty($diamond->certification_name)) {
+                return $diamond->certification_name;
             }
         }
         
@@ -183,7 +212,8 @@ class JPC_Bulk_Import_Export {
      * Export diamond quantity
      */
     public function export_diamond_quantity($value, $product) {
-        return get_post_meta($product->get_id(), '_jpc_diamond_quantity', true);
+        $qty = get_post_meta($product->get_id(), '_jpc_diamond_quantity', true);
+        return $qty ? $qty : '';
     }
     
     /**
@@ -250,7 +280,8 @@ class JPC_Bulk_Import_Export {
         $columns['jpc_metal_weight'] = 'JPC Metal Weight (grams)';
         
         // BOTH diamond systems
-        $columns['jpc_diamond_id'] = 'JPC Diamond ID (Legacy)';
+        $columns['jpc_diamond_id'] = 'JPC Diamond ID';
+        $columns['jpc_diamond_group'] = 'JPC Diamond Group';
         $columns['jpc_diamond_type'] = 'JPC Diamond Type';
         $columns['jpc_diamond_carat'] = 'JPC Diamond Carat';
         $columns['jpc_diamond_certification'] = 'JPC Diamond Certification';
@@ -276,7 +307,8 @@ class JPC_Bulk_Import_Export {
         $columns['JPC Metal Weight (grams)'] = 'jpc_metal_weight';
         
         // BOTH diamond systems
-        $columns['JPC Diamond ID (Legacy)'] = 'jpc_diamond_id';
+        $columns['JPC Diamond ID'] = 'jpc_diamond_id';
+        $columns['JPC Diamond Group'] = 'jpc_diamond_group';
         $columns['JPC Diamond Type'] = 'jpc_diamond_type';
         $columns['JPC Diamond Carat'] = 'jpc_diamond_carat';
         $columns['JPC Diamond Certification'] = 'jpc_diamond_certification';
