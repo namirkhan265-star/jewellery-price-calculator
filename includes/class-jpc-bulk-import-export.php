@@ -2,7 +2,7 @@
 /**
  * Bulk Import/Export Handler
  * Adds jewellery calculator fields to WooCommerce CSV import/export
- * Supports flexible diamond entry with automatic price calculation
+ * Supports BOTH legacy diamond system (diamond_id) and new flexible system (type/carat/cert)
  */
 
 if (!defined('ABSPATH')) {
@@ -29,7 +29,9 @@ class JPC_Bulk_Import_Export {
         add_filter('woocommerce_product_export_product_column_jpc_metal_id', array($this, 'export_metal_id'), 10, 2);
         add_filter('woocommerce_product_export_product_column_jpc_metal_weight', array($this, 'export_metal_weight'), 10, 2);
         
-        // Diamond exports - NEW FLEXIBLE FORMAT
+        // Diamond exports - BOTH SYSTEMS
+        add_filter('woocommerce_product_export_product_column_jpc_diamond_id', array($this, 'export_diamond_id'), 10, 2);
+        add_filter('woocommerce_product_export_product_column_jpc_diamond_name', array($this, 'export_diamond_name'), 10, 2);
         add_filter('woocommerce_product_export_product_column_jpc_diamond_type', array($this, 'export_diamond_type'), 10, 2);
         add_filter('woocommerce_product_export_product_column_jpc_diamond_carat', array($this, 'export_diamond_carat'), 10, 2);
         add_filter('woocommerce_product_export_product_column_jpc_diamond_certification', array($this, 'export_diamond_certification'), 10, 2);
@@ -59,7 +61,9 @@ class JPC_Bulk_Import_Export {
         $columns['jpc_metal_id'] = 'JPC Metal ID';
         $columns['jpc_metal_weight'] = 'JPC Metal Weight (grams)';
         
-        // NEW: Flexible diamond columns
+        // BOTH diamond systems
+        $columns['jpc_diamond_id'] = 'JPC Diamond ID (Legacy)';
+        $columns['jpc_diamond_name'] = 'JPC Diamond Name';
         $columns['jpc_diamond_type'] = 'JPC Diamond Type';
         $columns['jpc_diamond_carat'] = 'JPC Diamond Carat';
         $columns['jpc_diamond_certification'] = 'JPC Diamond Certification';
@@ -92,24 +96,87 @@ class JPC_Bulk_Import_Export {
     }
     
     /**
+     * Export diamond ID (legacy system)
+     */
+    public function export_diamond_id($value, $product) {
+        return get_post_meta($product->get_id(), '_jpc_diamond_id', true);
+    }
+    
+    /**
+     * Export diamond name (from legacy diamond table)
+     */
+    public function export_diamond_name($value, $product) {
+        $diamond_id = get_post_meta($product->get_id(), '_jpc_diamond_id', true);
+        if ($diamond_id) {
+            $diamond = JPC_Diamonds::get_by_id($diamond_id);
+            if ($diamond) {
+                return $diamond->display_name;
+            }
+        }
+        return '';
+    }
+    
+    /**
      * Export diamond type (natural, lab_grown, moissanite)
      */
     public function export_diamond_type($value, $product) {
-        return get_post_meta($product->get_id(), '_jpc_diamond_type', true);
+        $type = get_post_meta($product->get_id(), '_jpc_diamond_type', true);
+        if ($type) {
+            return $type;
+        }
+        
+        // Try to get from legacy diamond
+        $diamond_id = get_post_meta($product->get_id(), '_jpc_diamond_id', true);
+        if ($diamond_id) {
+            $diamond = JPC_Diamonds::get_by_id($diamond_id);
+            if ($diamond) {
+                return $diamond->type;
+            }
+        }
+        
+        return '';
     }
     
     /**
      * Export diamond carat
      */
     public function export_diamond_carat($value, $product) {
-        return get_post_meta($product->get_id(), '_jpc_diamond_carat', true);
+        $carat = get_post_meta($product->get_id(), '_jpc_diamond_carat', true);
+        if ($carat) {
+            return $carat;
+        }
+        
+        // Try to get from legacy diamond
+        $diamond_id = get_post_meta($product->get_id(), '_jpc_diamond_id', true);
+        if ($diamond_id) {
+            $diamond = JPC_Diamonds::get_by_id($diamond_id);
+            if ($diamond) {
+                return $diamond->carat;
+            }
+        }
+        
+        return '';
     }
     
     /**
      * Export diamond certification
      */
     public function export_diamond_certification($value, $product) {
-        return get_post_meta($product->get_id(), '_jpc_diamond_certification', true);
+        $cert = get_post_meta($product->get_id(), '_jpc_diamond_certification', true);
+        if ($cert) {
+            return $cert;
+        }
+        
+        // Try to get from legacy diamond
+        $diamond_id = get_post_meta($product->get_id(), '_jpc_diamond_id', true);
+        if ($diamond_id) {
+            $diamond = JPC_Diamonds::get_by_id($diamond_id);
+            if ($diamond) {
+                return $diamond->certification;
+            }
+        }
+        
+        return '';
     }
     
     /**
@@ -182,7 +249,8 @@ class JPC_Bulk_Import_Export {
         $columns['jpc_metal_id'] = 'JPC Metal ID';
         $columns['jpc_metal_weight'] = 'JPC Metal Weight (grams)';
         
-        // NEW: Flexible diamond columns
+        // BOTH diamond systems
+        $columns['jpc_diamond_id'] = 'JPC Diamond ID (Legacy)';
         $columns['jpc_diamond_type'] = 'JPC Diamond Type';
         $columns['jpc_diamond_carat'] = 'JPC Diamond Carat';
         $columns['jpc_diamond_certification'] = 'JPC Diamond Certification';
@@ -207,7 +275,8 @@ class JPC_Bulk_Import_Export {
         $columns['JPC Metal ID'] = 'jpc_metal_id';
         $columns['JPC Metal Weight (grams)'] = 'jpc_metal_weight';
         
-        // NEW: Flexible diamond mapping
+        // BOTH diamond systems
+        $columns['JPC Diamond ID (Legacy)'] = 'jpc_diamond_id';
         $columns['JPC Diamond Type'] = 'jpc_diamond_type';
         $columns['JPC Diamond Carat'] = 'jpc_diamond_carat';
         $columns['JPC Diamond Certification'] = 'jpc_diamond_certification';
@@ -244,8 +313,16 @@ class JPC_Bulk_Import_Export {
             );
         }
         
-        // NEW: Flexible diamond data
-        if (isset($parsed_data['jpc_diamond_type'])) {
+        // Diamond ID (legacy system) - takes priority
+        if (isset($parsed_data['jpc_diamond_id']) && !empty($parsed_data['jpc_diamond_id'])) {
+            $parsed_data['meta_data'][] = array(
+                'key' => '_jpc_diamond_id',
+                'value' => intval($parsed_data['jpc_diamond_id'])
+            );
+        }
+        
+        // NEW: Flexible diamond data (only if no diamond_id provided)
+        if (isset($parsed_data['jpc_diamond_type']) && !isset($parsed_data['jpc_diamond_id'])) {
             $parsed_data['meta_data'][] = array(
                 'key' => '_jpc_diamond_type',
                 'value' => sanitize_text_field($parsed_data['jpc_diamond_type'])
@@ -335,27 +412,30 @@ class JPC_Bulk_Import_Export {
     
     /**
      * Save import data and recalculate price
-     * NEW: Handles flexible diamond data with automatic price calculation
+     * Handles BOTH legacy diamond_id and flexible diamond data
      */
     public function save_import_data($product, $data) {
         $product_id = $product->get_id();
         
-        // Check if we have flexible diamond data
-        $diamond_type = get_post_meta($product_id, '_jpc_diamond_type', true);
-        $diamond_carat = get_post_meta($product_id, '_jpc_diamond_carat', true);
-        $diamond_cert = get_post_meta($product_id, '_jpc_diamond_certification', true);
-        $diamond_quantity = get_post_meta($product_id, '_jpc_diamond_quantity', true);
+        // Check if we have flexible diamond data (and no diamond_id)
+        $diamond_id = get_post_meta($product_id, '_jpc_diamond_id', true);
         
-        // If we have diamond data, get or create diamond entry
-        if ($diamond_type && $diamond_carat) {
-            $diamond_id = JPC_Diamond_Pricing::get_or_create_diamond(
-                $diamond_type,
-                floatval($diamond_carat),
-                $diamond_cert ? $diamond_cert : 'none'
-            );
+        if (!$diamond_id) {
+            $diamond_type = get_post_meta($product_id, '_jpc_diamond_type', true);
+            $diamond_carat = get_post_meta($product_id, '_jpc_diamond_carat', true);
+            $diamond_cert = get_post_meta($product_id, '_jpc_diamond_certification', true);
             
-            // Save diamond ID for backward compatibility
-            update_post_meta($product_id, '_jpc_diamond_id', $diamond_id);
+            // If we have diamond data, get or create diamond entry
+            if ($diamond_type && $diamond_carat) {
+                $diamond_id = JPC_Diamond_Pricing::get_or_create_diamond(
+                    $diamond_type,
+                    floatval($diamond_carat),
+                    $diamond_cert ? $diamond_cert : 'none'
+                );
+                
+                // Save diamond ID for backward compatibility
+                update_post_meta($product_id, '_jpc_diamond_id', $diamond_id);
+            }
         }
         
         // Check if any JPC fields were imported
@@ -363,7 +443,7 @@ class JPC_Bulk_Import_Export {
         
         if ($metal_id) {
             // Recalculate price using the calculator
-            JPC_Price_Calculator::calculate_product_price($product_id);
+            JPC_Price_Calculator::calculate_and_update_price($product_id);
         }
     }
 }
