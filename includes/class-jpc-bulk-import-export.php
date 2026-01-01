@@ -21,8 +21,7 @@ class JPC_Bulk_Import_Export {
     }
     
     private function __construct() {
-        // Export hooks
-        add_filter('woocommerce_product_export_column_names', array($this, 'add_export_columns'));
+        // Export hooks - FIXED: Use correct WooCommerce filter
         add_filter('woocommerce_product_export_product_default_columns', array($this, 'add_export_columns'));
         
         // Metal exports
@@ -56,13 +55,14 @@ class JPC_Bulk_Import_Export {
     }
     
     /**
-     * Add export columns
+     * Add export columns - FIXED: Using correct filter
      */
     public function add_export_columns($columns) {
+        // Metal columns
         $columns['jpc_metal_id'] = 'JPC Metal ID';
         $columns['jpc_metal_weight'] = 'JPC Metal Weight (grams)';
         
-        // BOTH diamond systems - with all details
+        // Diamond columns - BOTH systems with all details
         $columns['jpc_diamond_id'] = 'JPC Diamond ID';
         $columns['jpc_diamond_name'] = 'JPC Diamond Name';
         $columns['jpc_diamond_group'] = 'JPC Diamond Group';
@@ -71,6 +71,7 @@ class JPC_Bulk_Import_Export {
         $columns['jpc_diamond_certification'] = 'JPC Diamond Certification';
         $columns['jpc_diamond_quantity'] = 'JPC Diamond Quantity';
         
+        // Other columns
         $columns['jpc_making_charge'] = 'JPC Making Charge';
         $columns['jpc_making_charge_type'] = 'JPC Making Charge Type';
         $columns['jpc_wastage_charge'] = 'JPC Wastage Charge';
