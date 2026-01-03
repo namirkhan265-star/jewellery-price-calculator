@@ -329,20 +329,25 @@ class JPC_Price_Calculator {
     }
     
     /**
-     * Calculate and update product price - ENHANCED WITH CACHE CLEARING
+     * Calculate and update product price - RETURNS SUCCESS STATUS
      */
     public static function calculate_and_update_price($product_id) {
         // Prevent infinite loops
         if (isset(self::$calculating_products[$product_id])) {
-            return;
+            return false;
         }
         
         self::$calculating_products[$product_id] = true;
         
-        // Calculate prices
-        $prices = self::calculate_product_prices($product_id);
-        
-        if ($prices) {
+        try {
+            // Calculate prices
+            $prices = self::calculate_product_prices($product_id);
+            
+            if (!$prices) {
+                unset(self::$calculating_products[$product_id]);
+                return false;
+            }
+            
             // CRITICAL: Clear all WooCommerce caches first
             wp_cache_delete('product-' . $product_id, 'products');
             wp_cache_delete($product_id, 'post_meta');
@@ -351,35 +356,43 @@ class JPC_Price_Calculator {
             // Get WooCommerce product (fresh from database)
             $product = wc_get_product($product_id);
             
-            if ($product) {
-                // FORCE: Set prices using both WooCommerce methods AND direct meta updates
-                $product->set_regular_price($prices['regular_price']);
-                $product->set_sale_price($prices['sale_price']);
-                $product->set_price($prices['sale_price']);
-                
-                // Save product (this triggers WooCommerce hooks)
-                $product->save();
-                
-                // FORCE: Direct meta updates to ensure values are stored
-                update_post_meta($product_id, '_regular_price', $prices['regular_price']);
-                update_post_meta($product_id, '_sale_price', $prices['sale_price']);
-                update_post_meta($product_id, '_price', $prices['sale_price']);
-                
-                // Store discount percentage
-                update_post_meta($product_id, '_jpc_discount_percentage', $prices['discount_percentage']);
-                
-                // Calculate and store breakup
-                self::calculate_and_store_breakup($product_id);
-                
-                // FORCE: Clear caches again after update
-                wp_cache_delete('product-' . $product_id, 'products');
-                wp_cache_delete($product_id, 'post_meta');
-                wc_delete_product_transients($product_id);
-                clean_post_cache($product_id);
+            if (!$product) {
+                unset(self::$calculating_products[$product_id]);
+                return false;
             }
+            
+            // FORCE: Set prices using both WooCommerce methods AND direct meta updates
+            $product->set_regular_price($prices['regular_price']);
+            $product->set_sale_price($prices['sale_price']);
+            $product->set_price($prices['sale_price']);
+            
+            // Save product (this triggers WooCommerce hooks)
+            $product->save();
+            
+            // FORCE: Direct meta updates to ensure values are stored
+            update_post_meta($product_id, '_regular_price', $prices['regular_price']);
+            update_post_meta($product_id, '_sale_price', $prices['sale_price']);
+            update_post_meta($product_id, '_price', $prices['sale_price']);
+            
+            // Store discount percentage
+            update_post_meta($product_id, '_jpc_discount_percentage', $prices['discount_percentage']);
+            
+            // Calculate and store breakup
+            self::calculate_and_store_breakup($product_id);
+            
+            // FORCE: Clear caches again after update
+            wp_cache_delete('product-' . $product_id, 'products');
+            wp_cache_delete($product_id, 'post_meta');
+            wc_delete_product_transients($product_id);
+            clean_post_cache($product_id);
+            
+            unset(self::$calculating_products[$product_id]);
+            return true;
+            
+        } catch (Exception $e) {
+            unset(self::$calculating_products[$product_id]);
+            return false;
         }
-        
-        unset(self::$calculating_products[$product_id]);
     }
     
     /**
