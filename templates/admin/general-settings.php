@@ -11,6 +11,7 @@ if (!defined('ABSPATH')) {
 if (isset($_POST['jpc_bulk_update_prices']) && check_admin_referer('jpc_bulk_update_prices')) {
     $updated = 0;
     $errors = 0;
+    $error_products = array();
     
     // Get all products with JPC data
     $args = array(
@@ -29,16 +30,28 @@ if (isset($_POST['jpc_bulk_update_prices']) && check_admin_referer('jpc_bulk_upd
     
     foreach ($products as $product) {
         $result = JPC_Price_Calculator::calculate_and_update_price($product->ID);
-        if ($result !== false) {
+        if ($result === true) {
             $updated++;
         } else {
             $errors++;
+            $error_products[] = $product->post_title . ' (ID: ' . $product->ID . ')';
         }
     }
     
     echo '<div class="notice notice-success is-dismissible"><p>';
     printf(__('Bulk price update completed! Updated: %d products. Errors: %d products.', 'jewellery-price-calc'), $updated, $errors);
-    echo '</p></div>';
+    echo '</p>';
+    
+    if (!empty($error_products)) {
+        echo '<p><strong>Products with errors:</strong></p>';
+        echo '<ul>';
+        foreach ($error_products as $error_product) {
+            echo '<li>' . esc_html($error_product) . '</li>';
+        }
+        echo '</ul>';
+    }
+    
+    echo '</div>';
 }
 ?>
 
