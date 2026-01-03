@@ -3,7 +3,7 @@
  * Plugin Name: Jewellery Price Calculator
  * Plugin URI: https://github.com/yourusername/jewellery-price-calculator
  * Description: Advanced price calculator for jewellery products with metal rates, making charges, and GST
- * Version: 1.7.6
+ * Version: 1.7.7
  * Author: Your Name
  * Author URI: https://yourwebsite.com
  * Text Domain: jewellery-price-calc
@@ -19,7 +19,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('JPC_VERSION', '1.7.6');
+define('JPC_VERSION', '1.7.7');
 define('JPC_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('JPC_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('JPC_PLUGIN_BASENAME', plugin_basename(__FILE__));
@@ -32,7 +32,7 @@ if (!in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get
     return;
 }
 
-// Include required files - ALL class files
+// Include required files - ALL class files in correct order
 require_once JPC_PLUGIN_DIR . 'includes/class-jpc-database.php';
 require_once JPC_PLUGIN_DIR . 'includes/class-jpc-metal-groups.php';
 require_once JPC_PLUGIN_DIR . 'includes/class-jpc-metals.php';
@@ -45,12 +45,13 @@ require_once JPC_PLUGIN_DIR . 'includes/class-jpc-product-meta.php';
 require_once JPC_PLUGIN_DIR . 'includes/class-jpc-frontend.php';
 require_once JPC_PLUGIN_DIR . 'includes/class-jpc-admin.php';
 require_once JPC_PLUGIN_DIR . 'includes/class-jpc-shortcodes.php';
+require_once JPC_PLUGIN_DIR . 'includes/class-jpc-bulk-import-export.php';
 
 // Initialize plugin
 add_action('plugins_loaded', 'jpc_init');
 
 function jpc_init() {
-    // Initialize ALL singleton classes (CRITICAL: Must initialize all classes with hooks/shortcodes)
+    // Initialize ALL singleton classes (CRITICAL: Must initialize all classes with hooks/shortcodes/AJAX)
     // Note: Database class doesn't need initialization - it only has static methods
     JPC_Metal_Groups::get_instance();
     JPC_Metals::get_instance();
@@ -61,7 +62,8 @@ function jpc_init() {
     JPC_Product_Meta::get_instance();
     JPC_Frontend::get_instance();
     JPC_Admin::get_instance();
-    JPC_Shortcodes::get_instance(); // CRITICAL: Initialize shortcodes!
+    JPC_Shortcodes::get_instance();
+    JPC_Bulk_Import_Export::get_instance();
 }
 
 // Activation hook
