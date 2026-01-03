@@ -19,6 +19,12 @@ jQuery(document).ready(function($) {
         };
     }
     
+    // Safe number conversion
+    function toNumber(value, defaultValue = 0) {
+        const num = parseFloat(value);
+        return isNaN(num) ? defaultValue : num;
+    }
+    
     // Calculate live price
     function calculateLivePrice() {
         const metalId = $('#_jpc_metal_id').val();
@@ -75,38 +81,49 @@ jQuery(document).ready(function($) {
                 extra_field_5: extraField5
             },
             success: function(response) {
-                if (response.success) {
+                // DEBUG: Log the full response
+                console.log('JPC Live Calculator Response:', response);
+                
+                if (response.success && response.data) {
                     // BACKWARD COMPATIBLE: Support both old and new response structures
                     // New structure: final_price, price_before_discount
                     // Old structure: sale_price, regular_price
-                    const finalPrice = response.data.final_price || response.data.sale_price || 0;
-                    const priceBeforeDiscount = response.data.price_before_discount || response.data.regular_price || finalPrice;
+                    const finalPrice = toNumber(response.data.final_price || response.data.sale_price, 0);
+                    const priceBeforeDiscount = toNumber(response.data.price_before_discount || response.data.regular_price || finalPrice, 0);
+                    const discountAmount = toNumber(response.data.discount_amount, 0);
+                    
+                    console.log('Parsed Values:', {
+                        finalPrice,
+                        priceBeforeDiscount,
+                        discountAmount
+                    });
                     
                     currentCalculatedPrice = finalPrice;
                     currentPriceBeforeDiscount = priceBeforeDiscount;
-                    
-                    // Get discount from top level or breakdown
-                    currentDiscountAmount = response.data.discount_amount || (response.data.breakdown && response.data.breakdown.discount_amount) || 0;
-                    currentDiscountedPrice = currentCalculatedPrice;
+                    currentDiscountAmount = discountAmount;
+                    currentDiscountedPrice = finalPrice;
                     
                     displayPriceBreakup(response.data);
                     
                     // Auto-update WooCommerce price fields
                     autoUpdatePriceFields(currentPriceBeforeDiscount, currentDiscountedPrice, currentDiscountAmount);
                 } else {
-                    $('.jpc-price-breakup-admin').html('<p style="color: red;">' + (response.data.message || 'Error calculating price') + '</p>');
+                    console.error('JPC Error:', response);
+                    const errorMsg = (response.data && response.data.message) ? response.data.message : 'Error calculating price';
+                    $('.jpc-price-breakup-admin').html('<p style="color: red;">' + errorMsg + '</p>');
                 }
             },
-            error: function() {
-                $('.jpc-price-breakup-admin').html('<p style="color: red;">Error calculating price</p>');
+            error: function(xhr, status, error) {
+                console.error('JPC AJAX Error:', {xhr, status, error});
+                $('.jpc-price-breakup-admin').html('<p style="color: red;">Error calculating price. Check console for details.</p>');
             }
         });
     }
     
     // Auto-update WooCommerce price fields
     function autoUpdatePriceFields(regularPrice, salePrice, discountAmount) {
-        const formattedRegularPrice = regularPrice.toFixed(2);
-        const formattedSalePrice = salePrice.toFixed(2);
+        const formattedRegularPrice = toNumber(regularPrice, 0).toFixed(2);
+        const formattedSalePrice = toNumber(salePrice, 0).toFixed(2);
         
         // Update regular price
         $('#_regular_price').val(formattedRegularPrice);
@@ -177,12 +194,22 @@ jQuery(document).ready(function($) {
     
     // Display price breakup
     function displayPriceBreakup(data) {
+        console.log('Display Price Breakup - Input Data:', data);
+        
         // BACKWARD COMPATIBLE: Support both old and new response structures
         const breakdown = data.breakup || data.breakdown || {};
-        const finalPrice = data.final_price || data.sale_price || 0;
-        const priceBeforeDiscount = data.price_before_discount || data.regular_price || finalPrice;
-        const discountAmount = data.discount_amount || (breakdown.discount_amount) || 0;
-        const discountPercent = data.discount_percentage || (breakdown.discount_percentage) || 0;
+        const finalPrice = toNumber(data.final_price || data.sale_price, 0);
+        const priceBeforeDiscount = toNumber(data.price_before_discount || data.regular_price || finalPrice, 0);
+        const discountAmount = toNumber(data.discount_amount || breakdown.discount_amount, 0);
+        const discountPercent = toNumber(data.discount_percentage || breakdown.discount_percentage, 0);
+        
+        console.log('Display Values:', {
+            finalPrice,
+            priceBeforeDiscount,
+            discountAmount,
+            discountPercent,
+            breakdown
+        });
         
         let html = '<div class="jpc-live-calc-wrapper">';
         html += '<h4>💰 Live Price Calculation</h4>';
@@ -197,7 +224,7 @@ jQuery(document).ready(function($) {
             html += '</div>';
             
             html += '<div class="jpc-price-row jpc-discount-row">';
-            html += '<span class="label">Discount (' + parseFloat(discountPercent).toFixed(1) + '%):</span>';
+            html += '<span class="label">Discount (' + discountPercent.toFixed(1) + '%):</span>';
             html += '<span class="value discount">-₹' + formatNumber(discountAmount) + '</span>';
             html += '</div>';
             
@@ -219,52 +246,53 @@ jQuery(document).ready(function($) {
         html += '<summary>View Detailed Breakdown</summary>';
         html += '<table class="jpc-breakdown-table">';
         
-        html += '<tr><td>Metal Price:</td><td>₹' + formatNumber(breakdown.metal_price || 0) + '</td></tr>';
+        html += '<tr><td>Metal Price:</td><td>₹' + formatNumber(toNumber(breakdown.metal_price, 0)) + '</td></tr>';
         
-        if (breakdown.diamond_price > 0) {
-            html += '<tr><td>Diamond Price:</td><td>₹' + formatNumber(breakdown.diamond_price) + '</td></tr>';
+        if (toNumber(breakdown.diamond_price, 0) > 0) {
+            html += '<tr><td>Diamond Price:</td><td>₹' + formatNumber(toNumber(breakdown.diamond_price, 0)) + '</td></tr>';
         }
         
-        if (breakdown.making_charge > 0) {
-            html += '<tr><td>Making Charge:</td><td>₹' + formatNumber(breakdown.making_charge) + '</td></tr>';
+        if (toNumber(breakdown.making_charge, 0) > 0) {
+            html += '<tr><td>Making Charge:</td><td>₹' + formatNumber(toNumber(breakdown.making_charge, 0)) + '</td></tr>';
         }
         
-        if (breakdown.wastage_charge > 0) {
-            html += '<tr><td>Wastage Charge:</td><td>₹' + formatNumber(breakdown.wastage_charge) + '</td></tr>';
+        if (toNumber(breakdown.wastage_charge, 0) > 0) {
+            html += '<tr><td>Wastage Charge:</td><td>₹' + formatNumber(toNumber(breakdown.wastage_charge, 0)) + '</td></tr>';
         }
         
-        if (breakdown.pearl_cost > 0) {
-            html += '<tr><td>Pearl Cost:</td><td>₹' + formatNumber(breakdown.pearl_cost) + '</td></tr>';
+        if (toNumber(breakdown.pearl_cost, 0) > 0) {
+            html += '<tr><td>Pearl Cost:</td><td>₹' + formatNumber(toNumber(breakdown.pearl_cost, 0)) + '</td></tr>';
         }
         
-        if (breakdown.stone_cost > 0) {
-            html += '<tr><td>Stone Cost:</td><td>₹' + formatNumber(breakdown.stone_cost) + '</td></tr>';
+        if (toNumber(breakdown.stone_cost, 0) > 0) {
+            html += '<tr><td>Stone Cost:</td><td>₹' + formatNumber(toNumber(breakdown.stone_cost, 0)) + '</td></tr>';
         }
         
-        if (breakdown.extra_fee > 0) {
-            html += '<tr><td>Extra Fee:</td><td>₹' + formatNumber(breakdown.extra_fee) + '</td></tr>';
+        if (toNumber(breakdown.extra_fee, 0) > 0) {
+            html += '<tr><td>Extra Fee:</td><td>₹' + formatNumber(toNumber(breakdown.extra_fee, 0)) + '</td></tr>';
         }
         
         // Display extra fields with labels - SHOW ALL ENABLED FIELDS
-        if (breakdown.extra_fields && breakdown.extra_fields.length > 0) {
+        if (breakdown.extra_fields && Array.isArray(breakdown.extra_fields) && breakdown.extra_fields.length > 0) {
             for (let i = 0; i < breakdown.extra_fields.length; i++) {
                 const field = breakdown.extra_fields[i];
-                // Show ALL enabled fields, even if value is 0
-                html += '<tr><td>' + field.label + ':</td><td>₹' + formatNumber(field.value) + '</td></tr>';
+                if (field && field.label) {
+                    html += '<tr><td>' + field.label + ':</td><td>₹' + formatNumber(toNumber(field.value, 0)) + '</td></tr>';
+                }
             }
         }
         
         // Display additional percentage
-        if (breakdown.additional_percentage > 0) {
+        if (toNumber(breakdown.additional_percentage, 0) > 0) {
             const addPercentLabel = breakdown.additional_percentage_label || 'Additional Percentage';
-            html += '<tr><td>' + addPercentLabel + ':</td><td>₹' + formatNumber(breakdown.additional_percentage) + '</td></tr>';
+            html += '<tr><td>' + addPercentLabel + ':</td><td>₹' + formatNumber(toNumber(breakdown.additional_percentage, 0)) + '</td></tr>';
         }
         
         // Display GST
-        if (breakdown.gst > 0) {
+        if (toNumber(breakdown.gst, 0) > 0) {
             const gstLabel = breakdown.gst_label || 'GST';
-            const gstPercent = breakdown.gst_percentage || 0;
-            html += '<tr><td>' + gstLabel + ' (' + gstPercent + '%):</td><td>₹' + formatNumber(breakdown.gst) + '</td></tr>';
+            const gstPercent = toNumber(breakdown.gst_percentage, 0);
+            html += '<tr><td>' + gstLabel + ' (' + gstPercent + '%):</td><td>₹' + formatNumber(toNumber(breakdown.gst, 0)) + '</td></tr>';
         }
         
         html += '</table>';
@@ -277,7 +305,8 @@ jQuery(document).ready(function($) {
     
     // Format number with commas
     function formatNumber(num) {
-        return parseFloat(num).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        const number = toNumber(num, 0);
+        return number.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
     }
     
     // Debounced calculate function
