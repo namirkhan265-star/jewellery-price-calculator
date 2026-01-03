@@ -77,11 +77,12 @@ jQuery(document).ready(function($) {
             success: function(response) {
                 if (response.success) {
                     currentCalculatedPrice = response.data.final_price;
-                    currentDiscountAmount = response.data.discount || 0;
-                    
-                    // Use price_before_discount from backend if available
-                    currentDiscountedPrice = currentCalculatedPrice;
                     currentPriceBeforeDiscount = response.data.price_before_discount || currentCalculatedPrice;
+                    
+                    // Get discount from breakdown
+                    const breakdown = response.data.breakdown || {};
+                    currentDiscountAmount = breakdown.discount_amount || 0;
+                    currentDiscountedPrice = currentCalculatedPrice;
                     
                     displayPriceBreakup(response.data);
                     
@@ -171,35 +172,38 @@ jQuery(document).ready(function($) {
     
     // Display price breakup
     function displayPriceBreakup(data) {
+        // Extract breakdown data
+        const breakdown = data.breakdown || {};
+        const finalPrice = data.final_price || 0;
+        const priceBeforeDiscount = data.price_before_discount || finalPrice;
+        const discountAmount = breakdown.discount_amount || 0;
+        const discountPercent = breakdown.discount_percentage || 0;
+        
         let html = '<div class="jpc-live-calc-wrapper">';
         html += '<h4>💰 Live Price Calculation</h4>';
         
         // Price Summary Box
         html += '<div class="jpc-price-summary">';
         
-        if (data.discount > 0) {
-            // Use price_before_discount from backend
-            const priceBeforeDiscount = data.price_before_discount || (data.final_price + data.discount);
-            const discountPercent = data.discount_percentage ? parseFloat(data.discount_percentage).toFixed(1) : '0.0';
-            
+        if (discountAmount > 0) {
             html += '<div class="jpc-price-row jpc-before-discount">';
             html += '<span class="label">Price Before Discount:</span>';
             html += '<span class="value">₹' + formatNumber(priceBeforeDiscount) + '</span>';
             html += '</div>';
             
             html += '<div class="jpc-price-row jpc-discount-row">';
-            html += '<span class="label">Discount (' + discountPercent + '%):</span>';
-            html += '<span class="value discount">-₹' + formatNumber(data.discount) + '</span>';
+            html += '<span class="label">Discount (' + parseFloat(discountPercent).toFixed(1) + '%):</span>';
+            html += '<span class="value discount">-₹' + formatNumber(discountAmount) + '</span>';
             html += '</div>';
             
             html += '<div class="jpc-price-row jpc-after-discount">';
             html += '<span class="label">Price After Discount:</span>';
-            html += '<span class="value highlight">₹' + formatNumber(data.final_price) + '</span>';
+            html += '<span class="value highlight">₹' + formatNumber(finalPrice) + '</span>';
             html += '</div>';
         } else {
             html += '<div class="jpc-price-row jpc-final-price">';
             html += '<span class="label">Final Price:</span>';
-            html += '<span class="value highlight">₹' + formatNumber(data.final_price) + '</span>';
+            html += '<span class="value highlight">₹' + formatNumber(finalPrice) + '</span>';
             html += '</div>';
         }
         
@@ -210,73 +214,57 @@ jQuery(document).ready(function($) {
         html += '<summary>View Detailed Breakdown</summary>';
         html += '<table class="jpc-breakdown-table">';
         
-        html += '<tr><td>Metal Price:</td><td>₹' + formatNumber(data.metal_price) + '</td></tr>';
+        html += '<tr><td>Metal Price:</td><td>₹' + formatNumber(breakdown.metal_price || 0) + '</td></tr>';
         
-        if (data.diamond_price > 0) {
-            html += '<tr><td>Diamond Price:</td><td>₹' + formatNumber(data.diamond_price) + '</td></tr>';
+        if (breakdown.diamond_price > 0) {
+            html += '<tr><td>Diamond Price:</td><td>₹' + formatNumber(breakdown.diamond_price) + '</td></tr>';
         }
         
-        if (data.making_charge > 0) {
-            html += '<tr><td>Making Charge:</td><td>₹' + formatNumber(data.making_charge) + '</td></tr>';
+        if (breakdown.making_charge > 0) {
+            html += '<tr><td>Making Charge:</td><td>₹' + formatNumber(breakdown.making_charge) + '</td></tr>';
         }
         
-        if (data.wastage_charge > 0) {
-            html += '<tr><td>Wastage Charge:</td><td>₹' + formatNumber(data.wastage_charge) + '</td></tr>';
+        if (breakdown.wastage_charge > 0) {
+            html += '<tr><td>Wastage Charge:</td><td>₹' + formatNumber(breakdown.wastage_charge) + '</td></tr>';
         }
         
-        if (data.pearl_cost > 0) {
-            html += '<tr><td>Pearl Cost:</td><td>₹' + formatNumber(data.pearl_cost) + '</td></tr>';
+        if (breakdown.pearl_cost > 0) {
+            html += '<tr><td>Pearl Cost:</td><td>₹' + formatNumber(breakdown.pearl_cost) + '</td></tr>';
         }
         
-        if (data.stone_cost > 0) {
-            html += '<tr><td>Stone Cost:</td><td>₹' + formatNumber(data.stone_cost) + '</td></tr>';
+        if (breakdown.stone_cost > 0) {
+            html += '<tr><td>Stone Cost:</td><td>₹' + formatNumber(breakdown.stone_cost) + '</td></tr>';
         }
         
-        if (data.extra_fee > 0) {
-            html += '<tr><td>Extra Fee:</td><td>₹' + formatNumber(data.extra_fee) + '</td></tr>';
+        if (breakdown.extra_fee > 0) {
+            html += '<tr><td>Extra Fee:</td><td>₹' + formatNumber(breakdown.extra_fee) + '</td></tr>';
         }
         
         // Display extra fields with labels - SHOW ALL ENABLED FIELDS
-        if (data.extra_fields && data.extra_fields.length > 0) {
-            for (let i = 0; i < data.extra_fields.length; i++) {
-                const field = data.extra_fields[i];
+        if (breakdown.extra_fields && breakdown.extra_fields.length > 0) {
+            for (let i = 0; i < breakdown.extra_fields.length; i++) {
+                const field = breakdown.extra_fields[i];
                 // Show ALL enabled fields, even if value is 0
                 html += '<tr><td>' + field.label + ':</td><td>₹' + formatNumber(field.value) + '</td></tr>';
             }
         }
         
         // Display additional percentage
-        if (data.additional_percentage > 0) {
-            const addPercentLabel = data.additional_percentage_label || 'Additional Percentage';
-            html += '<tr><td>' + addPercentLabel + ':</td><td>₹' + formatNumber(data.additional_percentage) + '</td></tr>';
+        if (breakdown.additional_percentage > 0) {
+            const addPercentLabel = breakdown.additional_percentage_label || 'Additional Percentage';
+            html += '<tr><td>' + addPercentLabel + ':</td><td>₹' + formatNumber(breakdown.additional_percentage) + '</td></tr>';
         }
         
-        if (data.discount > 0) {
-            html += '<tr class="discount-row"><td>Discount:</td><td>-₹' + formatNumber(data.discount) + '</td></tr>';
+        // Display GST
+        if (breakdown.gst > 0) {
+            const gstLabel = breakdown.gst_label || 'GST';
+            const gstPercent = breakdown.gst_percentage || 0;
+            html += '<tr><td>' + gstLabel + ' (' + gstPercent + '%):</td><td>₹' + formatNumber(breakdown.gst) + '</td></tr>';
         }
         
-        // Always show GST line if GST is enabled
-        if (typeof data.gst !== 'undefined') {
-            const gstLabel = data.gst_label || 'GST';
-            const gstPercentage = data.gst_percentage || '';
-            const gstLabelText = gstPercentage ? gstLabel + ' (' + gstPercentage + '%)' : gstLabel;
-            html += '<tr class="gst-row"><td>' + gstLabelText + ':</td><td>₹' + formatNumber(data.gst) + '</td></tr>';
-        }
-        
-        html += '<tr class="total-row"><td><strong>Final Price:</strong></td><td><strong>₹' + formatNumber(data.final_price) + '</strong></td></tr>';
         html += '</table>';
         html += '</details>';
         
-        // Action Buttons
-        html += '<div class="jpc-action-buttons">';
-        html += '<button type="button" class="button button-primary jpc-apply-price-btn">✓ Apply All Prices</button>';
-        
-        if (data.discount > 0) {
-            html += '<button type="button" class="button jpc-sync-regular-btn">Sync Regular Price</button>';
-            html += '<button type="button" class="button jpc-sync-sale-btn">Sync Sale Price</button>';
-        }
-        
-        html += '</div>';
         html += '</div>';
         
         $('.jpc-price-breakup-admin').html(html);
@@ -287,18 +275,20 @@ jQuery(document).ready(function($) {
         return parseFloat(num).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
     }
     
-    // Debounced calculation
+    // Debounced calculate function
     const debouncedCalculate = debounce(calculateLivePrice, 500);
     
-    // Bind events to all input fields
+    // Bind events
     $('#_jpc_metal_id, #_jpc_metal_weight, #_jpc_diamond_id, #_jpc_diamond_quantity, #_jpc_making_charge, select[name="_jpc_making_charge_type"], #_jpc_wastage_charge, select[name="_jpc_wastage_charge_type"], #_jpc_pearl_cost, #_jpc_stone_cost, #_jpc_extra_fee, #_jpc_discount_percentage, #_jpc_extra_field_1, #_jpc_extra_field_2, #_jpc_extra_field_3, #_jpc_extra_field_4, #_jpc_extra_field_5').on('input change', debouncedCalculate);
     
-    // Bind button clicks
+    // Apply price button
     $(document).on('click', '.jpc-apply-price-btn', applyPriceToProduct);
+    
+    // Sync buttons
     $(document).on('click', '.jpc-sync-regular-btn', syncRegularPrice);
     $(document).on('click', '.jpc-sync-sale-btn', syncSalePrice);
     
-    // Initial calculation if fields are already filled
+    // Initial calculation if fields are filled
     if ($('#_jpc_metal_id').val() && $('#_jpc_metal_weight').val()) {
         calculateLivePrice();
     }
