@@ -3,7 +3,7 @@
  * Plugin Name: Jewellery Price Calculator
  * Plugin URI: https://github.com/yourusername/jewellery-price-calculator
  * Description: Advanced price calculator for jewellery products with metal rates, making charges, and GST
- * Version: 1.7.4
+ * Version: 1.7.5
  * Author: Your Name
  * Author URI: https://yourwebsite.com
  * Text Domain: jewellery-price-calc
@@ -19,7 +19,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('JPC_VERSION', '1.7.4');
+define('JPC_VERSION', '1.7.5');
 define('JPC_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('JPC_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('JPC_PLUGIN_BASENAME', plugin_basename(__FILE__));
@@ -49,10 +49,8 @@ require_once JPC_PLUGIN_DIR . 'includes/class-jpc-admin.php';
 add_action('plugins_loaded', 'jpc_init');
 
 function jpc_init() {
-    // Initialize database
-    JPC_Database::init();
-    
     // Initialize ALL singleton classes (CRITICAL: Must initialize all classes with AJAX handlers)
+    // Note: Database class doesn't need initialization - it only has static methods
     JPC_Metal_Groups::get_instance();
     JPC_Metals::get_instance();
     JPC_Diamond_Groups::get_instance();
