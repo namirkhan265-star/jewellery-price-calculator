@@ -263,20 +263,21 @@ class JPC_Price_Calculator {
         $extra_fee = floatval(get_post_meta($product_id, '_jpc_extra_fee', true));
         
         // Get extra field costs with labels - INCLUDE ALL ENABLED FIELDS
-        $extra_fields = array();
-        for ($i = 1; $i <= 5; $i++) {
-            $enabled = get_option('jpc_enable_extra_field_' . $i);
-            // Check multiple formats for enabled status
-            if ($enabled === 'yes' || $enabled === '1' || $enabled === 1 || $enabled === true) {
-                $label = get_option('jpc_extra_field_label_' . $i, 'Extra Field #' . $i);
-                $value = floatval(get_post_meta($product_id, '_jpc_extra_field_' . $i, true));
-                // ALWAYS include enabled fields, even if value is 0 (for display)
-                $extra_fields[] = array(
-                    'label' => $label,
-                    'value' => $value
-                );
-            }
-        }
+$extra_fields = array();
+for ($i = 1; $i <= 5; $i++) {
+    $enabled = get_option('jpc_enable_extra_field_' . $i);
+    // Check multiple formats for enabled status
+    if ($enabled === 'yes' || $enabled === '1' || $enabled === 1 || $enabled === true) {
+        $label = get_option('jpc_extra_field_' . $i . '_label', 'Extra Field #' . $i);
+        $value = floatval(get_post_meta($product_id, '_jpc_extra_field_' . $i, true));
+        // ALWAYS include enabled fields, even if value is 0 (for display)
+        $extra_fields[] = array(
+            'field_number' => $i,  // Store the actual field number
+            'label' => $label,
+            'value' => $value
+        );
+    }
+}
         
         // Get prices with GST
         $prices = self::calculate_product_prices($product_id);
