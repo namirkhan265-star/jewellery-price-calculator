@@ -3,7 +3,7 @@
  * Plugin Name: Jewellery Price Calculator
  * Plugin URI: https://github.com/yourusername/jewellery-price-calculator
  * Description: Advanced price calculator for jewellery products with metal rates, making charges, and GST
- * Version: 1.7.3
+ * Version: 1.7.4
  * Author: Your Name
  * Author URI: https://yourwebsite.com
  * Text Domain: jewellery-price-calc
@@ -19,7 +19,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('JPC_VERSION', '1.7.3');
+define('JPC_VERSION', '1.7.4');
 define('JPC_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('JPC_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('JPC_PLUGIN_BASENAME', plugin_basename(__FILE__));
@@ -32,10 +32,13 @@ if (!in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get
     return;
 }
 
-// Include required files
+// Include required files - ALL class files
 require_once JPC_PLUGIN_DIR . 'includes/class-jpc-database.php';
 require_once JPC_PLUGIN_DIR . 'includes/class-jpc-metal-groups.php';
 require_once JPC_PLUGIN_DIR . 'includes/class-jpc-metals.php';
+require_once JPC_PLUGIN_DIR . 'includes/class-jpc-diamond-groups.php';
+require_once JPC_PLUGIN_DIR . 'includes/class-jpc-diamond-types.php';
+require_once JPC_PLUGIN_DIR . 'includes/class-jpc-diamond-certifications.php';
 require_once JPC_PLUGIN_DIR . 'includes/class-jpc-diamonds.php';
 require_once JPC_PLUGIN_DIR . 'includes/class-jpc-price-calculator.php';
 require_once JPC_PLUGIN_DIR . 'includes/class-jpc-product-meta.php';
@@ -49,9 +52,12 @@ function jpc_init() {
     // Initialize database
     JPC_Database::init();
     
-    // Initialize ALL components (CRITICAL: Must initialize all singleton classes)
+    // Initialize ALL singleton classes (CRITICAL: Must initialize all classes with AJAX handlers)
     JPC_Metal_Groups::get_instance();
     JPC_Metals::get_instance();
+    JPC_Diamond_Groups::get_instance();
+    JPC_Diamond_Types::get_instance();
+    JPC_Diamond_Certifications::get_instance();
     JPC_Diamonds::get_instance();
     JPC_Product_Meta::get_instance();
     JPC_Frontend::get_instance();
