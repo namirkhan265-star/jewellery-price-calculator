@@ -192,7 +192,7 @@ class JPC_Product_Meta {
     
     /**
      * AJAX handler for live price calculation
-     * UPDATED: Now uses new discount calculation methods
+     * UPDATED: Now supports 5 discount methods including "Discount After GST"
      */
     public function ajax_calculate_live_price() {
         check_ajax_referer('jpc_live_calc_nonce', 'nonce');
@@ -270,25 +270,123 @@ class JPC_Product_Meta {
         // Apply Additional Percentage (if enabled)
         $additional_percentage_amount = 0;
         $additional_percentage = floatval(get_option('jpc_additional_percentage_value', 0));
+        $additional_percentage_label = get_option('jpc_additional_percentage_label', 'Additional Percentage');
+        
+        // Get discount calculation method
+        $discount_method = get_option('jpc_discount_calculation_method', 'simple');
+        
+        // Get GST settings
+        $gst_percentage = 0;
+        $gst_label = get_option('jpc_gst_label', 'GST');
+        $gst_enabled = get_option('jpc_enable_gst');
+        
+        if ($gst_enabled === 'yes' || $gst_enabled === '1' || $gst_enabled === 1 || $gst_enabled === true) {
+            $gst_percentage = floatval(get_option('jpc_gst_value', 5));
+            
+            // Check for metal-specific GST rates
+            $metal_group_name = strtolower(str_replace(' ', '_', $metal_group->name));
+            $metal_specific_gst = get_option('jpc_gst_' . $metal_group_name);
+            
+            if ($metal_specific_gst === false || $metal_specific_gst === '') {
+                $metal_group_name_no_underscore = strtolower(str_replace(' ', '', $metal_group->name));
+                $metal_specific_gst = get_option('jpc_gst_' . $metal_group_name_no_underscore);
+            }
+            
+            if ($metal_specific_gst !== false && $metal_specific_gst !== '' && $metal_specific_gst !== null) {
+                $gst_percentage = floatval($metal_specific_gst);
+            }
+        }
+        
+        // ============================================================
+        // METHOD 5: DISCOUNT AFTER GST (NEW!)
+        // ============================================================
+        if ($discount_method === 'discount_after_gst') {
+            // FLOW: Subtotal → + Additional % → + GST → - Discount → Final Price
+            
+            // Step 1: Add Additional % to subtotal
+            if ($additional_percentage > 0) {
+                $additional_percentage_amount = ($subtotal_before_additional * $additional_percentage) / 100;
+            }
+            $subtotal_with_additional = $subtotal_before_additional + $additional_percentage_amount;
+            
+            // Step 2: Calculate and add GST
+            $gst_amount = 0;
+            if ($gst_enabled === 'yes' || $gst_enabled === '1' || $gst_enabled === 1 || $gst_enabled === true) {
+                $gst_amount = ($subtotal_with_additional * $gst_percentage) / 100;
+            }
+            
+            $total_with_gst = $subtotal_with_additional + $gst_amount;
+            
+            // Step 3: Apply discount on (Subtotal + Additional % + GST)
+            $discount_amount = 0;
+            if ($discount_percentage > 0) {
+                $discount_amount = ($total_with_gst * $discount_percentage) / 100;
+            }
+            
+            $final_price = $total_with_gst - $discount_amount;
+            $price_before_discount = $total_with_gst;
+            
+            // Apply rounding
+            $rounding = get_option('jpc_price_rounding', 'default');
+            $final_price = $this->apply_rounding($final_price, $rounding);
+            $price_before_discount = $this->apply_rounding($price_before_discount, $rounding);
+            
+            // Get extra field labels
+            $extra_fields = array();
+            for ($i = 1; $i <= 5; $i++) {
+                $enabled = get_option('jpc_enable_extra_field_' . $i);
+                if ($enabled === 'yes' || $enabled === '1' || $enabled === 1 || $enabled === true) {
+                    $label = get_option('jpc_extra_field_label_' . $i, 'Extra Field #' . $i);
+                    $value = ${'extra_field_' . $i};
+                    $extra_fields[] = array(
+                        'label' => $label,
+                        'value' => $value
+                    );
+                }
+            }
+            
+            wp_send_json_success(array(
+                'final_price' => $final_price,
+                'price_before_discount' => $price_before_discount,
+                'breakdown' => array(
+                    'metal_price' => $metal_price,
+                    'diamond_price' => $diamond_price,
+                    'making_charge' => $making_charge_amount,
+                    'wastage_charge' => $wastage_charge_amount,
+                    'pearl_cost' => $pearl_cost,
+                    'stone_cost' => $stone_cost,
+                    'extra_fee' => $extra_fee,
+                    'extra_fields' => $extra_fields,
+                    'additional_percentage' => $additional_percentage_amount,
+                    'additional_percentage_label' => $additional_percentage_label,
+                    'subtotal_before_gst' => $subtotal_with_additional,
+                    'gst' => $gst_amount,
+                    'gst_label' => $gst_label,
+                    'gst_percentage' => $gst_percentage,
+                    'total_with_gst' => $total_with_gst,
+                    'discount_amount' => $discount_amount,
+                    'discount_percentage' => $discount_percentage,
+                    'calculation_method' => 'discount_after_gst'
+                )
+            ));
+            return;
+        }
+        
+        // ============================================================
+        // METHODS 1-4: TRADITIONAL DISCOUNT BEFORE GST
+        // ============================================================
+        
+        // Add Additional % for methods 1-4
         if ($additional_percentage > 0) {
             $additional_percentage_amount = ($subtotal_before_additional * $additional_percentage) / 100;
         }
-        $additional_percentage_label = get_option('jpc_additional_percentage_label', 'Additional Percentage');
-        
-        // Subtotal after additional percentage
         $subtotal_before_discount = $subtotal_before_additional + $additional_percentage_amount;
         
-        // ============================================================
-        // ENHANCED DISCOUNT CALCULATION WITH 4 METHODS
-        // ============================================================
+        // Calculate discount based on method
         $discount_amount = 0;
         $subtotal_after_discount = $subtotal_before_discount;
         
         if ($discount_percentage > 0) {
-            // Get discount calculation method
-            $discount_method = get_option('jpc_discount_calculation_method', 'simple');
-            
-            // Calculate discountable amount based on method
             $discountable_amount = 0;
             
             switch ($discount_method) {
@@ -310,7 +408,6 @@ class JPC_Product_Meta {
                         $discountable_amount += $wastage_charge_amount;
                     }
                     
-                    // If no components selected, apply to entire subtotal
                     if ($discountable_amount == 0) {
                         $discountable_amount = $subtotal_before_discount;
                     }
@@ -322,7 +419,7 @@ class JPC_Product_Meta {
                     break;
                     
                 case 'total_before_gst':
-                    // Method 3: Total Before GST ⭐ RECOMMENDED
+                    // Method 3: Total Before GST
                     $discountable_amount = $subtotal_before_discount;
                     break;
                     
@@ -332,58 +429,29 @@ class JPC_Product_Meta {
                     break;
                     
                 default:
-                    // Fallback to total discount
                     $discountable_amount = $subtotal_before_discount;
                     break;
             }
             
-            // Calculate discount
             $discount_amount = ($discountable_amount * $discount_percentage) / 100;
             $subtotal_after_discount = $subtotal_before_discount - $discount_amount;
         }
         
-        // ============================================================
-        // ENHANCED GST CALCULATION WITH BASE OPTIONS
-        // ============================================================
+        // Calculate GST
         $gst_amount = 0;
-        $gst_percentage = 0;
-        $gst_label = get_option('jpc_gst_label', 'GST');
-        $gst_enabled = get_option('jpc_enable_gst');
-        
         if ($gst_enabled === 'yes' || $gst_enabled === '1' || $gst_enabled === 1 || $gst_enabled === true) {
-            $gst_percentage = floatval(get_option('jpc_gst_value', 5));
-            
-            // Check for metal-specific GST rates
-            $metal_group_name = strtolower(str_replace(' ', '_', $metal_group->name));
-            $metal_specific_gst = get_option('jpc_gst_' . $metal_group_name);
-            
-            // Also try without underscores
-            if ($metal_specific_gst === false || $metal_specific_gst === '') {
-                $metal_group_name_no_underscore = strtolower(str_replace(' ', '', $metal_group->name));
-                $metal_specific_gst = get_option('jpc_gst_' . $metal_group_name_no_underscore);
-            }
-            
-            // Use metal-specific GST if found
-            if ($metal_specific_gst !== false && $metal_specific_gst !== '' && $metal_specific_gst !== null) {
-                $gst_percentage = floatval($metal_specific_gst);
-            }
-            
-            // Get GST calculation base setting
             $gst_base = get_option('jpc_gst_calculation_base', 'after_discount');
             
             if ($gst_base === 'after_discount') {
-                // GST on discounted amount (RECOMMENDED)
                 $gst_amount = ($subtotal_after_discount * $gst_percentage) / 100;
             } else {
-                // GST on original amount (before discount)
                 $gst_amount = ($subtotal_before_discount * $gst_percentage) / 100;
             }
         }
         
-        // Calculate final price (after discount, with GST)
+        // Calculate final prices
         $final_price = $subtotal_after_discount + $gst_amount;
         
-        // Calculate price before discount (full subtotal + GST on full subtotal)
         $gst_on_full_subtotal = 0;
         if ($gst_enabled === 'yes' || $gst_enabled === '1' || $gst_enabled === 1 || $gst_enabled === true) {
             $gst_on_full_subtotal = ($subtotal_before_discount * $gst_percentage) / 100;
@@ -395,15 +463,13 @@ class JPC_Product_Meta {
         $final_price = $this->apply_rounding($final_price, $rounding);
         $price_before_discount = $this->apply_rounding($price_before_discount, $rounding);
         
-        // Get extra field labels for display
+        // Get extra field labels
         $extra_fields = array();
         for ($i = 1; $i <= 5; $i++) {
             $enabled = get_option('jpc_enable_extra_field_' . $i);
             if ($enabled === 'yes' || $enabled === '1' || $enabled === 1 || $enabled === true) {
                 $label = get_option('jpc_extra_field_label_' . $i, 'Extra Field #' . $i);
-                $field_var = 'extra_field_' . $i;
-                $value = $$field_var; // Get the value from the variable
-                // ALWAYS include enabled fields, even if value is 0
+                $value = ${'extra_field_' . $i};
                 $extra_fields[] = array(
                     'label' => $label,
                     'value' => $value
@@ -412,24 +478,26 @@ class JPC_Product_Meta {
         }
         
         wp_send_json_success(array(
-            'metal_price' => $metal_price,
-            'diamond_price' => $diamond_price,
-            'making_charge' => $making_charge_amount,
-            'wastage_charge' => $wastage_charge_amount,
-            'pearl_cost' => $pearl_cost,
-            'stone_cost' => $stone_cost,
-            'extra_fee' => $extra_fee,
-            'extra_fields' => $extra_fields,
-            'additional_percentage' => $additional_percentage_amount,
-            'additional_percentage_label' => $additional_percentage_label,
-            'discount' => $discount_amount,
-            'discount_percentage' => $discount_percentage,
-            'subtotal' => $subtotal_after_discount,
-            'gst' => $gst_amount,
-            'gst_percentage' => $gst_percentage,
-            'gst_label' => $gst_label,
             'final_price' => $final_price,
             'price_before_discount' => $price_before_discount,
+            'breakdown' => array(
+                'metal_price' => $metal_price,
+                'diamond_price' => $diamond_price,
+                'making_charge' => $making_charge_amount,
+                'wastage_charge' => $wastage_charge_amount,
+                'pearl_cost' => $pearl_cost,
+                'stone_cost' => $stone_cost,
+                'extra_fee' => $extra_fee,
+                'extra_fields' => $extra_fields,
+                'additional_percentage' => $additional_percentage_amount,
+                'additional_percentage_label' => $additional_percentage_label,
+                'gst' => $gst_amount,
+                'gst_label' => $gst_label,
+                'gst_percentage' => $gst_percentage,
+                'discount_amount' => $discount_amount,
+                'discount_percentage' => $discount_percentage,
+                'calculation_method' => $discount_method
+            )
         ));
     }
     
@@ -440,27 +508,24 @@ class JPC_Product_Meta {
         switch ($rounding) {
             case 'nearest_10':
                 return round($price / 10) * 10;
-            case 'nearest_50':
-                return round($price / 50) * 50;
             case 'nearest_100':
                 return round($price / 100) * 100;
+            case 'nearest_1000':
+                return round($price / 1000) * 1000;
             case 'ceil_10':
                 return ceil($price / 10) * 10;
-            case 'ceil_50':
-                return ceil($price / 50) * 50;
             case 'ceil_100':
                 return ceil($price / 100) * 100;
+            case 'ceil_1000':
+                return ceil($price / 1000) * 1000;
             case 'floor_10':
                 return floor($price / 10) * 10;
-            case 'floor_50':
-                return floor($price / 50) * 50;
             case 'floor_100':
                 return floor($price / 100) * 100;
+            case 'floor_1000':
+                return floor($price / 1000) * 1000;
             default:
                 return round($price, 2);
         }
     }
 }
-
-// Initialize
-JPC_Product_Meta::get_instance();
