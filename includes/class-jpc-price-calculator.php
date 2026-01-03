@@ -136,7 +136,7 @@ class JPC_Price_Calculator {
         $extra_field_costs = 0;
         for ($i = 1; $i <= 5; $i++) {
             $enabled = get_option('jpc_enable_extra_field_' . $i);
-            if ($enabled === 'yes' || $enabled === '1') {
+            if ($enabled === 'yes' || $enabled === '1' || $enabled === 1 || $enabled === true) {
                 $field_value = floatval(get_post_meta($product_id, '_jpc_extra_field_' . $i, true));
                 $extra_field_costs += $field_value;
             }
@@ -172,22 +172,22 @@ class JPC_Price_Calculator {
             $discountable_amount = 0;
             
             // Add components based on settings
-            if ($discount_on_metals === 'yes' || $discount_on_metals === '1') {
+            if ($discount_on_metals === 'yes' || $discount_on_metals === '1' || $discount_on_metals === 1 || $discount_on_metals === true) {
                 $discountable_amount += $metal_price;
             }
             
-            if ($discount_on_making === 'yes' || $discount_on_making === '1') {
+            if ($discount_on_making === 'yes' || $discount_on_making === '1' || $discount_on_making === 1 || $discount_on_making === true) {
                 $discountable_amount += $making_charge_amount;
             }
             
-            if ($discount_on_wastage === 'yes' || $discount_on_wastage === '1') {
+            if ($discount_on_wastage === 'yes' || $discount_on_wastage === '1' || $discount_on_wastage === 1 || $discount_on_wastage === true) {
                 $discountable_amount += $wastage_charge_amount;
             }
             
             // If no specific discount options are enabled, apply to entire subtotal (backward compatibility)
-            if (($discount_on_metals !== 'yes' && $discount_on_metals !== '1') && 
-                ($discount_on_making !== 'yes' && $discount_on_making !== '1') && 
-                ($discount_on_wastage !== 'yes' && $discount_on_wastage !== '1')) {
+            if (($discount_on_metals !== 'yes' && $discount_on_metals !== '1' && $discount_on_metals !== 1 && $discount_on_metals !== true) && 
+                ($discount_on_making !== 'yes' && $discount_on_making !== '1' && $discount_on_making !== 1 && $discount_on_making !== true) && 
+                ($discount_on_wastage !== 'yes' && $discount_on_wastage !== '1' && $discount_on_wastage !== 1 && $discount_on_wastage !== true)) {
                 $discountable_amount = $subtotal_before_discount;
             }
             
@@ -329,19 +329,19 @@ class JPC_Price_Calculator {
         $stone_cost = floatval(get_post_meta($product_id, '_jpc_stone_cost', true));
         $extra_fee = floatval(get_post_meta($product_id, '_jpc_extra_fee', true));
         
-        // Get extra field costs with labels
+        // Get extra field costs with labels - INCLUDE ALL ENABLED FIELDS
         $extra_fields = array();
         for ($i = 1; $i <= 5; $i++) {
             $enabled = get_option('jpc_enable_extra_field_' . $i);
-            if ($enabled === 'yes' || $enabled === '1') {
+            // Check multiple formats for enabled status
+            if ($enabled === 'yes' || $enabled === '1' || $enabled === 1 || $enabled === true) {
                 $label = get_option('jpc_extra_field_label_' . $i, 'Extra Field #' . $i);
                 $value = floatval(get_post_meta($product_id, '_jpc_extra_field_' . $i, true));
-                if ($value > 0) {
-                    $extra_fields[] = array(
-                        'label' => $label,
-                        'value' => $value
-                    );
-                }
+                // ALWAYS include enabled fields, even if value is 0 (for display)
+                $extra_fields[] = array(
+                    'label' => $label,
+                    'value' => $value
+                );
             }
         }
         
