@@ -63,32 +63,35 @@ $discount_percentage = floatval(get_post_meta($product_id, '_jpc_discount_percen
 $regular_price = 0;
 $sale_price = 0;
 if ($price_breakup && is_array($price_breakup)) {
-    if (!empty($price_breakup['discount'])) {
-        // Calculate subtotal before discount (sum of all components)
-        $subtotal_before_discount = 0;
-        $subtotal_before_discount += !empty($price_breakup['metal_price']) ? floatval($price_breakup['metal_price']) : 0;
-        $subtotal_before_discount += !empty($price_breakup['diamond_price']) ? floatval($price_breakup['diamond_price']) : 0;
-        $subtotal_before_discount += !empty($price_breakup['making_charge']) ? floatval($price_breakup['making_charge']) : 0;
-        $subtotal_before_discount += !empty($price_breakup['wastage_charge']) ? floatval($price_breakup['wastage_charge']) : 0;
-        $subtotal_before_discount += !empty($price_breakup['pearl_cost']) ? floatval($price_breakup['pearl_cost']) : 0;
-        $subtotal_before_discount += !empty($price_breakup['stone_cost']) ? floatval($price_breakup['stone_cost']) : 0;
-        $subtotal_before_discount += !empty($price_breakup['extra_fee']) ? floatval($price_breakup['extra_fee']) : 0;
-        
-        // Calculate GST on the pre-discount subtotal
-        // GST rate can be determined from the actual GST and final price
-        $current_gst = !empty($price_breakup['gst']) ? floatval($price_breakup['gst']) : 0;
-        $price_after_discount = $subtotal_before_discount - floatval($price_breakup['discount']);
-        
-        // Calculate GST rate from current values
-        $gst_rate = ($price_after_discount > 0) ? ($current_gst / $price_after_discount) : 0;
-        
-        // Calculate GST on pre-discount subtotal
-        $gst_on_regular_price = $subtotal_before_discount * $gst_rate;
-        
-        // Regular price = subtotal before discount + GST on that subtotal
-        $regular_price = $subtotal_before_discount + $gst_on_regular_price;
-        $sale_price = $price_breakup['final_price'];
+    // Calculate subtotal BEFORE additional percentage
+    $subtotal_before_additional = 0;
+    $subtotal_before_additional += !empty($price_breakup['metal_price']) ? floatval($price_breakup['metal_price']) : 0;
+    $subtotal_before_additional += !empty($price_breakup['diamond_price']) ? floatval($price_breakup['diamond_price']) : 0;
+    $subtotal_before_additional += !empty($price_breakup['making_charge']) ? floatval($price_breakup['making_charge']) : 0;
+    $subtotal_before_additional += !empty($price_breakup['wastage_charge']) ? floatval($price_breakup['wastage_charge']) : 0;
+    $subtotal_before_additional += !empty($price_breakup['pearl_cost']) ? floatval($price_breakup['pearl_cost']) : 0;
+    $subtotal_before_additional += !empty($price_breakup['stone_cost']) ? floatval($price_breakup['stone_cost']) : 0;
+    $subtotal_before_additional += !empty($price_breakup['extra_fee']) ? floatval($price_breakup['extra_fee']) : 0;
+    
+    // Add extra fields to subtotal before additional
+    if (!empty($price_breakup['extra_fields']) && is_array($price_breakup['extra_fields'])) {
+        foreach ($price_breakup['extra_fields'] as $extra_field) {
+            $subtotal_before_additional += !empty($extra_field['value']) ? floatval($extra_field['value']) : 0;
+        }
     }
+    
+    // Add additional percentage
+    $additional_percentage_amount = !empty($price_breakup['additional_percentage']) ? floatval($price_breakup['additional_percentage']) : 0;
+    
+    // Subtotal AFTER additional percentage
+    $subtotal_after_additional = $subtotal_before_additional + $additional_percentage_amount;
+    
+    // Calculate regular price (subtotal after additional + GST on full)
+    $gst_on_full = !empty($price_breakup['gst_on_full']) ? floatval($price_breakup['gst_on_full']) : 0;
+    $regular_price = $subtotal_after_additional + $gst_on_full;
+    
+    // Sale price from breakup
+    $sale_price = !empty($price_breakup['final_price']) ? floatval($price_breakup['final_price']) : 0;
 }
 
 // Get product tags
@@ -304,7 +307,23 @@ $has_tags = !empty($tags) && !is_wp_error($tags);
             }
             ?>
             
-            <!-- Subtotal (before Additional % and discount) -->
+            <!-- Additional Percentage BEFORE Subtotal (with percentage value always shown) -->
+            <?php if (!empty($price_breakup['additional_percentage']) && $price_breakup['additional_percentage'] > 0): 
+                $additional_percentage_label = !empty($price_breakup['additional_percentage_label']) ? $price_breakup['additional_percentage_label'] : 'Additional Percentage';
+                $additional_percentage_value = !empty($price_breakup['additional_percentage_value']) ? floatval($price_breakup['additional_percentage_value']) : 0;
+            ?>
+            <div class="jpc-detail-row">
+                <span class="jpc-detail-label">
+                    <?php echo esc_html($additional_percentage_label); ?>
+                    <?php if ($additional_percentage_value > 0): ?>
+                        (<?php echo number_format($additional_percentage_value, 0); ?>%)
+                    <?php endif; ?>
+                </span>
+                <span class="jpc-detail-value">₹ <?php echo number_format($price_breakup['additional_percentage'], 0); ?>/-</span>
+            </div>
+            <?php endif; ?>
+            
+            <!-- Subtotal (AFTER Additional Percentage) -->
             <?php 
             $subtotal = 0;
             $subtotal += !empty($price_breakup['metal_price']) ? floatval($price_breakup['metal_price']) : 0;
@@ -322,27 +341,14 @@ $has_tags = !empty($tags) && !is_wp_error($tags);
                 }
             }
             
+            // Add additional percentage to subtotal
+            $subtotal += !empty($price_breakup['additional_percentage']) ? floatval($price_breakup['additional_percentage']) : 0;
+            
             if ($subtotal > 0):
             ?>
-            <div class="jpc-detail-row jpc-subtotal-row" style="border-top: 2px solid #ddd; margin-top: 10px; padding-top: 10px;">
+            <div class="jpc-detail-row jpc-subtotal-row" style="border-top: 2px solid #ddd; margin-top: 10px; padding-top: 10px; background: #f5f5f5; padding: 12px 0;">
                 <span class="jpc-detail-label"><strong>Subtotal</strong></span>
                 <span class="jpc-detail-value"><strong>₹ <?php echo number_format($subtotal, 0); ?>/-</strong></span>
-            </div>
-            <?php endif; ?>
-            
-            <!-- Additional Percentage with percentage value -->
-            <?php if (!empty($price_breakup['additional_percentage']) && $price_breakup['additional_percentage'] > 0): 
-                $additional_percentage_label = !empty($price_breakup['additional_percentage_label']) ? $price_breakup['additional_percentage_label'] : 'Additional Percentage';
-                $additional_percentage_value = !empty($price_breakup['additional_percentage_value']) ? $price_breakup['additional_percentage_value'] : 0;
-            ?>
-            <div class="jpc-detail-row">
-                <span class="jpc-detail-label">
-                    <?php echo esc_html($additional_percentage_label); ?>
-                    <?php if ($additional_percentage_value > 0): ?>
-                        (<?php echo number_format($additional_percentage_value, 0); ?>%)
-                    <?php endif; ?>
-                </span>
-                <span class="jpc-detail-value">₹ <?php echo number_format($price_breakup['additional_percentage'], 0); ?>/-</span>
             </div>
             <?php endif; ?>
             
@@ -572,7 +578,6 @@ $has_tags = !empty($tags) && !is_wp_error($tags);
 
 .jpc-sale-price-row {
     padding: 10px 0;
-    background: #f0f8ff;
     margin-top: 5px;
 }
 
