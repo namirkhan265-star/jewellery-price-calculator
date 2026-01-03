@@ -268,7 +268,7 @@ for ($i = 1; $i <= 5; $i++) {
     $enabled = get_option('jpc_enable_extra_field_' . $i);
     // Check multiple formats for enabled status
     if ($enabled === 'yes' || $enabled === '1' || $enabled === 1 || $enabled === true) {
-        $label = get_option('jpc_extra_field_' . $i . '_label', 'Extra Field #' . $i);
+       $label = get_option('jpc_extra_field_label_' . $i, 'Extra Field #' . $i);
         $value = floatval(get_post_meta($product_id, '_jpc_extra_field_' . $i, true));
         // ALWAYS include enabled fields, even if value is 0 (for display)
         $extra_fields[] = array(
