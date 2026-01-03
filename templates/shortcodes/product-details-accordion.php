@@ -306,7 +306,7 @@ if (!empty($price_breakup['extra_fields']) && is_array($price_breakup['extra_fie
             $field_num = !empty($extra_field['field_number']) ? $extra_field['field_number'] : 1;
             
             // Fetch live label from settings (with fallback to cached label)
-            $live_label = get_option('jpc_extra_field_' . $field_num . '_label', $extra_field['label']);
+            $live_label = get_option('jpc_extra_field_label_' . $field_num, $extra_field['label']);
             ?>
             <div class="jpc-detail-row">
                 <span class="jpc-detail-label"><?php echo esc_html($live_label); ?></span>
