@@ -174,40 +174,40 @@ jQuery(document).ready(function($) {
             discountPercent
         });
         
-        let html = '<div class=\"jpc-live-calc-wrapper\">';
+        let html = '<div class="jpc-live-calc-wrapper">';
         html += '<h4>💰 Live Price Calculation</h4>';
         
         // Price Summary Box
-        html += '<div class=\"jpc-price-summary\">';
+        html += '<div class="jpc-price-summary">';
         
         if (discountAmount > 0) {
-            html += '<div class=\"jpc-price-row jpc-before-discount\">';
-            html += '<span class=\"label\">Price Before Discount:</span>';
-            html += '<span class=\"value\">₹' + formatNumber(priceBeforeDiscount) + '</span>';
+            html += '<div class="jpc-price-row jpc-before-discount">';
+            html += '<span class="label">Price Before Discount:</span>';
+            html += '<span class="value">₹' + formatNumber(priceBeforeDiscount) + '</span>';
             html += '</div>';
             
-            html += '<div class=\"jpc-price-row jpc-discount-row\">';
-            html += '<span class=\"label\">Discount (' + discountPercent.toFixed(1) + '%):</span>';
-            html += '<span class=\"value discount\">-₹' + formatNumber(discountAmount) + '</span>';
+            html += '<div class="jpc-price-row jpc-discount-row">';
+            html += '<span class="label">Discount (' + discountPercent.toFixed(1) + '%):</span>';
+            html += '<span class="value discount">-₹' + formatNumber(discountAmount) + '</span>';
             html += '</div>';
             
-            html += '<div class=\"jpc-price-row jpc-after-discount\">';
-            html += '<span class=\"label\">Price After Discount:</span>';
-            html += '<span class=\"value highlight\">₹' + formatNumber(finalPrice) + '</span>';
+            html += '<div class="jpc-price-row jpc-after-discount">';
+            html += '<span class="label">Price After Discount:</span>';
+            html += '<span class="value highlight">₹' + formatNumber(finalPrice) + '</span>';
             html += '</div>';
         } else {
-            html += '<div class=\"jpc-price-row jpc-final-price\">';
-            html += '<span class=\"label\">Final Price:</span>';
-            html += '<span class=\"value highlight\">₹' + formatNumber(finalPrice) + '</span>';
+            html += '<div class="jpc-price-row jpc-final-price">';
+            html += '<span class="label">Final Price:</span>';
+            html += '<span class="value highlight">₹' + formatNumber(finalPrice) + '</span>';
             html += '</div>';
         }
         
         html += '</div>';
         
         // Detailed Breakdown
-        html += '<details class=\"jpc-breakdown-details\" open>';
+        html += '<details class="jpc-breakdown-details" open>';
         html += '<summary>View Detailed Breakdown</summary>';
-        html += '<table class=\"jpc-breakdown-table\">';
+        html += '<table class="jpc-breakdown-table">';
         
         // Metal Price
         const metalPrice = toNumber(breakdown.metal_price, 0);
@@ -260,6 +260,12 @@ jQuery(document).ready(function($) {
             });
         }
         
+        // Subtotal (before discount and GST)
+        const subtotal = toNumber(breakdown.subtotal, 0);
+        if (subtotal > 0) {
+            html += '<tr class="subtotal-row"><td><strong>Subtotal:</strong></td><td><strong>₹' + formatNumber(subtotal) + '</strong></td></tr>';
+        }
+        
         // Additional Percentage
         const additionalPercentage = toNumber(breakdown.additional_percentage, 0);
         if (additionalPercentage > 0) {
@@ -267,13 +273,27 @@ jQuery(document).ready(function($) {
             html += '<tr><td>' + addPercentLabel + ':</td><td>₹' + formatNumber(additionalPercentage) + '</td></tr>';
         }
         
+        // DISCOUNT ROW - Add it here in the detailed breakdown
+        if (discountAmount > 0) {
+            html += '<tr class="discount-row" style="background: #d4edda;">';
+            html += '<td><strong>Discount (' + discountPercent.toFixed(1) + '%):</strong></td>';
+            html += '<td style="color: #28a745; font-weight: bold;">-₹' + formatNumber(discountAmount) + '</td>';
+            html += '</tr>';
+        }
+        
         // GST
         const gst = toNumber(breakdown.gst, 0);
         if (gst > 0) {
             const gstLabel = breakdown.gst_label || 'GST';
             const gstPercent = toNumber(breakdown.gst_percentage, 0);
-            html += '<tr><td>' + gstLabel + ' (' + gstPercent + '%):</td><td>₹' + formatNumber(gst) + '</td></tr>';
+            html += '<tr class="gst-row"><td>' + gstLabel + ' (' + gstPercent + '%):</td><td>₹' + formatNumber(gst) + '</td></tr>';
         }
+        
+        // Final Price Row
+        html += '<tr class="total-row">';
+        html += '<td><strong>Final Price:</strong></td>';
+        html += '<td><strong>₹' + formatNumber(finalPrice) + '</strong></td>';
+        html += '</tr>';
         
         html += '</table>';
         html += '</details>';
