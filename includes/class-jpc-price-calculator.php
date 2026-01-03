@@ -164,27 +164,30 @@ class JPC_Price_Calculator {
         
         if ($discount_percentage > 0) {
             // Check which components to apply discount on
-            $discount_on_metals = get_option('jpc_discount_on_metals') === 'yes';
-            $discount_on_making = get_option('jpc_discount_on_making') === 'yes';
-            $discount_on_wastage = get_option('jpc_discount_on_wastage') === 'yes';
+            $discount_on_metals = get_option('jpc_discount_on_metals');
+            $discount_on_making = get_option('jpc_discount_on_making');
+            $discount_on_wastage = get_option('jpc_discount_on_wastage');
             
             // Calculate discountable amount
             $discountable_amount = 0;
             
-            if ($discount_on_metals) {
+            // Add components based on settings
+            if ($discount_on_metals === 'yes' || $discount_on_metals === '1') {
                 $discountable_amount += $metal_price;
             }
             
-            if ($discount_on_making) {
+            if ($discount_on_making === 'yes' || $discount_on_making === '1') {
                 $discountable_amount += $making_charge_amount;
             }
             
-            if ($discount_on_wastage) {
+            if ($discount_on_wastage === 'yes' || $discount_on_wastage === '1') {
                 $discountable_amount += $wastage_charge_amount;
             }
             
             // If no specific discount options are enabled, apply to entire subtotal (backward compatibility)
-            if (!$discount_on_metals && !$discount_on_making && !$discount_on_wastage) {
+            if (($discount_on_metals !== 'yes' && $discount_on_metals !== '1') && 
+                ($discount_on_making !== 'yes' && $discount_on_making !== '1') && 
+                ($discount_on_wastage !== 'yes' && $discount_on_wastage !== '1')) {
                 $discountable_amount = $subtotal_before_discount;
             }
             
@@ -196,6 +199,7 @@ class JPC_Price_Calculator {
         // Calculate GST
         $gst_amount_on_discounted = 0;
         $gst_amount_on_full = 0;
+        $gst_percentage = 0;
         $gst_enabled = get_option('jpc_enable_gst');
         
         // Check if GST is enabled
@@ -203,10 +207,18 @@ class JPC_Price_Calculator {
             $gst_percentage = floatval(get_option('jpc_gst_value', 5));
             
             // Check for metal-specific GST rates
-            $metal_group_name = strtolower($metal_group->name);
+            // Try multiple option name formats for compatibility
+            $metal_group_name = strtolower(str_replace(' ', '_', $metal_group->name));
             $metal_specific_gst = get_option('jpc_gst_' . $metal_group_name);
             
-            if ($metal_specific_gst !== false && $metal_specific_gst !== '') {
+            // Also try without underscores
+            if ($metal_specific_gst === false || $metal_specific_gst === '') {
+                $metal_group_name_no_underscore = strtolower(str_replace(' ', '', $metal_group->name));
+                $metal_specific_gst = get_option('jpc_gst_' . $metal_group_name_no_underscore);
+            }
+            
+            // Use metal-specific GST if found
+            if ($metal_specific_gst !== false && $metal_specific_gst !== '' && $metal_specific_gst !== null) {
                 $gst_percentage = floatval($metal_specific_gst);
             }
             
@@ -233,6 +245,7 @@ class JPC_Price_Calculator {
             'discount_percentage' => $discount_percentage,
             'gst_on_full' => $gst_amount_on_full,
             'gst_on_discounted' => $gst_amount_on_discounted,
+            'gst_percentage' => $gst_percentage,
             'additional_percentage_amount' => $additional_percentage_amount,
             'extra_field_costs' => $extra_field_costs
         );
@@ -348,6 +361,10 @@ class JPC_Price_Calculator {
         // Get additional percentage label
         $additional_percentage_label = get_option('jpc_additional_percentage_label', 'Additional Percentage');
         
+        // Get GST label and percentage for display
+        $gst_label = get_option('jpc_gst_label', 'GST');
+        $gst_percentage = $prices['gst_percentage'];
+        
         // Store price breakup for display
         $breakup = array(
             'metal_price' => $metal_price,
@@ -362,6 +379,8 @@ class JPC_Price_Calculator {
             'additional_percentage_label' => $additional_percentage_label,
             'discount' => $prices['discount_amount'],
             'gst' => $gst_to_display,  // CRITICAL: Store GST in breakup
+            'gst_percentage' => $gst_percentage,  // Store GST percentage for display
+            'gst_label' => $gst_label,  // Store GST label
             'gst_on_full' => $prices['gst_on_full'],  // For reference
             'gst_on_discounted' => $prices['gst_on_discounted'],  // For reference
             'subtotal' => $prices['sale_price'],
