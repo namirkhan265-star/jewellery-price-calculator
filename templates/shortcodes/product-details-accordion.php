@@ -330,28 +330,36 @@ $has_tags = !empty($tags) && !is_wp_error($tags);
             </div>
             <?php endif; ?>
             
-            <!-- Additional Percentage -->
-            <?php if (!empty($price_breakup['additional_percentage']) && $price_breakup['additional_percentage'] > 0): ?>
+            <!-- Additional Percentage with percentage value -->
+            <?php if (!empty($price_breakup['additional_percentage']) && $price_breakup['additional_percentage'] > 0): 
+                $additional_percentage_label = !empty($price_breakup['additional_percentage_label']) ? $price_breakup['additional_percentage_label'] : 'Additional Percentage';
+                $additional_percentage_value = !empty($price_breakup['additional_percentage_value']) ? $price_breakup['additional_percentage_value'] : 0;
+            ?>
             <div class="jpc-detail-row">
-                <span class="jpc-detail-label"><?php echo esc_html($price_breakup['additional_percentage_label'] ?? 'Additional Percentage'); ?></span>
+                <span class="jpc-detail-label">
+                    <?php echo esc_html($additional_percentage_label); ?>
+                    <?php if ($additional_percentage_value > 0): ?>
+                        (<?php echo number_format($additional_percentage_value, 0); ?>%)
+                    <?php endif; ?>
+                </span>
                 <span class="jpc-detail-value">₹ <?php echo number_format($price_breakup['additional_percentage'], 0); ?>/-</span>
             </div>
             <?php endif; ?>
             
-            <!-- Discount -->
+            <!-- Discount with improved styling -->
             <?php if (!empty($price_breakup['discount'])): ?>
-            <div class="jpc-detail-row" style="color: #28a745; background: #d4edda; padding: 12px 0;">
+            <div class="jpc-detail-row jpc-discount-row" style="background: #f5f5f5; padding: 12px 0;">
                 <span class="jpc-detail-label">
                     <strong>Discount</strong>
                     <?php if ($discount_percentage > 0): ?>
-                        <span style="font-weight: bold;">(<?php echo number_format($discount_percentage, 1); ?>% OFF)</span>
+                        (<?php echo number_format($discount_percentage, 1); ?>% OFF)
                     <?php endif; ?>
                 </span>
-                <span class="jpc-detail-value" style="font-weight: bold;">- ₹ <?php echo number_format($price_breakup['discount'], 0); ?>/-</span>
+                <span class="jpc-detail-value" style="font-weight: bold; color: #28a745;">- ₹ <?php echo number_format($price_breakup['discount'], 0); ?>/-</span>
             </div>
             <?php endif; ?>
             
-            <!-- GST with percentage -->
+            <!-- GST with percentage - clean styling -->
             <?php if (!empty($price_breakup['gst'])): 
                 $gst_label = !empty($price_breakup['gst_label']) ? $price_breakup['gst_label'] : 'GST';
                 $gst_percentage = !empty($price_breakup['gst_percentage']) ? $price_breakup['gst_percentage'] : 0;
@@ -536,20 +544,20 @@ $has_tags = !empty($tags) && !is_wp_error($tags);
 }
 
 .jpc-subtotal-row {
-    background: #f0f8ff;
+    background: #f5f5f5;
 }
 
 .jpc-total-row {
-    background: #e8f4f8;
+    background: #f5f5f5;
     padding: 15px 0 !important;
     margin-top: 10px;
-    border-top: 2px solid #0066cc !important;
+    border-top: 2px solid #ddd !important;
 }
 
 .jpc-total-row .jpc-detail-label,
 .jpc-total-row .jpc-detail-value {
     font-size: 16px;
-    color: #0066cc;
+    color: #333;
 }
 
 .jpc-price-summary {
