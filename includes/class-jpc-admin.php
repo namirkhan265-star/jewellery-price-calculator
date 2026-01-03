@@ -23,6 +23,52 @@ class JPC_Admin {
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_assets'));
         add_action('admin_init', array($this, 'register_settings'));
         add_action('admin_init', array($this, 'handle_settings_save'));
+        add_action('admin_init', array($this, 'handle_bulk_regenerate'));
+    }
+    
+    /**
+     * Handle bulk regenerate price breakup
+     */
+    public function handle_bulk_regenerate() {
+        if (!isset($_POST['jpc_bulk_regenerate']) || !isset($_POST['_wpnonce'])) {
+            return;
+        }
+        
+        if (!wp_verify_nonce($_POST['_wpnonce'], 'jpc_bulk_regenerate')) {
+            wp_die('Security check failed');
+        }
+        
+        if (!current_user_can('manage_woocommerce')) {
+            wp_die('Unauthorized');
+        }
+        
+        // Get all products with JPC metal ID
+        $args = array(
+            'post_type' => 'product',
+            'posts_per_page' => -1,
+            'meta_query' => array(
+                array(
+                    'key' => '_jpc_metal_id',
+                    'compare' => 'EXISTS'
+                )
+            )
+        );
+        
+        $products = get_posts($args);
+        $count = 0;
+        
+        foreach ($products as $product) {
+            // Recalculate and update price
+            JPC_Price_Calculator::calculate_and_update_price($product->ID);
+            $count++;
+        }
+        
+        // Redirect with success message
+        wp_redirect(add_query_arg(array(
+            'page' => 'jewellery-price-calc',
+            'regenerated' => $count
+        ), admin_url('admin.php')));
+        exit;
     }
     
     /**
@@ -272,7 +318,7 @@ class JPC_Admin {
     }
     
     /**
-     * Render diamonds page (legacy)
+     * Render diamonds page
      */
     public function render_diamonds() {
         include JPC_PLUGIN_DIR . 'templates/admin/diamonds.php';
