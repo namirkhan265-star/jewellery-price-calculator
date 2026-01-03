@@ -1,7 +1,7 @@
 <?php
 /**
- * Frontend Price Breakup Template - SIMPLE VERSION
- * Just displays stored values from database, no calculations
+ * Frontend Price Breakup Template - COMPLETE VERSION
+ * Displays all price components including extra fields
  */
 
 if (!defined('ABSPATH')) {
@@ -88,6 +88,33 @@ if (empty($sale_price) || $sale_price <= 0) {
             <tr>
                 <td><?php _e('Extra Fee', 'jewellery-price-calc'); ?></td>
                 <td><?php echo wc_price($breakup['extra_fee']); ?></td>
+            </tr>
+            <?php endif; ?>
+            
+            <!-- Extra Fields #1-5 -->
+            <?php
+            for ($i = 1; $i <= 5; $i++) {
+                $enabled = get_option('jpc_enable_extra_field_' . $i);
+                if ($enabled === 'yes' || $enabled === '1') {
+                    $field_key = 'extra_field_' . $i;
+                    if (!empty($breakup[$field_key]) && $breakup[$field_key] > 0) {
+                        $label = get_option('jpc_extra_field_label_' . $i, 'Extra Field #' . $i);
+                        ?>
+                        <tr>
+                            <td><?php echo esc_html($label); ?></td>
+                            <td><?php echo wc_price($breakup[$field_key]); ?></td>
+                        </tr>
+                        <?php
+                    }
+                }
+            }
+            ?>
+            
+            <!-- Additional Percentage -->
+            <?php if (!empty($breakup['additional_percentage']) && $breakup['additional_percentage'] > 0): ?>
+            <tr>
+                <td><?php echo esc_html($breakup['additional_percentage_label'] ?? 'Additional Percentage'); ?></td>
+                <td><?php echo wc_price($breakup['additional_percentage']); ?></td>
             </tr>
             <?php endif; ?>
             
