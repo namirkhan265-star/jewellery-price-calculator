@@ -107,7 +107,7 @@ class JPC_Frontend {
     }
     
     /**
-     * Render Price Breakup tab content - FETCH FROM DATABASE ONLY
+     * Render Price Breakup tab content - COMPLETE VERSION WITH ALL FIELDS
      */
     public function render_price_breakup_tab_content() {
         global $product;
@@ -124,11 +124,6 @@ class JPC_Frontend {
         $discount_percentage = floatval(get_post_meta($product_id, '_jpc_discount_percentage', true));
         $breakup = get_post_meta($product_id, '_jpc_price_breakup', true);
         $metal_id = get_post_meta($product_id, '_jpc_metal_id', true);
-        
-        // DEBUG: Show what we're fetching
-        echo '<!-- DEBUG: Regular Price from DB: ' . $regular_price . ' -->';
-        echo '<!-- DEBUG: Sale Price from DB: ' . $sale_price . ' -->';
-        echo '<!-- DEBUG: Discount %: ' . $discount_percentage . ' -->';
         
         // Get metal info
         $metal = JPC_Metals::get_by_id($metal_id);
@@ -151,33 +146,6 @@ class JPC_Frontend {
         ?>
         <div class="jpc-price-breakup-tab" style="padding: 20px; background: #fff;">
             <h3 style="margin-bottom: 20px; font-size: 1.5em;"><?php _e('PRICE BREAKUP', 'jewellery-price-calc'); ?></h3>
-            
-            <!-- BIG DEBUG BOX -->
-            <div style="background: #fff3cd; border: 3px solid #ffc107; padding: 20px; margin-bottom: 20px; border-radius: 8px;">
-                <h4 style="color: #856404; margin: 0 0 10px 0;">🔍 DEBUG INFO (Database Values)</h4>
-                <table style="width: 100%; border-collapse: collapse;">
-                    <tr style="border-bottom: 1px solid #ddd;">
-                        <td style="padding: 8px;"><strong>Product ID:</strong></td>
-                        <td style="padding: 8px;"><?php echo $product_id; ?></td>
-                    </tr>
-                    <tr style="border-bottom: 1px solid #ddd;">
-                        <td style="padding: 8px;"><strong>Regular Price (DB):</strong></td>
-                        <td style="padding: 8px; font-size: 1.2em; color: #0066cc;"><strong>₹<?php echo number_format($regular_price, 2); ?></strong></td>
-                    </tr>
-                    <tr style="border-bottom: 1px solid #ddd;">
-                        <td style="padding: 8px;"><strong>Sale Price (DB):</strong></td>
-                        <td style="padding: 8px; font-size: 1.2em; color: #d63638;"><strong>₹<?php echo number_format($sale_price, 2); ?></strong></td>
-                    </tr>
-                    <tr style="border-bottom: 1px solid #ddd;">
-                        <td style="padding: 8px;"><strong>Discount %:</strong></td>
-                        <td style="padding: 8px;"><strong><?php echo $discount_percentage; ?>%</strong></td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 8px;"><strong>Discount Amount:</strong></td>
-                        <td style="padding: 8px;"><strong>₹<?php echo number_format($discount_amount, 2); ?></strong></td>
-                    </tr>
-                </table>
-            </div>
             
             <table class="jpc-price-breakup-table" style="width: 100%; border-collapse: collapse;">
                 <tbody>
@@ -211,6 +179,54 @@ class JPC_Frontend {
                     </tr>
                     <?php endif; ?>
                     
+                    <!-- Pearl Cost -->
+                    <?php if (!empty($breakup['pearl_cost']) && $breakup['pearl_cost'] > 0): ?>
+                    <tr style="border-bottom: 1px solid #ddd;">
+                        <td style="padding: 12px;"><?php _e('Pearl Cost', 'jewellery-price-calc'); ?></td>
+                        <td style="padding: 12px; text-align: right;"><?php echo wc_price($breakup['pearl_cost']); ?></td>
+                    </tr>
+                    <?php endif; ?>
+                    
+                    <!-- Stone Cost -->
+                    <?php if (!empty($breakup['stone_cost']) && $breakup['stone_cost'] > 0): ?>
+                    <tr style="border-bottom: 1px solid #ddd;">
+                        <td style="padding: 12px;"><?php _e('Stone Cost', 'jewellery-price-calc'); ?></td>
+                        <td style="padding: 12px; text-align: right;"><?php echo wc_price($breakup['stone_cost']); ?></td>
+                    </tr>
+                    <?php endif; ?>
+                    
+                    <!-- Extra Fee -->
+                    <?php if (!empty($breakup['extra_fee']) && $breakup['extra_fee'] > 0): ?>
+                    <tr style="border-bottom: 1px solid #ddd;">
+                        <td style="padding: 12px;"><?php _e('Extra Fee', 'jewellery-price-calc'); ?></td>
+                        <td style="padding: 12px; text-align: right;"><?php echo wc_price($breakup['extra_fee']); ?></td>
+                    </tr>
+                    <?php endif; ?>
+                    
+                    <!-- Extra Fields #1-5 (from array) -->
+                    <?php
+                    if (!empty($breakup['extra_fields']) && is_array($breakup['extra_fields'])) {
+                        foreach ($breakup['extra_fields'] as $extra_field) {
+                            if (!empty($extra_field['value']) && $extra_field['value'] > 0) {
+                                ?>
+                                <tr style="border-bottom: 1px solid #ddd;">
+                                    <td style="padding: 12px;"><?php echo esc_html($extra_field['label']); ?></td>
+                                    <td style="padding: 12px; text-align: right;"><?php echo wc_price($extra_field['value']); ?></td>
+                                </tr>
+                                <?php
+                            }
+                        }
+                    }
+                    ?>
+                    
+                    <!-- Additional Percentage -->
+                    <?php if (!empty($breakup['additional_percentage']) && $breakup['additional_percentage'] > 0): ?>
+                    <tr style="border-bottom: 1px solid #ddd;">
+                        <td style="padding: 12px;"><?php echo esc_html($breakup['additional_percentage_label'] ?? 'Additional Percentage'); ?></td>
+                        <td style="padding: 12px; text-align: right;"><?php echo wc_price($breakup['additional_percentage']); ?></td>
+                    </tr>
+                    <?php endif; ?>
+                    
                     <!-- Discount Row -->
                     <?php if ($discount_percentage > 0 && $discount_amount > 0): ?>
                     <tr style="border-bottom: 1px solid #ddd; color: #d63638;">
@@ -223,6 +239,14 @@ class JPC_Frontend {
                         <td style="padding: 12px; text-align: right; color: #d63638; font-weight: bold;">
                             - <?php echo wc_price($discount_amount); ?>
                         </td>
+                    </tr>
+                    <?php endif; ?>
+                    
+                    <!-- GST -->
+                    <?php if (!empty($breakup['gst']) && $breakup['gst'] > 0): ?>
+                    <tr style="border-bottom: 1px solid #ddd;">
+                        <td style="padding: 12px;"><?php echo get_option('jpc_gst_label', 'GST'); ?></td>
+                        <td style="padding: 12px; text-align: right;"><?php echo wc_price($breakup['gst']); ?></td>
                     </tr>
                     <?php endif; ?>
                     
