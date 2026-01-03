@@ -362,11 +362,20 @@ class JPC_Product_Meta {
         }
         
         // Build response with detailed breakup
+        // IMPORTANT: Include both naming conventions for backward compatibility
         $response = array(
+            // New naming (primary)
+            'price_before_discount' => $regular_price,
+            'final_price' => $sale_price,
+            
+            // Old naming (backward compatibility)
             'regular_price' => $regular_price,
             'sale_price' => $sale_price,
+            
             'discount_amount' => $discount_amount,
             'discount_percentage' => $discount_percentage,
+            
+            // Include both 'breakup' and 'breakdown' for compatibility
             'breakup' => array(
                 'metal_price' => $metal_price,
                 'diamond_price' => $diamond_price,
@@ -381,10 +390,16 @@ class JPC_Product_Meta {
                 'additional_percentage_label' => $additional_percentage_label,
                 'gst' => $gst_amount,
                 'gst_percentage' => $gst_percentage,
+                'gst_label' => 'GST',
                 'discount_method' => $discount_method,
-                'discountable_amount' => $discountable_amount
+                'discountable_amount' => $discountable_amount,
+                'discount_amount' => $discount_amount,
+                'discount_percentage' => $discount_percentage
             )
         );
+        
+        // Add 'breakdown' as alias for 'breakup'
+        $response['breakdown'] = $response['breakup'];
         
         wp_send_json_success($response);
     }
