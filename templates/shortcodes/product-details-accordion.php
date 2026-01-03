@@ -300,12 +300,13 @@ $has_tags = !empty($tags) && !is_wp_error($tags);
             <!-- Extra Fields #1-5 with custom labels -->
 <?php
 if (!empty($price_breakup['extra_fields']) && is_array($price_breakup['extra_fields'])) {
-    $field_index = 0;
     foreach ($price_breakup['extra_fields'] as $extra_field) {
-        $field_index++;
         if (!empty($extra_field['value']) && $extra_field['value'] > 0) {
+            // Get field number (use stored number or fallback to index)
+            $field_num = !empty($extra_field['field_number']) ? $extra_field['field_number'] : 1;
+            
             // Fetch live label from settings (with fallback to cached label)
-            $live_label = get_option('jpc_extra_field_' . $field_index . '_label', $extra_field['label']);
+            $live_label = get_option('jpc_extra_field_' . $field_num . '_label', $extra_field['label']);
             ?>
             <div class="jpc-detail-row">
                 <span class="jpc-detail-label"><?php echo esc_html($live_label); ?></span>
@@ -315,8 +316,7 @@ if (!empty($price_breakup['extra_fields']) && is_array($price_breakup['extra_fie
         }
     }
 }
-?>
-            
+?>    
             <!-- Additional Percentage BEFORE Subtotal (with percentage value always shown) -->
             <?php if (!empty($price_breakup['additional_percentage']) && $price_breakup['additional_percentage'] > 0): 
                 $additional_percentage_label = get_option('jpc_additional_percentage_label', !empty($price_breakup['additional_percentage_label']) ? $price_breakup['additional_percentage_label'] : 'Additional Percentage');
