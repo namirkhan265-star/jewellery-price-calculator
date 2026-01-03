@@ -1,7 +1,7 @@
 <?php
 /**
- * Frontend Price Breakup Template - COMPLETE VERSION
- * Displays all price components including extra fields
+ * Frontend Price Breakup Template - USES ONLY STORED BREAKUP DATA
+ * NO CALCULATIONS - DISPLAYS STORED DATA ONLY
  */
 
 if (!defined('ABSPATH')) {
@@ -11,24 +11,38 @@ if (!defined('ABSPATH')) {
 // Get product ID
 $product_id = get_the_ID();
 
-// FETCH DIRECTLY FROM DATABASE - NO CALCULATIONS
-$stored_regular_price = get_post_meta($product_id, '_regular_price', true);
-$stored_sale_price = get_post_meta($product_id, '_sale_price', true);
-$stored_discount_percentage = get_post_meta($product_id, '_jpc_discount_percentage', true);
+// CRITICAL: Fetch ONLY stored breakup data - NO CALCULATIONS!
+$breakup = get_post_meta($product_id, '_jpc_price_breakup', true);
 
-// Convert to float
-$regular_price = floatval($stored_regular_price);
-$sale_price = floatval($stored_sale_price);
-$discount_percentage = floatval($stored_discount_percentage);
+// Validate breakup data exists
+if (!$breakup || !is_array($breakup)) {
+    echo '<div style="padding: 20px; background: #fff3cd; border: 2px solid #ffc107; border-radius: 5px;">';
+    echo '<p style="color: #856404; font-weight: bold;">⚠️ Price breakup data not found!</p>';
+    echo '<p>Please go to the product editor and click "Regenerate Price Breakup" button.</p>';
+    echo '</div>';
+    return;
+}
 
-// Calculate discount amount
-$discount_amount = $regular_price - $sale_price;
+// Get stored prices from WooCommerce
+$regular_price = floatval(get_post_meta($product_id, '_regular_price', true));
+$sale_price = floatval(get_post_meta($product_id, '_sale_price', true));
+$discount_percentage = floatval(get_post_meta($product_id, '_jpc_discount_percentage', true));
 
-// If no sale price, use regular price
+// CRITICAL: Use stored discount from breakup, NOT calculated
+$discount_amount = isset($breakup['discount']) ? floatval($breakup['discount']) : 0;
+
+// Fallback if no sale price
 if (empty($sale_price) || $sale_price <= 0) {
     $sale_price = $regular_price;
-    $discount_amount = 0;
-    $discount_percentage = 0;
+}
+
+// Get metal info
+$metal_id = get_post_meta($product_id, '_jpc_metal_id', true);
+$metal = JPC_Metals::get_by_id($metal_id);
+
+if (!$metal) {
+    echo '<p>' . __('Invalid metal configuration.', 'jewellery-price-calc') . '</p>';
+    return;
 }
 ?>
 
@@ -115,13 +129,13 @@ if (empty($sale_price) || $sale_price <= 0) {
             </tr>
             <?php endif; ?>
             
-            <!-- Discount Row -->
+            <!-- Discount Row - USES STORED DISCOUNT FROM BREAKUP -->
             <?php if ($discount_percentage > 0 && $discount_amount > 0): ?>
             <tr class="discount-row" style="color: #d63638;">
                 <td>
                     <?php _e('Discount', 'jewellery-price-calc'); ?>
                     <span style="color: #d63638; font-weight: bold;">
-                        (<?php echo number_format($discount_percentage, 0); ?>% OFF)
+                        (<?php echo number_format($discount_percentage, 1); ?>% OFF)
                     </span>
                 </td>
                 <td style="color: #d63638; font-weight: bold;">
@@ -130,11 +144,17 @@ if (empty($sale_price) || $sale_price <= 0) {
             </tr>
             <?php endif; ?>
             
-            <!-- GST -->
-            <?php if (!empty($breakup['gst']) && $breakup['gst'] > 0): ?>
+            <!-- GST - USES STORED GST FROM BREAKUP -->
+            <?php 
+            $gst_value = isset($breakup['gst']) ? floatval($breakup['gst']) : 0;
+            $gst_label = isset($breakup['gst_label']) ? $breakup['gst_label'] : get_option('jpc_gst_label', 'GST');
+            $gst_percentage = isset($breakup['gst_percentage']) ? $breakup['gst_percentage'] : 0;
+            
+            if ($gst_value > 0): 
+            ?>
             <tr class="gst-row">
-                <td><?php echo get_option('jpc_gst_label', 'GST'); ?></td>
-                <td><?php echo wc_price($breakup['gst']); ?></td>
+                <td><?php echo esc_html($gst_label) . ' (' . number_format($gst_percentage, 2) . '%)'; ?></td>
+                <td><?php echo wc_price($gst_value); ?></td>
             </tr>
             <?php endif; ?>
             
@@ -145,9 +165,9 @@ if (empty($sale_price) || $sale_price <= 0) {
             
             <!-- REGULAR PRICE - FROM DATABASE -->
             <tr class="regular-price-row">
-                <td><strong><?php _e('Regular Price', 'jewellery-price-calc'); ?></strong></td>
+                <td><strong><?php _e('Price Before Discount', 'jewellery-price-calc'); ?></strong></td>
                 <td>
-                    <strong style="<?php echo ($discount_percentage > 0) ? 'text-decoration: line-through; color: #999;' : ''; ?>">
+                    <strong style="<?php echo ($discount_percentage > 0) ? 'text-decoration: line-through; color: #999;' : 'color: #0066cc;'; ?>">
                         <?php echo wc_price($regular_price); ?>
                     </strong>
                 </td>
@@ -156,14 +176,14 @@ if (empty($sale_price) || $sale_price <= 0) {
             <!-- SALE PRICE - FROM DATABASE (only if discount exists) -->
             <?php if ($discount_percentage > 0 && $discount_amount > 0): ?>
             <tr class="sale-price-row">
-                <td><strong style="color: #d63638; font-size: 1.1em;"><?php _e('Sale Price', 'jewellery-price-calc'); ?></strong></td>
+                <td><strong style="color: #d63638; font-size: 1.1em;"><?php _e('Price After Discount', 'jewellery-price-calc'); ?></strong></td>
                 <td><strong style="color: #d63638; font-size: 1.2em;"><?php echo wc_price($sale_price); ?></strong></td>
             </tr>
             <?php endif; ?>
         </tbody>
     </table>
     
-    <!-- Savings Badge -->
+    <!-- Savings Badge - USES STORED DISCOUNT -->
     <?php if ($discount_percentage > 0 && $discount_amount > 0): ?>
     <div class="jpc-savings-badge" style="margin-top: 15px; padding: 10px; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 4px; text-align: center;">
         <strong style="color: #155724; font-size: 1.1em;">
@@ -174,9 +194,9 @@ if (empty($sale_price) || $sale_price <= 0) {
     <?php endif; ?>
 </div>
 
-<!-- DEBUG INFO - ALWAYS VISIBLE -->
+<!-- DEBUG INFO - SHOWS STORED VALUES -->
 <div style="background: #fff3cd; padding: 15px; margin-top: 20px; border: 2px solid #ffc107; border-radius: 5px;">
-    <h4 style="margin: 0 0 10px 0; color: #856404;">🔍 DEBUG INFO (Database Values)</h4>
+    <h4 style="margin: 0 0 10px 0; color: #856404;">🔍 DEBUG INFO (Stored Values)</h4>
     <table style="width: 100%; font-size: 13px;">
         <tr>
             <td><strong>Product ID:</strong></td>
@@ -191,12 +211,16 @@ if (empty($sale_price) || $sale_price <= 0) {
             <td style="color: #d63638; font-weight: bold;">₹<?php echo number_format($sale_price, 2); ?></td>
         </tr>
         <tr>
-            <td><strong>Discount %:</strong></td>
+            <td><strong>Discount % (DB):</strong></td>
             <td><?php echo $discount_percentage; ?>%</td>
         </tr>
         <tr>
-            <td><strong>Discount Amount:</strong></td>
-            <td>₹<?php echo number_format($discount_amount, 2); ?></td>
+            <td><strong>Discount Amount (BREAKUP):</strong></td>
+            <td style="color: #d63638; font-weight: bold;">₹<?php echo number_format($discount_amount, 2); ?></td>
+        </tr>
+        <tr>
+            <td><strong>GST (BREAKUP):</strong></td>
+            <td>₹<?php echo number_format($gst_value, 2); ?></td>
         </tr>
         <tr>
             <td><strong>Extra Fields Count:</strong></td>
@@ -208,7 +232,7 @@ if (empty($sale_price) || $sale_price <= 0) {
         </tr>
         <tr>
             <td colspan="2" style="padding-top: 10px; border-top: 1px solid #ccc; margin-top: 10px;">
-                <em>These are the EXACT values stored in your database.</em>
+                <em style="color: #28a745;">✓ All values from stored breakup data - NO calculations!</em>
             </td>
         </tr>
     </table>
