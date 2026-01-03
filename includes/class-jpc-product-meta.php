@@ -192,6 +192,7 @@ class JPC_Product_Meta {
     
     /**
      * AJAX handler for live price calculation
+     * UPDATED: Now uses new discount calculation methods
      */
     public function ajax_calculate_live_price() {
         check_ajax_referer('jpc_live_calc_nonce', 'nonce');
@@ -277,34 +278,63 @@ class JPC_Product_Meta {
         // Subtotal after additional percentage
         $subtotal_before_discount = $subtotal_before_additional + $additional_percentage_amount;
         
-        // Calculate discount based on settings
+        // ============================================================
+        // ENHANCED DISCOUNT CALCULATION WITH 4 METHODS
+        // ============================================================
         $discount_amount = 0;
         $subtotal_after_discount = $subtotal_before_discount;
         
         if ($discount_percentage > 0) {
-            // Check which components to apply discount on
-            $discount_on_metals = get_option('jpc_discount_on_metals') === 'yes';
-            $discount_on_making = get_option('jpc_discount_on_making') === 'yes';
-            $discount_on_wastage = get_option('jpc_discount_on_wastage') === 'yes';
+            // Get discount calculation method
+            $discount_method = get_option('jpc_discount_calculation_method', 'simple');
             
-            // Calculate discountable amount
+            // Calculate discountable amount based on method
             $discountable_amount = 0;
             
-            if ($discount_on_metals) {
-                $discountable_amount += $metal_price;
-            }
-            
-            if ($discount_on_making) {
-                $discountable_amount += $making_charge_amount;
-            }
-            
-            if ($discount_on_wastage) {
-                $discountable_amount += $wastage_charge_amount;
-            }
-            
-            // If no specific discount options are enabled, apply to entire subtotal (backward compatibility)
-            if (!$discount_on_metals && !$discount_on_making && !$discount_on_wastage) {
-                $discountable_amount = $subtotal_before_discount;
+            switch ($discount_method) {
+                case 'simple':
+                    // Method 1: Component-Based Discount
+                    $discount_on_metals = get_option('jpc_discount_on_metals');
+                    $discount_on_making = get_option('jpc_discount_on_making');
+                    $discount_on_wastage = get_option('jpc_discount_on_wastage');
+                    
+                    if ($discount_on_metals === 'yes' || $discount_on_metals === '1' || $discount_on_metals === 1 || $discount_on_metals === true) {
+                        $discountable_amount += $metal_price;
+                    }
+                    
+                    if ($discount_on_making === 'yes' || $discount_on_making === '1' || $discount_on_making === 1 || $discount_on_making === true) {
+                        $discountable_amount += $making_charge_amount;
+                    }
+                    
+                    if ($discount_on_wastage === 'yes' || $discount_on_wastage === '1' || $discount_on_wastage === 1 || $discount_on_wastage === true) {
+                        $discountable_amount += $wastage_charge_amount;
+                    }
+                    
+                    // If no components selected, apply to entire subtotal
+                    if ($discountable_amount == 0) {
+                        $discountable_amount = $subtotal_before_discount;
+                    }
+                    break;
+                    
+                case 'advanced':
+                    // Method 2: All Components
+                    $discountable_amount = $subtotal_before_discount;
+                    break;
+                    
+                case 'total_before_gst':
+                    // Method 3: Total Before GST ⭐ RECOMMENDED
+                    $discountable_amount = $subtotal_before_discount;
+                    break;
+                    
+                case 'total_after_additional':
+                    // Method 4: Total After Additional %
+                    $discountable_amount = $subtotal_before_discount;
+                    break;
+                    
+                default:
+                    // Fallback to total discount
+                    $discountable_amount = $subtotal_before_discount;
+                    break;
             }
             
             // Calculate discount
@@ -312,7 +342,9 @@ class JPC_Product_Meta {
             $subtotal_after_discount = $subtotal_before_discount - $discount_amount;
         }
         
-        // Calculate GST
+        // ============================================================
+        // ENHANCED GST CALCULATION WITH BASE OPTIONS
+        // ============================================================
         $gst_amount = 0;
         $gst_percentage = 0;
         $gst_label = get_option('jpc_gst_label', 'GST');
@@ -322,15 +354,30 @@ class JPC_Product_Meta {
             $gst_percentage = floatval(get_option('jpc_gst_value', 5));
             
             // Check for metal-specific GST rates
-            $metal_group_name = strtolower($metal_group->name);
+            $metal_group_name = strtolower(str_replace(' ', '_', $metal_group->name));
             $metal_specific_gst = get_option('jpc_gst_' . $metal_group_name);
             
-            if ($metal_specific_gst !== false && $metal_specific_gst !== '') {
+            // Also try without underscores
+            if ($metal_specific_gst === false || $metal_specific_gst === '') {
+                $metal_group_name_no_underscore = strtolower(str_replace(' ', '', $metal_group->name));
+                $metal_specific_gst = get_option('jpc_gst_' . $metal_group_name_no_underscore);
+            }
+            
+            // Use metal-specific GST if found
+            if ($metal_specific_gst !== false && $metal_specific_gst !== '' && $metal_specific_gst !== null) {
                 $gst_percentage = floatval($metal_specific_gst);
             }
             
-            // GST on discounted amount for final price
-            $gst_amount = ($subtotal_after_discount * $gst_percentage) / 100;
+            // Get GST calculation base setting
+            $gst_base = get_option('jpc_gst_calculation_base', 'after_discount');
+            
+            if ($gst_base === 'after_discount') {
+                // GST on discounted amount (RECOMMENDED)
+                $gst_amount = ($subtotal_after_discount * $gst_percentage) / 100;
+            } else {
+                // GST on original amount (before discount)
+                $gst_amount = ($subtotal_before_discount * $gst_percentage) / 100;
+            }
         }
         
         // Calculate final price (after discount, with GST)
@@ -352,16 +399,15 @@ class JPC_Product_Meta {
         $extra_fields = array();
         for ($i = 1; $i <= 5; $i++) {
             $enabled = get_option('jpc_enable_extra_field_' . $i);
-            if ($enabled === 'yes' || $enabled === '1') {
+            if ($enabled === 'yes' || $enabled === '1' || $enabled === 1 || $enabled === true) {
                 $label = get_option('jpc_extra_field_label_' . $i, 'Extra Field #' . $i);
                 $field_var = 'extra_field_' . $i;
                 $value = $$field_var; // Get the value from the variable
-                if ($value > 0) {
-                    $extra_fields[] = array(
-                        'label' => $label,
-                        'value' => $value
-                    );
-                }
+                // ALWAYS include enabled fields, even if value is 0
+                $extra_fields[] = array(
+                    'label' => $label,
+                    'value' => $value
+                );
             }
         }
         
