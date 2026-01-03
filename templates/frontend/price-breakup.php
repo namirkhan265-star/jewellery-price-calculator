@@ -91,18 +91,15 @@ if (empty($sale_price) || $sale_price <= 0) {
             </tr>
             <?php endif; ?>
             
-            <!-- Extra Fields #1-5 -->
+            <!-- Extra Fields #1-5 (from array) -->
             <?php
-            for ($i = 1; $i <= 5; $i++) {
-                $enabled = get_option('jpc_enable_extra_field_' . $i);
-                if ($enabled === 'yes' || $enabled === '1') {
-                    $field_key = 'extra_field_' . $i;
-                    if (!empty($breakup[$field_key]) && $breakup[$field_key] > 0) {
-                        $label = get_option('jpc_extra_field_label_' . $i, 'Extra Field #' . $i);
+            if (!empty($breakup['extra_fields']) && is_array($breakup['extra_fields'])) {
+                foreach ($breakup['extra_fields'] as $extra_field) {
+                    if (!empty($extra_field['value']) && $extra_field['value'] > 0) {
                         ?>
                         <tr>
-                            <td><?php echo esc_html($label); ?></td>
-                            <td><?php echo wc_price($breakup[$field_key]); ?></td>
+                            <td><?php echo esc_html($extra_field['label']); ?></td>
+                            <td><?php echo wc_price($extra_field['value']); ?></td>
                         </tr>
                         <?php
                     }
@@ -200,6 +197,14 @@ if (empty($sale_price) || $sale_price <= 0) {
         <tr>
             <td><strong>Discount Amount:</strong></td>
             <td>₹<?php echo number_format($discount_amount, 2); ?></td>
+        </tr>
+        <tr>
+            <td><strong>Extra Fields Count:</strong></td>
+            <td><?php echo !empty($breakup['extra_fields']) ? count($breakup['extra_fields']) : 0; ?></td>
+        </tr>
+        <tr>
+            <td><strong>Additional %:</strong></td>
+            <td>₹<?php echo !empty($breakup['additional_percentage']) ? number_format($breakup['additional_percentage'], 2) : '0.00'; ?></td>
         </tr>
         <tr>
             <td colspan="2" style="padding-top: 10px; border-top: 1px solid #ccc; margin-top: 10px;">
