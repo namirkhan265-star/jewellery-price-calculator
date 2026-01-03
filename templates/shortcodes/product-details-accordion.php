@@ -303,7 +303,7 @@ if (!empty($price_breakup['extra_fields']) && is_array($price_breakup['extra_fie
     foreach ($price_breakup['extra_fields'] as $extra_field) {
         if (!empty($extra_field['value']) && $extra_field['value'] > 0) {
             // Get field number (use stored number or fallback to index)
-            $field_num = !empty($extra_field['field_number']) ? $extra_field['field_number'] : 1;
+            $field_num = !empty($extra_field['field_number']) ? $extra_field['field_number'] : $field_index;
             
             // Fetch live label from settings (with fallback to cached label)
             $live_label = get_option('jpc_extra_field_label_' . $field_num, $extra_field['label']);
