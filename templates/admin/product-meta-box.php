@@ -99,6 +99,24 @@ if (!defined('ABSPATH')) {
     </div>
     <?php endif; ?>
     
+    <?php 
+    // Extra Fields #1-5
+    for ($i = 1; $i <= 5; $i++):
+        $enabled = get_option('jpc_enable_extra_field_' . $i);
+        if ($enabled === 'yes' || $enabled === '1'):
+            $label = get_option('jpc_extra_field_label_' . $i, 'Extra Field #' . $i);
+            $value = get_post_meta($post->ID, '_jpc_extra_field_' . $i, true);
+    ?>
+    <div class="form-field">
+        <label for="_jpc_extra_field_<?php echo $i; ?>"><?php echo esc_html($label); ?></label>
+        <input type="number" id="_jpc_extra_field_<?php echo $i; ?>" name="_jpc_extra_field_<?php echo $i; ?>" value="<?php echo esc_attr($value); ?>" step="0.01" min="0" class="widefat">
+        <p class="description"><?php printf(__('Enter %s cost', 'jewellery-price-calc'), esc_html($label)); ?></p>
+    </div>
+    <?php 
+        endif;
+    endfor; 
+    ?>
+    
     <?php if (get_option('jpc_enable_discount') === 'yes'): ?>
     <div class="form-field">
         <label for="_jpc_discount_percentage"><?php _e('Discount Percentage', 'jewellery-price-calc'); ?></label>
