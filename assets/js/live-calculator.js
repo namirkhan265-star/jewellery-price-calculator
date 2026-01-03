@@ -34,6 +34,13 @@ jQuery(document).ready(function($) {
         const extraFee = $('#_jpc_extra_fee').val() || 0;
         const discountPercentage = $('#_jpc_discount_percentage').val() || 0;
         
+        // Get extra fields #1-5
+        const extraField1 = $('#_jpc_extra_field_1').val() || 0;
+        const extraField2 = $('#_jpc_extra_field_2').val() || 0;
+        const extraField3 = $('#_jpc_extra_field_3').val() || 0;
+        const extraField4 = $('#_jpc_extra_field_4').val() || 0;
+        const extraField5 = $('#_jpc_extra_field_5').val() || 0;
+        
         // Check if required fields are filled
         if (!metalId || !metalWeight) {
             return;
@@ -60,7 +67,12 @@ jQuery(document).ready(function($) {
                 pearl_cost: pearlCost,
                 stone_cost: stoneCost,
                 extra_fee: extraFee,
-                discount_percentage: discountPercentage
+                discount_percentage: discountPercentage,
+                extra_field_1: extraField1,
+                extra_field_2: extraField2,
+                extra_field_3: extraField3,
+                extra_field_4: extraField4,
+                extra_field_5: extraField5
             },
             success: function(response) {
                 if (response.success) {
@@ -224,6 +236,22 @@ jQuery(document).ready(function($) {
             html += '<tr><td>Extra Fee:</td><td>₹' + formatNumber(data.extra_fee) + '</td></tr>';
         }
         
+        // Display extra fields with labels
+        if (data.extra_fields && data.extra_fields.length > 0) {
+            for (let i = 0; i < data.extra_fields.length; i++) {
+                const field = data.extra_fields[i];
+                if (field.value > 0) {
+                    html += '<tr><td>' + field.label + ':</td><td>₹' + formatNumber(field.value) + '</td></tr>';
+                }
+            }
+        }
+        
+        // Display additional percentage
+        if (data.additional_percentage > 0) {
+            const addPercentLabel = data.additional_percentage_label || 'Additional Percentage';
+            html += '<tr><td>' + addPercentLabel + ':</td><td>₹' + formatNumber(data.additional_percentage) + '</td></tr>';
+        }
+        
         if (data.discount > 0) {
             html += '<tr class="discount-row"><td>Discount:</td><td>-₹' + formatNumber(data.discount) + '</td></tr>';
         }
@@ -248,48 +276,30 @@ jQuery(document).ready(function($) {
             html += '<button type="button" class="button jpc-sync-regular-btn">Sync Regular Price</button>';
             html += '<button type="button" class="button jpc-sync-sale-btn">Sync Sale Price</button>';
         }
-        html += '</div>';
         
-        // Help Text
-        html += '<div class="jpc-help-text">';
-        if (data.discount > 0) {
-            const priceBeforeDiscount = data.price_before_discount || (data.final_price + data.discount);
-            html += '<p><strong>📌 Price Mapping:</strong></p>';
-            html += '<ul>';
-            html += '<li><strong>Regular Price:</strong> ₹' + formatNumber(priceBeforeDiscount) + ' (before discount)</li>';
-            html += '<li><strong>Sale Price:</strong> ₹' + formatNumber(data.final_price) + ' (after discount)</li>';
-            html += '</ul>';
-            html += '<p class="note">💡 Prices are auto-updated. Use manual sync buttons if needed.</p>';
-        } else {
-            html += '<p><strong>📌 Regular Price:</strong> ₹' + formatNumber(data.final_price) + '</p>';
-            html += '<p class="note">💡 Price is auto-updated when you change values.</p>';
-        }
         html += '</div>';
-        
         html += '</div>';
         
         $('.jpc-price-breakup-admin').html(html);
-        
-        // Bind click events
-        $('.jpc-apply-price-btn').off('click').on('click', applyPriceToProduct);
-        $('.jpc-sync-regular-btn').off('click').on('click', syncRegularPrice);
-        $('.jpc-sync-sale-btn').off('click').on('click', syncSalePrice);
     }
     
-    // Format number with 2 decimals
+    // Format number with commas
     function formatNumber(num) {
         return parseFloat(num).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
     }
     
-    // Debounced calculation function
+    // Debounced calculation
     const debouncedCalculate = debounce(calculateLivePrice, 500);
     
     // Bind events to all input fields
-    $('#_jpc_metal_id, #_jpc_metal_weight, #_jpc_diamond_id, #_jpc_diamond_quantity, #_jpc_making_charge, select[name="_jpc_making_charge_type"], #_jpc_wastage_charge, select[name="_jpc_wastage_charge_type"], #_jpc_pearl_cost, #_jpc_stone_cost, #_jpc_extra_fee, #_jpc_discount_percentage').on('change keyup', function() {
-        debouncedCalculate();
-    });
+    $('#_jpc_metal_id, #_jpc_metal_weight, #_jpc_diamond_id, #_jpc_diamond_quantity, #_jpc_making_charge, select[name="_jpc_making_charge_type"], #_jpc_wastage_charge, select[name="_jpc_wastage_charge_type"], #_jpc_pearl_cost, #_jpc_stone_cost, #_jpc_extra_fee, #_jpc_discount_percentage, #_jpc_extra_field_1, #_jpc_extra_field_2, #_jpc_extra_field_3, #_jpc_extra_field_4, #_jpc_extra_field_5').on('input change', debouncedCalculate);
     
-    // Initial calculation if fields are filled
+    // Bind button clicks
+    $(document).on('click', '.jpc-apply-price-btn', applyPriceToProduct);
+    $(document).on('click', '.jpc-sync-regular-btn', syncRegularPrice);
+    $(document).on('click', '.jpc-sync-sale-btn', syncSalePrice);
+    
+    // Initial calculation if fields are already filled
     if ($('#_jpc_metal_id').val() && $('#_jpc_metal_weight').val()) {
         calculateLivePrice();
     }
