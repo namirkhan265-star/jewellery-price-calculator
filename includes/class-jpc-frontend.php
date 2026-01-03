@@ -254,7 +254,7 @@ class JPC_Frontend {
                     <!-- Diamond Price -->
                     <?php if (!empty($breakup['diamond_price']) && $breakup['diamond_price'] > 0): ?>
                     <tr style="border-bottom: 1px solid #ddd;">
-                        <td style="padding: 12px;"><?php _e('Diamond Price', 'jewellery-price-calc'); ?></td>
+                        <td style="padding: 12px;"><?php _e('Diamond', 'jewellery-price-calc'); ?></td>
                         <td style="padding: 12px; text-align: right;"><?php echo wc_price($breakup['diamond_price']); ?></td>
                     </tr>
                     <?php endif; ?>
@@ -262,7 +262,7 @@ class JPC_Frontend {
                     <!-- Making Charges -->
                     <?php if (!empty($breakup['making_charge']) && $breakup['making_charge'] > 0): ?>
                     <tr style="border-bottom: 1px solid #ddd;">
-                        <td style="padding: 12px;"><?php _e('Making Charge', 'jewellery-price-calc'); ?></td>
+                        <td style="padding: 12px;"><?php _e('Making Charges', 'jewellery-price-calc'); ?></td>
                         <td style="padding: 12px; text-align: right;"><?php echo wc_price($breakup['making_charge']); ?></td>
                     </tr>
                     <?php endif; ?>
@@ -306,7 +306,7 @@ class JPC_Frontend {
                             if (!empty($extra_field['value']) && $extra_field['value'] > 0) {
                                 ?>
                                 <tr style="border-bottom: 1px solid #ddd;">
-                                    <td style="padding: 12px;"><?php echo esc_html($extra_field['label']); ?>:</td>
+                                    <td style="padding: 12px;"><?php echo esc_html($extra_field['label']); ?></td>
                                     <td style="padding: 12px; text-align: right;"><?php echo wc_price($extra_field['value']); ?></td>
                                 </tr>
                                 <?php
@@ -318,16 +318,16 @@ class JPC_Frontend {
                     <!-- Additional Percentage -->
                     <?php if (!empty($breakup['additional_percentage']) && $breakup['additional_percentage'] > 0): ?>
                     <tr style="border-bottom: 1px solid #ddd;">
-                        <td style="padding: 12px;"><?php echo esc_html($breakup['additional_percentage_label'] ?? 'Additional Percentage'); ?>:</td>
+                        <td style="padding: 12px;"><?php echo esc_html($breakup['additional_percentage_label'] ?? 'Additional Percentage'); ?></td>
                         <td style="padding: 12px; text-align: right;"><?php echo wc_price($breakup['additional_percentage']); ?></td>
                     </tr>
                     <?php endif; ?>
                     
                     <!-- Discount Row -->
                     <?php if ($discount_percentage > 0 && $discount_amount > 0): ?>
-                    <tr style="border-bottom: 1px solid #ddd; color: #28a745;">
-                        <td style="padding: 12px;">
-                            <?php _e('Discount', 'jewellery-price-calc'); ?>:
+                    <tr style="border-bottom: 1px solid #ddd; background: #d4edda;">
+                        <td style="padding: 12px; color: #28a745; font-weight: bold;">
+                            <?php printf(__('Discount (%s%%)', 'jewellery-price-calc'), number_format($discount_percentage, 1)); ?>
                         </td>
                         <td style="padding: 12px; text-align: right; color: #28a745; font-weight: bold;">
                             -<?php echo wc_price($discount_amount); ?>
@@ -348,7 +348,7 @@ class JPC_Frontend {
                     ?>
                     <tr style="border-bottom: 1px solid #ddd; <?php echo ($gst_value <= 0) ? 'background: #fff3cd;' : ''; ?>">
                         <td style="padding: 12px;">
-                            <?php echo esc_html($gst_label) . ' (' . number_format($gst_percentage, 2) . '%)'; ?>:
+                            <?php echo esc_html($gst_label) . ' (' . number_format($gst_percentage, 2) . '%)'; ?>
                             <?php if ($gst_value <= 0): ?>
                                 <span style="color: #856404; font-size: 0.9em;">(⚠️ GST is 0 - check calculation)</span>
                             <?php endif; ?>
@@ -362,9 +362,9 @@ class JPC_Frontend {
                         <td colspan="2" style="padding: 10px;">&nbsp;</td>
                     </tr>
                     
-                    <!-- REGULAR PRICE - FROM DATABASE -->
+                    <!-- PRICE BEFORE DISCOUNT - FROM DATABASE -->
                     <tr style="border-bottom: 1px solid #ddd; background: #f9f9f9;">
-                        <td style="padding: 15px;"><strong style="font-size: 1.1em;"><?php _e('Regular Price', 'jewellery-price-calc'); ?></strong></td>
+                        <td style="padding: 15px;"><strong style="font-size: 1.1em;"><?php _e('Price Before Discount', 'jewellery-price-calc'); ?></strong></td>
                         <td style="padding: 15px; text-align: right;">
                             <strong style="font-size: 1.3em; <?php echo ($discount_percentage > 0) ? 'text-decoration: line-through; color: #999;' : 'color: #0066cc;'; ?>">
                                 <?php echo wc_price($regular_price); ?>
@@ -372,10 +372,10 @@ class JPC_Frontend {
                         </td>
                     </tr>
                     
-                    <!-- SALE PRICE - FROM DATABASE (only if discount exists) -->
+                    <!-- PRICE AFTER DISCOUNT - FROM DATABASE (only if discount exists) -->
                     <?php if ($discount_percentage > 0 && $discount_amount > 0): ?>
                     <tr style="border-bottom: 1px solid #ddd; background: #f9f9f9;">
-                        <td style="padding: 15px;"><strong style="color: #d63638; font-size: 1.2em;"><?php _e('Sale Price', 'jewellery-price-calc'); ?></strong></td>
+                        <td style="padding: 15px;"><strong style="color: #d63638; font-size: 1.2em;"><?php _e('Price After Discount', 'jewellery-price-calc'); ?></strong></td>
                         <td style="padding: 15px; text-align: right;"><strong style="color: #d63638; font-size: 1.5em;"><?php echo wc_price($sale_price); ?></strong></td>
                     </tr>
                     <?php endif; ?>
