@@ -213,11 +213,11 @@ class JPC_Admin {
             array($this, 'render_shortcodes')
         );
         
-        // Debug page (temporary - remove in production)
+        // Enhanced Debug page
         add_submenu_page(
             'jewellery-price-calc',
-            __('Debug Info', 'jewellery-price-calc'),
-            __('Debug', 'jewellery-price-calc'),
+            __('Debug & Diagnostics', 'jewellery-price-calc'),
+            __('🔧 Debug', 'jewellery-price-calc'),
             'manage_woocommerce',
             'jpc-debug',
             array($this, 'render_debug')
@@ -346,9 +346,10 @@ class JPC_Admin {
     }
     
     /**
-     * Render debug page
+     * Render enhanced debug page
      */
     public function render_debug() {
-        include JPC_PLUGIN_DIR . 'templates/admin/debug.php';
+        // Use enhanced debug page with price calculation details
+        include JPC_PLUGIN_DIR . 'templates/admin/debug-enhanced.php';
     }
 }
