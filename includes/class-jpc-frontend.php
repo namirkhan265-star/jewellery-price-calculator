@@ -335,17 +335,25 @@ class JPC_Frontend {
                     </tr>
                     <?php endif; ?>
                     
-                    <!-- GST -->
-                    <?php if (!empty($breakup['gst']) && $breakup['gst'] > 0): ?>
-                    <tr style="border-bottom: 1px solid #ddd;">
+                    <!-- GST - ALWAYS SHOW IF GST IS ENABLED -->
+                    <?php 
+                    // Get GST info from breakup or fallback to settings
+                    $gst_value = isset($breakup['gst']) ? floatval($breakup['gst']) : 0;
+                    $gst_label = isset($breakup['gst_label']) ? $breakup['gst_label'] : get_option('jpc_gst_label', 'GST');
+                    $gst_percentage = isset($breakup['gst_percentage']) ? $breakup['gst_percentage'] : get_option('jpc_gst_value', 5);
+                    $gst_enabled = get_option('jpc_enable_gst');
+                    
+                    // Show GST if enabled (even if value is 0 for debugging)
+                    if ($gst_enabled === 'yes' || $gst_enabled === '1' || $gst_enabled === 1 || $gst_enabled === true): 
+                    ?>
+                    <tr style="border-bottom: 1px solid #ddd; <?php echo ($gst_value <= 0) ? 'background: #fff3cd;' : ''; ?>">
                         <td style="padding: 12px;">
-                            <?php 
-                            $gst_label = get_option('jpc_gst_label', 'GST');
-                            $gst_percentage = get_option('jpc_gst_value', 5);
-                            echo esc_html($gst_label) . ' (' . $gst_percentage . '%)';
-                            ?>:
+                            <?php echo esc_html($gst_label) . ' (' . number_format($gst_percentage, 2) . '%)'; ?>:
+                            <?php if ($gst_value <= 0): ?>
+                                <span style="color: #856404; font-size: 0.9em;">(⚠️ GST is 0 - check calculation)</span>
+                            <?php endif; ?>
                         </td>
-                        <td style="padding: 12px; text-align: right;"><?php echo wc_price($breakup['gst']); ?></td>
+                        <td style="padding: 12px; text-align: right;"><?php echo wc_price($gst_value); ?></td>
                     </tr>
                     <?php endif; ?>
                     
