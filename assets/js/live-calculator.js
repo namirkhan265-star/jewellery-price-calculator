@@ -236,13 +236,12 @@ jQuery(document).ready(function($) {
             html += '<tr><td>Extra Fee:</td><td>₹' + formatNumber(data.extra_fee) + '</td></tr>';
         }
         
-        // Display extra fields with labels
+        // Display extra fields with labels - SHOW ALL ENABLED FIELDS
         if (data.extra_fields && data.extra_fields.length > 0) {
             for (let i = 0; i < data.extra_fields.length; i++) {
                 const field = data.extra_fields[i];
-                if (field.value > 0) {
-                    html += '<tr><td>' + field.label + ':</td><td>₹' + formatNumber(field.value) + '</td></tr>';
-                }
+                // Show ALL enabled fields, even if value is 0
+                html += '<tr><td>' + field.label + ':</td><td>₹' + formatNumber(field.value) + '</td></tr>';
             }
         }
         
