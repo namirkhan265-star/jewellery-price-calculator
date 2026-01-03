@@ -145,6 +145,13 @@ class JPC_Frontend {
         
         ?>
         <div class="jpc-price-breakup-tab" style="padding: 20px; background: #fff;">
+            
+            <!-- DEBUG BOX - TEMPORARY -->
+            <div style="background: #fff3cd; border: 2px solid #ffc107; padding: 15px; margin-bottom: 20px; border-radius: 5px;">
+                <h4 style="margin: 0 0 10px 0; color: #856404;">🔍 DEBUG: Stored Breakup Data</h4>
+                <pre style="background: #fff; padding: 10px; overflow: auto; font-size: 11px; max-height: 300px;"><?php print_r($breakup); ?></pre>
+            </div>
+            
             <h3 style="margin-bottom: 20px; font-size: 1.5em;"><?php _e('PRICE BREAKUP', 'jewellery-price-calc'); ?></h3>
             
             <table class="jpc-price-breakup-table" style="width: 100%; border-collapse: collapse;">
