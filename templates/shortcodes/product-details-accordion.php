@@ -315,7 +315,7 @@ $has_tags = !empty($tags) && !is_wp_error($tags);
             
             <!-- Additional Percentage BEFORE Subtotal (with percentage value always shown) -->
             <?php if (!empty($price_breakup['additional_percentage']) && $price_breakup['additional_percentage'] > 0): 
-                $additional_percentage_label = !empty($price_breakup['additional_percentage_label']) ? $price_breakup['additional_percentage_label'] : 'Additional Percentage';
+                $additional_percentage_label = get_option('jpc_additional_percentage_label', !empty($price_breakup['additional_percentage_label']) ? $price_breakup['additional_percentage_label'] : 'Additional Percentage');
                 $additional_percentage_value = !empty($price_breakup['additional_percentage_value']) ? floatval($price_breakup['additional_percentage_value']) : 0;
             ?>
             <div class="jpc-detail-row">
