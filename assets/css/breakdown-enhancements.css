@@ -1,0 +1,45 @@
+/* Additional CSS for enhanced breakdown table rows */
+
+/* Subtotal Row - Make it stand out */
+.jpc-breakdown-table .subtotal-row {
+    background: #f0f6fc;
+    border-top: 2px solid #ddd;
+    border-bottom: 2px solid #ddd;
+}
+
+.jpc-breakdown-table .subtotal-row td {
+    padding: 12px 15px;
+    font-size: 15px;
+    color: #1d2327;
+}
+
+/* Discount Row in Breakdown Table - ENHANCED */
+.jpc-breakdown-table .discount-row {
+    background: #d4edda !important;
+    border-left: 4px solid #28a745 !important;
+}
+
+.jpc-breakdown-table .discount-row td {
+    color: #28a745 !important;
+    font-weight: 700 !important;
+    padding: 12px 15px;
+    font-size: 15px;
+}
+
+.jpc-breakdown-table .discount-row td:last-child {
+    font-size: 16px;
+}
+
+/* Total/Final Price Row - Make it prominent */
+.jpc-breakdown-table .total-row {
+    background: #e7f3ff !important;
+    border-top: 3px solid #2271b1 !important;
+    border-bottom: 3px solid #2271b1 !important;
+}
+
+.jpc-breakdown-table .total-row td {
+    padding: 14px 15px;
+    font-size: 17px;
+    color: #2271b1 !important;
+    font-weight: 800 !important;
+}
