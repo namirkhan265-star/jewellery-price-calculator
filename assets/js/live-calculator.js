@@ -76,12 +76,17 @@ jQuery(document).ready(function($) {
             },
             success: function(response) {
                 if (response.success) {
-                    currentCalculatedPrice = response.data.final_price;
-                    currentPriceBeforeDiscount = response.data.price_before_discount || currentCalculatedPrice;
+                    // BACKWARD COMPATIBLE: Support both old and new response structures
+                    // New structure: final_price, price_before_discount
+                    // Old structure: sale_price, regular_price
+                    const finalPrice = response.data.final_price || response.data.sale_price || 0;
+                    const priceBeforeDiscount = response.data.price_before_discount || response.data.regular_price || finalPrice;
                     
-                    // Get discount from breakdown
-                    const breakdown = response.data.breakdown || {};
-                    currentDiscountAmount = breakdown.discount_amount || 0;
+                    currentCalculatedPrice = finalPrice;
+                    currentPriceBeforeDiscount = priceBeforeDiscount;
+                    
+                    // Get discount from top level or breakdown
+                    currentDiscountAmount = response.data.discount_amount || (response.data.breakdown && response.data.breakdown.discount_amount) || 0;
                     currentDiscountedPrice = currentCalculatedPrice;
                     
                     displayPriceBreakup(response.data);
@@ -89,7 +94,7 @@ jQuery(document).ready(function($) {
                     // Auto-update WooCommerce price fields
                     autoUpdatePriceFields(currentPriceBeforeDiscount, currentDiscountedPrice, currentDiscountAmount);
                 } else {
-                    $('.jpc-price-breakup-admin').html('<p style="color: red;">' + response.data.message + '</p>');
+                    $('.jpc-price-breakup-admin').html('<p style="color: red;">' + (response.data.message || 'Error calculating price') + '</p>');
                 }
             },
             error: function() {
@@ -172,12 +177,12 @@ jQuery(document).ready(function($) {
     
     // Display price breakup
     function displayPriceBreakup(data) {
-        // Extract breakdown data
-        const breakdown = data.breakdown || {};
-        const finalPrice = data.final_price || 0;
-        const priceBeforeDiscount = data.price_before_discount || finalPrice;
-        const discountAmount = breakdown.discount_amount || 0;
-        const discountPercent = breakdown.discount_percentage || 0;
+        // BACKWARD COMPATIBLE: Support both old and new response structures
+        const breakdown = data.breakup || data.breakdown || {};
+        const finalPrice = data.final_price || data.sale_price || 0;
+        const priceBeforeDiscount = data.price_before_discount || data.regular_price || finalPrice;
+        const discountAmount = data.discount_amount || (breakdown.discount_amount) || 0;
+        const discountPercent = data.discount_percentage || (breakdown.discount_percentage) || 0;
         
         let html = '<div class="jpc-live-calc-wrapper">';
         html += '<h4>💰 Live Price Calculation</h4>';
