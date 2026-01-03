@@ -86,9 +86,15 @@ if ($price_breakup && is_array($price_breakup)) {
     // Subtotal AFTER additional percentage
     $subtotal_after_additional = $subtotal_before_additional + $additional_percentage_amount;
     
-    // Calculate regular price (subtotal after additional + GST on full)
-    $gst_on_full = !empty($price_breakup['gst_on_full']) ? floatval($price_breakup['gst_on_full']) : 0;
-    $regular_price = $subtotal_after_additional + $gst_on_full;
+    // Get discount amount
+    $discount_amount = !empty($price_breakup['discount']) ? floatval($price_breakup['discount']) : 0;
+    
+    // Get GST (this is GST on discounted amount if discount exists)
+    $gst_amount = !empty($price_breakup['gst']) ? floatval($price_breakup['gst']) : 0;
+    
+    // Calculate regular price: Subtotal (before discount) + GST (on discounted amount)
+    // This matches the admin panel calculation where Regular Price = Subtotal + GST shown in breakup
+    $regular_price = $subtotal_after_additional + $gst_amount;
     
     // Sale price from breakup
     $sale_price = !empty($price_breakup['final_price']) ? floatval($price_breakup['final_price']) : 0;
