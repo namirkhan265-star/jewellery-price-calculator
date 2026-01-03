@@ -104,6 +104,22 @@ class JPC_Admin {
                 update_option('jpc_enable_extra_field_' . $i, 'no');
             }
         }
+        
+        // Handle discount settings checkboxes
+        if (isset($_POST['option_page']) && $_POST['option_page'] === 'jpc_discount_settings') {
+            $discount_checkboxes = array(
+                'jpc_enable_discount',
+                'jpc_discount_on_metals',
+                'jpc_discount_on_making',
+                'jpc_discount_on_wastage',
+            );
+            
+            foreach ($discount_checkboxes as $field) {
+                if (!isset($_POST[$field])) {
+                    update_option($field, 'no');
+                }
+            }
+        }
     }
     
     /**
@@ -268,8 +284,11 @@ class JPC_Admin {
             register_setting('jpc_general_settings', 'jpc_extra_field_label_' . $i);
         }
         
-        // Discount settings
+        // Discount settings - ENHANCED
         register_setting('jpc_discount_settings', 'jpc_enable_discount');
+        register_setting('jpc_discount_settings', 'jpc_discount_calculation_method'); // NEW
+        register_setting('jpc_discount_settings', 'jpc_discount_timing'); // NEW
+        register_setting('jpc_discount_settings', 'jpc_gst_calculation_base'); // NEW
         register_setting('jpc_discount_settings', 'jpc_discount_on_metals');
         register_setting('jpc_discount_settings', 'jpc_discount_on_making');
         register_setting('jpc_discount_settings', 'jpc_discount_on_wastage');
