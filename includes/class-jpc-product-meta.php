@@ -26,17 +26,194 @@ class JPC_Product_Meta {
         // AJAX handler for live price calculation
         add_action('wp_ajax_jpc_calculate_live_price', array($this, 'ajax_calculate_live_price'));
         
-        // Enqueue admin scripts
+        // Enqueue admin scripts AND CSS
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_scripts'));
+        
+        // CRITICAL: Inject inline CSS for product pages
+        add_action('admin_head', array($this, 'inject_product_page_css'));
     }
     
     /**
-     * Enqueue admin scripts
+     * Inject inline CSS for product pages (CRITICAL FIX)
+     */
+    public function inject_product_page_css() {
+        global $post;
+        $screen = get_current_screen();
+        
+        if (!$screen || $screen->post_type !== 'product') {
+            return;
+        }
+        
+        ?>
+        <style type="text/css">
+            /* CRITICAL: Inline CSS for product meta box styling */
+            .jpc-product-meta-box { padding: 12px; }
+            .jpc-product-meta-box .form-field { margin-bottom: 15px; }
+            .jpc-product-meta-box label { display: block; margin-bottom: 5px; font-weight: 600; }
+            .jpc-product-meta-box input[type="text"],
+            .jpc-product-meta-box input[type="number"],
+            .jpc-product-meta-box select { width: 100%; max-width: 300px; }
+            .jpc-product-meta-box .description { font-style: italic; color: #666; font-size: 12px; }
+            
+            /* Live Calculator Wrapper */
+            .jpc-live-calc-wrapper { background: #fff; border: 1px solid #c3c4c7; border-radius: 4px; padding: 20px; margin-top: 20px; }
+            .jpc-live-calc-wrapper h4 { margin: 0 0 15px 0; color: #1d2327; font-size: 16px; font-weight: 600; }
+            
+            /* Price Summary Box - ENHANCED */
+            .jpc-price-summary { 
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                color: #fff; 
+                padding: 20px; 
+                border-radius: 8px; 
+                margin-bottom: 20px; 
+                box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
+            }
+            
+            .jpc-price-row { 
+                display: flex; 
+                justify-content: space-between; 
+                align-items: center; 
+                padding: 10px 0; 
+                border-bottom: 1px solid rgba(255,255,255,0.2); 
+            }
+            .jpc-price-row:last-child { border-bottom: none; }
+            .jpc-price-row .label { font-size: 15px; font-weight: 500; }
+            .jpc-price-row .value { font-size: 18px; font-weight: 700; }
+            
+            .jpc-price-row.jpc-before-discount .value { 
+                text-decoration: line-through; 
+                opacity: 0.85; 
+                font-size: 16px; 
+            }
+            
+            /* ENHANCED: Make discount more prominent */
+            .jpc-price-row.jpc-discount-row { 
+                background: rgba(74, 222, 128, 0.15); 
+                padding: 12px 15px; 
+                margin: 8px -15px; 
+                border-radius: 6px; 
+                border: 2px solid rgba(74, 222, 128, 0.3) !important; 
+            }
+            
+            .jpc-price-row.jpc-discount-row .label { font-size: 16px; font-weight: 600; }
+            
+            .jpc-price-row.jpc-discount-row .value.discount { 
+                color: #4ade80 !important; 
+                font-size: 20px !important; 
+                font-weight: 800 !important; 
+                text-shadow: 0 0 10px rgba(74, 222, 128, 0.5); 
+            }
+            
+            .jpc-price-row.jpc-after-discount,
+            .jpc-price-row.jpc-final-price { 
+                padding-top: 14px; 
+                margin-top: 10px; 
+                border-top: 2px solid rgba(255,255,255,0.4) !important; 
+            }
+            
+            .jpc-price-row .value.highlight { 
+                font-size: 26px; 
+                color: #fbbf24; 
+                text-shadow: 0 0 10px rgba(251, 191, 36, 0.3); 
+            }
+            
+            /* Breakdown Details */
+            .jpc-breakdown-details { margin: 20px 0; border: 1px solid #ddd; border-radius: 4px; }
+            .jpc-breakdown-details summary { 
+                padding: 12px 15px; 
+                background: #f0f0f1; 
+                cursor: pointer; 
+                font-weight: 600; 
+                list-style: none; 
+                position: relative; 
+                padding-left: 35px; 
+            }
+            .jpc-breakdown-details summary:before { 
+                content: '+'; 
+                position: absolute; 
+                left: 12px; 
+                top: 50%; 
+                transform: translateY(-50%); 
+                font-size: 18px; 
+                font-weight: bold; 
+                color: #2271b1; 
+            }
+            .jpc-breakdown-details[open] summary:before { content: '−'; }
+            .jpc-breakdown-details summary::-webkit-details-marker { display: none; }
+            .jpc-breakdown-details summary::marker { display: none; }
+            .jpc-breakdown-details summary:hover { background: #e5e5e5; }
+            
+            .jpc-breakdown-table { width: 100%; border-collapse: collapse; }
+            .jpc-breakdown-table tr { border-bottom: 1px solid #f0f0f1; }
+            .jpc-breakdown-table tr:last-child { border-bottom: none; }
+            .jpc-breakdown-table td { padding: 10px 15px; }
+            .jpc-breakdown-table td:first-child { color: #50575e; font-weight: 500; }
+            .jpc-breakdown-table td:last-child { text-align: right; font-weight: 600; color: #1d2327; }
+            .jpc-breakdown-table .discount-row td { color: #46b450; }
+            .jpc-breakdown-table .gst-row td { color: #666; font-size: 13px; }
+            .jpc-breakdown-table .total-row { background: #f9f9f9; border-top: 2px solid #2271b1; }
+            .jpc-breakdown-table .total-row td { padding: 12px 15px; font-size: 16px; color: #2271b1; }
+            
+            /* Action Buttons */
+            .jpc-action-buttons { display: flex; gap: 10px; margin: 20px 0; flex-wrap: wrap; }
+            .jpc-action-buttons .button { flex: 1; min-width: 150px; text-align: center; }
+            .jpc-action-buttons .button-primary { background: #2271b1; border-color: #2271b1; }
+            .jpc-action-buttons .button-primary:hover { background: #135e96; border-color: #135e96; }
+            
+            /* Help Text */
+            .jpc-help-text { 
+                background: #f0f6fc; 
+                border-left: 4px solid #2271b1; 
+                padding: 15px; 
+                margin: 20px 0 0 0; 
+                border-radius: 4px; 
+            }
+            .jpc-help-text p { margin: 0 0 10px 0; color: #1d2327; }
+            .jpc-help-text p:last-child { margin-bottom: 0; }
+            .jpc-help-text ul { margin: 10px 0; padding-left: 20px; }
+            .jpc-help-text li { margin: 5px 0; color: #50575e; }
+            .jpc-help-text .note { font-size: 13px; color: #646970; font-style: italic; }
+            
+            /* Loading Spinner */
+            .jpc-loading { 
+                display: inline-block; 
+                width: 20px; 
+                height: 20px; 
+                border: 3px solid rgba(0,0,0,.1); 
+                border-radius: 50%; 
+                border-top-color: #2271b1; 
+                animation: jpc-spin 1s ease-in-out infinite; 
+            }
+            @keyframes jpc-spin { to { transform: rotate(360deg); } }
+            
+            /* Success/Error Messages */
+            .jpc-message { padding: 10px 15px; margin: 15px 0; border-radius: 4px; }
+            .jpc-message.success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+            .jpc-message.error { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+            
+            /* Responsive */
+            @media screen and (max-width: 782px) {
+                .jpc-action-buttons { flex-direction: column; }
+                .jpc-action-buttons .button { width: 100%; }
+                .jpc-price-row .value { font-size: 16px; }
+                .jpc-price-row .value.highlight { font-size: 20px; }
+                .jpc-price-row.jpc-discount-row .value.discount { font-size: 18px !important; }
+            }
+        </style>
+        <?php
+    }
+    
+    /**
+     * Enqueue admin scripts AND CSS
      */
     public function enqueue_admin_scripts($hook) {
         global $post;
         
         if (('post.php' === $hook || 'post-new.php' === $hook) && 'product' === $post->post_type) {
+            // Enqueue external CSS file
+            wp_enqueue_style('jpc-admin-css', JPC_PLUGIN_URL . 'assets/css/admin.css', array(), JPC_VERSION);
+            
+            // Enqueue JavaScript
             wp_enqueue_script('jpc-product-meta', JPC_PLUGIN_URL . 'assets/js/product-meta.js', array('jquery'), JPC_VERSION, true);
             
             wp_localize_script('jpc-product-meta', 'jpcProductMeta', array(
