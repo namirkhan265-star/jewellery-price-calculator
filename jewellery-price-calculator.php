@@ -3,7 +3,7 @@
  * Plugin Name: Jewellery Price Calculator
  * Plugin URI: https://github.com/yourusername/jewellery-price-calculator
  * Description: Advanced price calculator for jewellery products with metal rates, making charges, and GST
- * Version: 1.8.0
+ * Version: 1.9.0
  * Author: Your Name
  * Author URI: https://yourwebsite.com
  * Text Domain: jewellery-price-calc
@@ -19,7 +19,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('JPC_VERSION', '1.8.0');
+define('JPC_VERSION', '1.9.0');
 define('JPC_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('JPC_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('JPC_PLUGIN_BASENAME', plugin_basename(__FILE__));
@@ -39,6 +39,10 @@ require_once JPC_PLUGIN_DIR . 'includes/class-jpc-metals.php';
 require_once JPC_PLUGIN_DIR . 'includes/class-jpc-diamond-groups.php';
 require_once JPC_PLUGIN_DIR . 'includes/class-jpc-diamond-types.php';
 require_once JPC_PLUGIN_DIR . 'includes/class-jpc-diamond-certifications.php';
+require_once JPC_PLUGIN_DIR . 'includes/class-jpc-diamond-shapes.php';
+require_once JPC_PLUGIN_DIR . 'includes/class-jpc-diamond-colours.php';
+require_once JPC_PLUGIN_DIR . 'includes/class-jpc-diamond-clarities.php';
+require_once JPC_PLUGIN_DIR . 'includes/class-jpc-diamond-cuts.php';
 require_once JPC_PLUGIN_DIR . 'includes/class-jpc-diamonds.php';
 require_once JPC_PLUGIN_DIR . 'includes/class-jpc-price-calculator.php';
 require_once JPC_PLUGIN_DIR . 'includes/class-jpc-product-meta.php';
@@ -58,6 +62,10 @@ function jpc_init() {
     JPC_Diamond_Groups::get_instance();
     JPC_Diamond_Types::get_instance();
     JPC_Diamond_Certifications::get_instance();
+    JPC_Diamond_Shapes::get_instance();
+    JPC_Diamond_Colours::get_instance();
+    JPC_Diamond_Clarities::get_instance();
+    JPC_Diamond_Cuts::get_instance();
     JPC_Diamonds::get_instance();
     JPC_Product_Meta::get_instance();
     JPC_Frontend::get_instance();
