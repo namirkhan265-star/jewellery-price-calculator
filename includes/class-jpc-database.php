@@ -155,13 +155,101 @@ class JPC_Database {
             error_log("JPC Error creating diamond_certifications: " . $wpdb->last_error);
         }
         
-        // Old Diamonds Table (backward compatibility)
+        // NEW: Diamond Shapes Table
+        $table_diamond_shapes = $wpdb->prefix . 'jpc_diamond_shapes';
+        $sql = "CREATE TABLE IF NOT EXISTS `$table_diamond_shapes` (
+            `id` bigint(20) NOT NULL AUTO_INCREMENT,
+            `name` varchar(100) NOT NULL,
+            `slug` varchar(100) NOT NULL,
+            `adjustment_type` varchar(20) NOT NULL DEFAULT 'percentage',
+            `adjustment_value` decimal(10,2) NOT NULL DEFAULT 0,
+            `description` text,
+            `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+            `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (`id`),
+            UNIQUE KEY `slug` (`slug`)
+        ) $charset_collate;";
+        
+        $result = $wpdb->query($sql);
+        error_log("JPC: Created/verified table: $table_diamond_shapes (result: $result)");
+        if ($wpdb->last_error) {
+            error_log("JPC Error creating diamond_shapes: " . $wpdb->last_error);
+        }
+        
+        // NEW: Diamond Colours Table
+        $table_diamond_colours = $wpdb->prefix . 'jpc_diamond_colours';
+        $sql = "CREATE TABLE IF NOT EXISTS `$table_diamond_colours` (
+            `id` bigint(20) NOT NULL AUTO_INCREMENT,
+            `name` varchar(100) NOT NULL,
+            `slug` varchar(100) NOT NULL,
+            `adjustment_type` varchar(20) NOT NULL DEFAULT 'percentage',
+            `adjustment_value` decimal(10,2) NOT NULL DEFAULT 0,
+            `description` text,
+            `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+            `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (`id`),
+            UNIQUE KEY `slug` (`slug`)
+        ) $charset_collate;";
+        
+        $result = $wpdb->query($sql);
+        error_log("JPC: Created/verified table: $table_diamond_colours (result: $result)");
+        if ($wpdb->last_error) {
+            error_log("JPC Error creating diamond_colours: " . $wpdb->last_error);
+        }
+        
+        // NEW: Diamond Clarities Table
+        $table_diamond_clarities = $wpdb->prefix . 'jpc_diamond_clarities';
+        $sql = "CREATE TABLE IF NOT EXISTS `$table_diamond_clarities` (
+            `id` bigint(20) NOT NULL AUTO_INCREMENT,
+            `name` varchar(100) NOT NULL,
+            `slug` varchar(100) NOT NULL,
+            `adjustment_type` varchar(20) NOT NULL DEFAULT 'percentage',
+            `adjustment_value` decimal(10,2) NOT NULL DEFAULT 0,
+            `description` text,
+            `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+            `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (`id`),
+            UNIQUE KEY `slug` (`slug`)
+        ) $charset_collate;";
+        
+        $result = $wpdb->query($sql);
+        error_log("JPC: Created/verified table: $table_diamond_clarities (result: $result)");
+        if ($wpdb->last_error) {
+            error_log("JPC Error creating diamond_clarities: " . $wpdb->last_error);
+        }
+        
+        // NEW: Diamond Cuts Table
+        $table_diamond_cuts = $wpdb->prefix . 'jpc_diamond_cuts';
+        $sql = "CREATE TABLE IF NOT EXISTS `$table_diamond_cuts` (
+            `id` bigint(20) NOT NULL AUTO_INCREMENT,
+            `name` varchar(100) NOT NULL,
+            `slug` varchar(100) NOT NULL,
+            `adjustment_type` varchar(20) NOT NULL DEFAULT 'percentage',
+            `adjustment_value` decimal(10,2) NOT NULL DEFAULT 0,
+            `description` text,
+            `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+            `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (`id`),
+            UNIQUE KEY `slug` (`slug`)
+        ) $charset_collate;";
+        
+        $result = $wpdb->query($sql);
+        error_log("JPC: Created/verified table: $table_diamond_cuts (result: $result)");
+        if ($wpdb->last_error) {
+            error_log("JPC Error creating diamond_cuts: " . $wpdb->last_error);
+        }
+        
+        // Old Diamonds Table (backward compatibility) - NOW WITH NEW FIELDS
         $table_diamonds = $wpdb->prefix . 'jpc_diamonds';
         $sql = "CREATE TABLE IF NOT EXISTS `$table_diamonds` (
             `id` bigint(20) NOT NULL AUTO_INCREMENT,
             `type` varchar(50) NOT NULL,
             `carat` decimal(10,2) NOT NULL,
             `certification` varchar(50) NOT NULL,
+            `shape_id` bigint(20) DEFAULT NULL,
+            `colour_id` bigint(20) DEFAULT NULL,
+            `clarity_id` bigint(20) DEFAULT NULL,
+            `cut_id` bigint(20) DEFAULT NULL,
             `price_per_carat` decimal(10,2) NOT NULL DEFAULT 0,
             `display_name` varchar(200) NOT NULL,
             `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
@@ -169,7 +257,11 @@ class JPC_Database {
             PRIMARY KEY (`id`),
             KEY `type` (`type`),
             KEY `carat` (`carat`),
-            KEY `certification` (`certification`)
+            KEY `certification` (`certification`),
+            KEY `shape_id` (`shape_id`),
+            KEY `colour_id` (`colour_id`),
+            KEY `clarity_id` (`clarity_id`),
+            KEY `cut_id` (`cut_id`)
         ) $charset_collate;";
         
         $wpdb->query($sql);
@@ -271,7 +363,7 @@ class JPC_Database {
     }
     
     /**
-     * Insert default diamond data (groups, types, certifications)
+     * Insert default diamond data (groups, types, certifications, shapes, colours, clarities, cuts)
      */
     private static function insert_diamond_default_data() {
         global $wpdb;
@@ -279,6 +371,10 @@ class JPC_Database {
         $table_diamond_groups = $wpdb->prefix . 'jpc_diamond_groups';
         $table_diamond_types = $wpdb->prefix . 'jpc_diamond_types';
         $table_diamond_certs = $wpdb->prefix . 'jpc_diamond_certifications';
+        $table_diamond_shapes = $wpdb->prefix . 'jpc_diamond_shapes';
+        $table_diamond_colours = $wpdb->prefix . 'jpc_diamond_colours';
+        $table_diamond_clarities = $wpdb->prefix . 'jpc_diamond_clarities';
+        $table_diamond_cuts = $wpdb->prefix . 'jpc_diamond_cuts';
         
         // Insert default diamond groups
         $diamond_groups = array(
@@ -377,6 +473,80 @@ class JPC_Database {
                 error_log('JPC: Failed to insert certification: ' . $cert['name'] . ' - ' . $wpdb->last_error);
             }
         }
+        
+        // NEW: Insert default shapes
+        $shapes = array(
+            array('name' => 'Round', 'slug' => 'round', 'adjustment_type' => 'percentage', 'adjustment_value' => 0.00, 'description' => 'Classic round brilliant cut'),
+            array('name' => 'Princess', 'slug' => 'princess', 'adjustment_type' => 'percentage', 'adjustment_value' => -5.00, 'description' => 'Square shape with brilliant faceting'),
+            array('name' => 'Cushion', 'slug' => 'cushion', 'adjustment_type' => 'percentage', 'adjustment_value' => -8.00, 'description' => 'Pillow-shaped with rounded corners'),
+            array('name' => 'Emerald', 'slug' => 'emerald', 'adjustment_type' => 'percentage', 'adjustment_value' => -10.00, 'description' => 'Rectangular step cut'),
+            array('name' => 'Oval', 'slug' => 'oval', 'adjustment_type' => 'percentage', 'adjustment_value' => -3.00, 'description' => 'Elongated round shape'),
+            array('name' => 'Pear', 'slug' => 'pear', 'adjustment_type' => 'percentage', 'adjustment_value' => -7.00, 'description' => 'Teardrop shape'),
+            array('name' => 'Marquise', 'slug' => 'marquise', 'adjustment_type' => 'percentage', 'adjustment_value' => -12.00, 'description' => 'Elongated pointed ends'),
+            array('name' => 'Heart', 'slug' => 'heart', 'adjustment_type' => 'percentage', 'adjustment_value' => -15.00, 'description' => 'Heart-shaped'),
+        );
+        
+        foreach ($shapes as $shape) {
+            $result = $wpdb->insert($table_diamond_shapes, $shape);
+            if ($result) {
+                error_log('JPC: Inserted diamond shape: ' . $shape['name']);
+            }
+        }
+        
+        // NEW: Insert default colours
+        $colours = array(
+            array('name' => 'D (Colorless)', 'slug' => 'd-colorless', 'adjustment_type' => 'percentage', 'adjustment_value' => 25.00, 'description' => 'Absolutely colorless - highest grade'),
+            array('name' => 'E (Colorless)', 'slug' => 'e-colorless', 'adjustment_type' => 'percentage', 'adjustment_value' => 20.00, 'description' => 'Colorless'),
+            array('name' => 'F (Colorless)', 'slug' => 'f-colorless', 'adjustment_type' => 'percentage', 'adjustment_value' => 15.00, 'description' => 'Colorless'),
+            array('name' => 'G (Near Colorless)', 'slug' => 'g-near-colorless', 'adjustment_type' => 'percentage', 'adjustment_value' => 10.00, 'description' => 'Near colorless'),
+            array('name' => 'H (Near Colorless)', 'slug' => 'h-near-colorless', 'adjustment_type' => 'percentage', 'adjustment_value' => 5.00, 'description' => 'Near colorless'),
+            array('name' => 'I (Near Colorless)', 'slug' => 'i-near-colorless', 'adjustment_type' => 'percentage', 'adjustment_value' => 0.00, 'description' => 'Near colorless'),
+            array('name' => 'J (Near Colorless)', 'slug' => 'j-near-colorless', 'adjustment_type' => 'percentage', 'adjustment_value' => -5.00, 'description' => 'Near colorless'),
+            array('name' => 'K-M (Faint)', 'slug' => 'k-m-faint', 'adjustment_type' => 'percentage', 'adjustment_value' => -15.00, 'description' => 'Faint yellow tint'),
+        );
+        
+        foreach ($colours as $colour) {
+            $result = $wpdb->insert($table_diamond_colours, $colour);
+            if ($result) {
+                error_log('JPC: Inserted diamond colour: ' . $colour['name']);
+            }
+        }
+        
+        // NEW: Insert default clarities
+        $clarities = array(
+            array('name' => 'FL (Flawless)', 'slug' => 'fl-flawless', 'adjustment_type' => 'percentage', 'adjustment_value' => 30.00, 'description' => 'No inclusions or blemishes'),
+            array('name' => 'IF (Internally Flawless)', 'slug' => 'if-internally-flawless', 'adjustment_type' => 'percentage', 'adjustment_value' => 25.00, 'description' => 'No inclusions'),
+            array('name' => 'VVS1', 'slug' => 'vvs1', 'adjustment_type' => 'percentage', 'adjustment_value' => 20.00, 'description' => 'Very very slightly included'),
+            array('name' => 'VVS2', 'slug' => 'vvs2', 'adjustment_type' => 'percentage', 'adjustment_value' => 15.00, 'description' => 'Very very slightly included'),
+            array('name' => 'VS1', 'slug' => 'vs1', 'adjustment_type' => 'percentage', 'adjustment_value' => 10.00, 'description' => 'Very slightly included'),
+            array('name' => 'VS2', 'slug' => 'vs2', 'adjustment_type' => 'percentage', 'adjustment_value' => 5.00, 'description' => 'Very slightly included'),
+            array('name' => 'SI1', 'slug' => 'si1', 'adjustment_type' => 'percentage', 'adjustment_value' => 0.00, 'description' => 'Slightly included'),
+            array('name' => 'SI2', 'slug' => 'si2', 'adjustment_type' => 'percentage', 'adjustment_value' => -10.00, 'description' => 'Slightly included'),
+            array('name' => 'I1-I3', 'slug' => 'i1-i3', 'adjustment_type' => 'percentage', 'adjustment_value' => -25.00, 'description' => 'Included'),
+        );
+        
+        foreach ($clarities as $clarity) {
+            $result = $wpdb->insert($table_diamond_clarities, $clarity);
+            if ($result) {
+                error_log('JPC: Inserted diamond clarity: ' . $clarity['name']);
+            }
+        }
+        
+        // NEW: Insert default cuts
+        $cuts = array(
+            array('name' => 'Excellent', 'slug' => 'excellent', 'adjustment_type' => 'percentage', 'adjustment_value' => 15.00, 'description' => 'Exceptional brilliance and fire'),
+            array('name' => 'Very Good', 'slug' => 'very-good', 'adjustment_type' => 'percentage', 'adjustment_value' => 10.00, 'description' => 'Superior brilliance'),
+            array('name' => 'Good', 'slug' => 'good', 'adjustment_type' => 'percentage', 'adjustment_value' => 0.00, 'description' => 'Good brilliance'),
+            array('name' => 'Fair', 'slug' => 'fair', 'adjustment_type' => 'percentage', 'adjustment_value' => -10.00, 'description' => 'Moderate brilliance'),
+            array('name' => 'Poor', 'slug' => 'poor', 'adjustment_type' => 'percentage', 'adjustment_value' => -20.00, 'description' => 'Limited brilliance'),
+        );
+        
+        foreach ($cuts as $cut) {
+            $result = $wpdb->insert($table_diamond_cuts, $cut);
+            if ($result) {
+                error_log('JPC: Inserted diamond cut: ' . $cut['name']);
+            }
+        }
     }
     
     /**
@@ -391,6 +561,10 @@ class JPC_Database {
             $wpdb->prefix . 'jpc_diamond_groups',
             $wpdb->prefix . 'jpc_diamond_types',
             $wpdb->prefix . 'jpc_diamond_certifications',
+            $wpdb->prefix . 'jpc_diamond_shapes',
+            $wpdb->prefix . 'jpc_diamond_colours',
+            $wpdb->prefix . 'jpc_diamond_clarities',
+            $wpdb->prefix . 'jpc_diamond_cuts',
             $wpdb->prefix . 'jpc_diamonds',
             $wpdb->prefix . 'jpc_price_history',
             $wpdb->prefix . 'jpc_product_price_log',
@@ -416,6 +590,10 @@ class JPC_Database {
         $tables = array(
             $wpdb->prefix . 'jpc_product_price_log',
             $wpdb->prefix . 'jpc_price_history',
+            $wpdb->prefix . 'jpc_diamond_cuts',
+            $wpdb->prefix . 'jpc_diamond_clarities',
+            $wpdb->prefix . 'jpc_diamond_colours',
+            $wpdb->prefix . 'jpc_diamond_shapes',
             $wpdb->prefix . 'jpc_diamond_certifications',
             $wpdb->prefix . 'jpc_diamond_types',
             $wpdb->prefix . 'jpc_diamond_groups',
@@ -443,6 +621,10 @@ class JPC_Database {
         $wpdb->query("TRUNCATE TABLE `{$wpdb->prefix}jpc_diamond_groups`");
         $wpdb->query("TRUNCATE TABLE `{$wpdb->prefix}jpc_diamond_types`");
         $wpdb->query("TRUNCATE TABLE `{$wpdb->prefix}jpc_diamond_certifications`");
+        $wpdb->query("TRUNCATE TABLE `{$wpdb->prefix}jpc_diamond_shapes`");
+        $wpdb->query("TRUNCATE TABLE `{$wpdb->prefix}jpc_diamond_colours`");
+        $wpdb->query("TRUNCATE TABLE `{$wpdb->prefix}jpc_diamond_clarities`");
+        $wpdb->query("TRUNCATE TABLE `{$wpdb->prefix}jpc_diamond_cuts`");
         
         // Insert fresh data
         self::insert_diamond_default_data();
@@ -451,13 +633,21 @@ class JPC_Database {
         $groups_count = $wpdb->get_var("SELECT COUNT(*) FROM `{$wpdb->prefix}jpc_diamond_groups`");
         $types_count = $wpdb->get_var("SELECT COUNT(*) FROM `{$wpdb->prefix}jpc_diamond_types`");
         $certs_count = $wpdb->get_var("SELECT COUNT(*) FROM `{$wpdb->prefix}jpc_diamond_certifications`");
+        $shapes_count = $wpdb->get_var("SELECT COUNT(*) FROM `{$wpdb->prefix}jpc_diamond_shapes`");
+        $colours_count = $wpdb->get_var("SELECT COUNT(*) FROM `{$wpdb->prefix}jpc_diamond_colours`");
+        $clarities_count = $wpdb->get_var("SELECT COUNT(*) FROM `{$wpdb->prefix}jpc_diamond_clarities`");
+        $cuts_count = $wpdb->get_var("SELECT COUNT(*) FROM `{$wpdb->prefix}jpc_diamond_cuts`");
         
-        error_log("JPC: Force insert complete - Groups: $groups_count, Types: $types_count, Certs: $certs_count");
+        error_log("JPC: Force insert complete - Groups: $groups_count, Types: $types_count, Certs: $certs_count, Shapes: $shapes_count, Colours: $colours_count, Clarities: $clarities_count, Cuts: $cuts_count");
         
         return array(
             'groups' => $groups_count,
             'types' => $types_count,
-            'certifications' => $certs_count
+            'certifications' => $certs_count,
+            'shapes' => $shapes_count,
+            'colours' => $colours_count,
+            'clarities' => $clarities_count,
+            'cuts' => $cuts_count
         );
     }
 }
