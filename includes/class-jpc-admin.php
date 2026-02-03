@@ -475,10 +475,10 @@ class JPC_Admin {
     }
     
     /**
-     * Render diamonds page
+     * Render diamonds page (v1.9.0 - Updated to use diamonds-v2.php with 4Cs)
      */
     public function render_diamonds() {
-        include JPC_PLUGIN_DIR . 'templates/admin/diamonds.php';
+        include JPC_PLUGIN_DIR . 'templates/admin/diamonds-v2.php';
     }
     
     /**
