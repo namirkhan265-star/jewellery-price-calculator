@@ -263,6 +263,46 @@ class JPC_Admin {
             array($this, 'render_diamond_certifications')
         );
         
+        // NEW v1.9.0: Diamond Shapes submenu
+        add_submenu_page(
+            'jewellery-price-calc',
+            __('Diamond Shapes', 'jewellery-price-calc'),
+            __('Shapes', 'jewellery-price-calc'),
+            'manage_woocommerce',
+            'jpc-diamond-shapes',
+            array($this, 'render_diamond_shapes')
+        );
+        
+        // NEW v1.9.0: Diamond Colours submenu
+        add_submenu_page(
+            'jewellery-price-calc',
+            __('Diamond Colours', 'jewellery-price-calc'),
+            __('Colours', 'jewellery-price-calc'),
+            'manage_woocommerce',
+            'jpc-diamond-colours',
+            array($this, 'render_diamond_colours')
+        );
+        
+        // NEW v1.9.0: Diamond Clarities submenu
+        add_submenu_page(
+            'jewellery-price-calc',
+            __('Diamond Clarities', 'jewellery-price-calc'),
+            __('Clarities', 'jewellery-price-calc'),
+            'manage_woocommerce',
+            'jpc-diamond-clarities',
+            array($this, 'render_diamond_clarities')
+        );
+        
+        // NEW v1.9.0: Diamond Cuts submenu
+        add_submenu_page(
+            'jewellery-price-calc',
+            __('Diamond Cuts', 'jewellery-price-calc'),
+            __('Cuts', 'jewellery-price-calc'),
+            'manage_woocommerce',
+            'jpc-diamond-cuts',
+            array($this, 'render_diamond_cuts')
+        );
+        
         add_submenu_page(
             'jewellery-price-calc',
             __('Diamonds (Legacy)', 'jewellery-price-calc'),
@@ -404,6 +444,34 @@ class JPC_Admin {
      */
     public function render_diamond_certifications() {
         include JPC_PLUGIN_DIR . 'templates/admin/diamond-certifications.php';
+    }
+    
+    /**
+     * Render diamond shapes page (v1.9.0)
+     */
+    public function render_diamond_shapes() {
+        include JPC_PLUGIN_DIR . 'templates/admin/diamond-shapes.php';
+    }
+    
+    /**
+     * Render diamond colours page (v1.9.0)
+     */
+    public function render_diamond_colours() {
+        include JPC_PLUGIN_DIR . 'templates/admin/diamond-colours.php';
+    }
+    
+    /**
+     * Render diamond clarities page (v1.9.0)
+     */
+    public function render_diamond_clarities() {
+        include JPC_PLUGIN_DIR . 'templates/admin/diamond-clarities.php';
+    }
+    
+    /**
+     * Render diamond cuts page (v1.9.0)
+     */
+    public function render_diamond_cuts() {
+        include JPC_PLUGIN_DIR . 'templates/admin/diamond-cuts.php';
     }
     
     /**
