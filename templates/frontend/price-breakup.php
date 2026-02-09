@@ -2,7 +2,7 @@
 /**
  * Frontend Price Breakup Template - USES ONLY STORED BREAKUP DATA
  * NO CALCULATIONS - DISPLAYS STORED DATA ONLY
- * v2.5.0: Now uses custom labels from settings
+ * v2.5.0: Now uses custom labels from stored breakup data
  */
 
 if (!defined('ABSPATH')) {
@@ -46,10 +46,10 @@ if (!$metal) {
     return;
 }
 
-// Get custom labels from settings - v2.5.0
-$pearl_cost_label = get_option('jpc_pearl_cost_label', 'Pearl Cost');
-$stone_cost_label = get_option('jpc_stone_cost_label', 'Stone Cost');
-$extra_fee_label = get_option('jpc_extra_fee_label', 'Extra Fee');
+// Get custom labels from stored breakup data - v2.5.0 FIX
+$pearl_cost_label = isset($breakup['pearl_cost_label']) ? $breakup['pearl_cost_label'] : 'Pearl Cost';
+$stone_cost_label = isset($breakup['stone_cost_label']) ? $breakup['stone_cost_label'] : 'Stone Cost';
+$extra_fee_label = isset($breakup['extra_fee_label']) ? $breakup['extra_fee_label'] : 'Extra Fee';
 ?>
 
 <div class="jpc-price-breakup">
@@ -87,7 +87,7 @@ $extra_fee_label = get_option('jpc_extra_fee_label', 'Extra Fee');
             </tr>
             <?php endif; ?>
             
-            <!-- Pearl Cost - v2.5.0 ENHANCED -->
+            <!-- Pearl Cost - v2.5.0 ENHANCED - Uses stored label -->
             <?php if (!empty($breakup['pearl_cost']) && $breakup['pearl_cost'] > 0): ?>
             <tr>
                 <td><?php echo esc_html($pearl_cost_label); ?></td>
@@ -95,7 +95,7 @@ $extra_fee_label = get_option('jpc_extra_fee_label', 'Extra Fee');
             </tr>
             <?php endif; ?>
             
-            <!-- Stone Cost - v2.5.0 ENHANCED -->
+            <!-- Stone Cost - v2.5.0 ENHANCED - Uses stored label -->
             <?php if (!empty($breakup['stone_cost']) && $breakup['stone_cost'] > 0): ?>
             <tr>
                 <td><?php echo esc_html($stone_cost_label); ?></td>
@@ -103,7 +103,7 @@ $extra_fee_label = get_option('jpc_extra_fee_label', 'Extra Fee');
             </tr>
             <?php endif; ?>
             
-            <!-- Extra Fee - v2.5.0 ENHANCED -->
+            <!-- Extra Fee - v2.5.0 ENHANCED - Uses stored label -->
             <?php if (!empty($breakup['extra_fee']) && $breakup['extra_fee'] > 0): ?>
             <tr>
                 <td><?php echo esc_html($extra_fee_label); ?></td>
@@ -235,6 +235,18 @@ $extra_fee_label = get_option('jpc_extra_fee_label', 'Extra Fee');
         <tr>
             <td><strong>Additional %:</strong></td>
             <td>₹<?php echo !empty($breakup['additional_percentage']) ? number_format($breakup['additional_percentage'], 2) : '0.00'; ?></td>
+        </tr>
+        <tr>
+            <td><strong>Pearl Cost Label:</strong></td>
+            <td style="color: #28a745; font-weight: bold;"><?php echo esc_html($pearl_cost_label); ?></td>
+        </tr>
+        <tr>
+            <td><strong>Stone Cost Label:</strong></td>
+            <td style="color: #28a745; font-weight: bold;"><?php echo esc_html($stone_cost_label); ?></td>
+        </tr>
+        <tr>
+            <td><strong>Extra Fee Label:</strong></td>
+            <td style="color: #28a745; font-weight: bold;"><?php echo esc_html($extra_fee_label); ?></td>
         </tr>
         <tr>
             <td colspan="2" style="padding-top: 10px; border-top: 1px solid #ccc; margin-top: 10px;">
