@@ -1,6 +1,7 @@
 <?php
 /**
  * Admin Interface Handler
+ * v2.5.0: Added custom label and type settings for additional cost fields
  */
 
 if (!defined('ABSPATH')) {
@@ -370,12 +371,22 @@ class JPC_Admin {
     
     /**
      * Register settings
+     * v2.5.0: Added custom label and type settings for additional cost fields
      */
     public function register_settings() {
         // General settings
         register_setting('jpc_general_settings', 'jpc_enable_pearl_cost');
+        register_setting('jpc_general_settings', 'jpc_pearl_cost_label'); // NEW v2.5.0
+        register_setting('jpc_general_settings', 'jpc_pearl_cost_type'); // NEW v2.5.0
+        
         register_setting('jpc_general_settings', 'jpc_enable_stone_cost');
+        register_setting('jpc_general_settings', 'jpc_stone_cost_label'); // NEW v2.5.0
+        register_setting('jpc_general_settings', 'jpc_stone_cost_type'); // NEW v2.5.0
+        
         register_setting('jpc_general_settings', 'jpc_enable_extra_fee');
+        register_setting('jpc_general_settings', 'jpc_extra_fee_label'); // NEW v2.5.0
+        register_setting('jpc_general_settings', 'jpc_extra_fee_type'); // NEW v2.5.0
+        
         register_setting('jpc_general_settings', 'jpc_additional_percentage_label');
         register_setting('jpc_general_settings', 'jpc_additional_percentage_value');
         register_setting('jpc_general_settings', 'jpc_enable_gst');
@@ -396,9 +407,9 @@ class JPC_Admin {
         
         // Discount settings - ENHANCED
         register_setting('jpc_discount_settings', 'jpc_enable_discount');
-        register_setting('jpc_discount_settings', 'jpc_discount_calculation_method'); // NEW
-        register_setting('jpc_discount_settings', 'jpc_discount_timing'); // NEW
-        register_setting('jpc_discount_settings', 'jpc_gst_calculation_base'); // NEW
+        register_setting('jpc_discount_settings', 'jpc_discount_calculation_method');
+        register_setting('jpc_discount_settings', 'jpc_discount_timing');
+        register_setting('jpc_discount_settings', 'jpc_gst_calculation_base');
         register_setting('jpc_discount_settings', 'jpc_discount_on_metals');
         register_setting('jpc_discount_settings', 'jpc_discount_on_making');
         register_setting('jpc_discount_settings', 'jpc_discount_on_wastage');
