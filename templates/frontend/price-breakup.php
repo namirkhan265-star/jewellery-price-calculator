@@ -2,6 +2,7 @@
 /**
  * Frontend Price Breakup Template - USES ONLY STORED BREAKUP DATA
  * NO CALCULATIONS - DISPLAYS STORED DATA ONLY
+ * v2.5.0: Now uses custom labels from settings
  */
 
 if (!defined('ABSPATH')) {
@@ -44,6 +45,11 @@ if (!$metal) {
     echo '<p>' . __('Invalid metal configuration.', 'jewellery-price-calc') . '</p>';
     return;
 }
+
+// Get custom labels from settings - v2.5.0
+$pearl_cost_label = get_option('jpc_pearl_cost_label', 'Pearl Cost');
+$stone_cost_label = get_option('jpc_stone_cost_label', 'Stone Cost');
+$extra_fee_label = get_option('jpc_extra_fee_label', 'Extra Fee');
 ?>
 
 <div class="jpc-price-breakup">
@@ -81,26 +87,26 @@ if (!$metal) {
             </tr>
             <?php endif; ?>
             
-            <!-- Pearl Cost -->
+            <!-- Pearl Cost - v2.5.0 ENHANCED -->
             <?php if (!empty($breakup['pearl_cost']) && $breakup['pearl_cost'] > 0): ?>
             <tr>
-                <td><?php _e('Pearl Cost', 'jewellery-price-calc'); ?></td>
+                <td><?php echo esc_html($pearl_cost_label); ?></td>
                 <td><?php echo wc_price($breakup['pearl_cost']); ?></td>
             </tr>
             <?php endif; ?>
             
-            <!-- Stone Cost -->
+            <!-- Stone Cost - v2.5.0 ENHANCED -->
             <?php if (!empty($breakup['stone_cost']) && $breakup['stone_cost'] > 0): ?>
             <tr>
-                <td><?php _e('Stone Cost', 'jewellery-price-calc'); ?></td>
+                <td><?php echo esc_html($stone_cost_label); ?></td>
                 <td><?php echo wc_price($breakup['stone_cost']); ?></td>
             </tr>
             <?php endif; ?>
             
-            <!-- Extra Fee -->
+            <!-- Extra Fee - v2.5.0 ENHANCED -->
             <?php if (!empty($breakup['extra_fee']) && $breakup['extra_fee'] > 0): ?>
             <tr>
-                <td><?php _e('Extra Fee', 'jewellery-price-calc'); ?></td>
+                <td><?php echo esc_html($extra_fee_label); ?></td>
                 <td><?php echo wc_price($breakup['extra_fee']); ?></td>
             </tr>
             <?php endif; ?>
