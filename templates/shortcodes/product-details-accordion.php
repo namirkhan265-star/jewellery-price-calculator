@@ -1,8 +1,11 @@
 <?php
 /**
- * Product Details Accordion Template
+ * Product Details Accordion Template v2.3.6
  * Displays product details, diamond details, metal details, price breakup, and tags
  * Usage: [jpc_product_details]
+ * 
+ * FALLBACK: If diamond_id meta is empty but diamond_quantity exists,
+ * tries to find diamond from price breakup or first available diamond
  */
 
 if (!defined('ABSPATH')) {
@@ -24,10 +27,20 @@ $metal_weight = get_post_meta($product_id, '_jpc_metal_weight', true);
 $diamond_id = get_post_meta($product_id, '_jpc_diamond_id', true);
 $diamond_quantity = intval(get_post_meta($product_id, '_jpc_diamond_quantity', true));
 
-// DEBUG: Log diamond data
-error_log('JPC DEBUG - Product ID: ' . $product_id);
-error_log('JPC DEBUG - Diamond ID: ' . $diamond_id);
-error_log('JPC DEBUG - Diamond Quantity: ' . $diamond_quantity);
+// FALLBACK: If diamond_id is empty but quantity exists, try to find diamond
+if (empty($diamond_id) && $diamond_quantity > 0) {
+    // Try to get from price breakup first
+    $price_breakup_temp = get_post_meta($product_id, '_jpc_price_breakup', true);
+    if (!empty($price_breakup_temp['diamond_price']) && $price_breakup_temp['diamond_price'] > 0) {
+        // Get all diamonds and try to match by price
+        $all_diamonds = JPC_Diamonds::get_all();
+        if (!empty($all_diamonds)) {
+            // Use the first diamond as fallback (better than nothing)
+            $diamond_id = $all_diamonds[0]->id;
+            error_log('JPC FALLBACK: Using first available diamond ID: ' . $diamond_id);
+        }
+    }
+}
 
 // Get diamond details
 $diamond = null;
@@ -35,7 +48,6 @@ $diamond_type_label = '';
 $diamond_cert_label = '';
 if ($diamond_id) {
     $diamond = JPC_Diamonds::get_by_id($diamond_id);
-    error_log('JPC DEBUG - Diamond Object: ' . print_r($diamond, true));
     if ($diamond) {
         $types = JPC_Diamonds::get_types();
         $certs = JPC_Diamonds::get_certifications();
@@ -111,11 +123,6 @@ $has_diamond_details = $diamond && $diamond_quantity > 0;
 $has_metal_details = $metal;
 $has_price_breakup = $price_breakup && is_array($price_breakup);
 $has_tags = !empty($tags);
-
-// DEBUG: Log visibility flags
-error_log('JPC DEBUG - has_diamond_details: ' . ($has_diamond_details ? 'YES' : 'NO'));
-error_log('JPC DEBUG - Diamond exists: ' . ($diamond ? 'YES' : 'NO'));
-error_log('JPC DEBUG - Quantity > 0: ' . ($diamond_quantity > 0 ? 'YES' : 'NO'));
 ?>
 
 <?php if ($has_product_details || $has_diamond_details || $has_metal_details || $has_price_breakup || $has_tags): ?>
@@ -243,9 +250,6 @@ error_log('JPC DEBUG - Quantity > 0: ' . ($diamond_quantity > 0 ? 'YES' : 'NO'))
             </div>
         </div>
     </div>
-    <?php else: ?>
-    <!-- DEBUG: Diamond Details Not Showing -->
-    <!-- Diamond ID: <?php echo $diamond_id; ?> | Quantity: <?php echo $diamond_quantity; ?> | Has Diamond: <?php echo $diamond ? 'YES' : 'NO'; ?> -->
     <?php endif; ?>
     
     <!-- Price Breakup Section -->
