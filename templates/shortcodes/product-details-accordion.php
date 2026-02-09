@@ -12,6 +12,11 @@ if (!defined('ABSPATH')) {
 // Get WooCommerce product weight (total product weight)
 $product_weight = $product->get_weight();
 
+// Get metal ID (passed from shortcode handler)
+if (!isset($metal_id)) {
+    $metal_id = get_post_meta($product_id, '_jpc_metal_id', true);
+}
+
 // Get metal data
 $metal_weight = get_post_meta($product_id, '_jpc_metal_weight', true);
 
