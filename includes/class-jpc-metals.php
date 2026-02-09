@@ -1,6 +1,7 @@
 <?php
 /**
- * Metals Handler
+ * Metals Handler v2.0.0
+ * Enhanced with making_charges_per_gram support
  */
 
 if (!defined('ABSPATH')) {
@@ -62,7 +63,7 @@ class JPC_Metals {
     }
     
     /**
-     * Add new metal
+     * Add new metal (v2.0.0 - Added making_charges_per_gram)
      */
     public static function add($data) {
         global $wpdb;
@@ -73,6 +74,7 @@ class JPC_Metals {
             'display_name' => sanitize_text_field($data['display_name']),
             'metal_group_id' => intval($data['metal_group_id']),
             'price_per_unit' => floatval($data['price_per_unit']),
+            'making_charges_per_gram' => floatval($data['making_charges_per_gram'] ?? 0), // v2.0.0
         );
         
         $result = $wpdb->insert($table, $insert_data);
@@ -85,7 +87,7 @@ class JPC_Metals {
     }
     
     /**
-     * Update metal
+     * Update metal (v2.0.0 - Added making_charges_per_gram)
      */
     public static function update($id, $data) {
         global $wpdb;
@@ -100,6 +102,7 @@ class JPC_Metals {
             'display_name' => sanitize_text_field($data['display_name']),
             'metal_group_id' => intval($data['metal_group_id']),
             'price_per_unit' => floatval($data['price_per_unit']),
+            'making_charges_per_gram' => floatval($data['making_charges_per_gram'] ?? 0), // v2.0.0
         );
         
         $result = $wpdb->update($table, $update_data, array('id' => $id));
@@ -357,7 +360,7 @@ class JPC_Metals {
     }
     
     /**
-     * AJAX: Add metal
+     * AJAX: Add metal (v2.0.0 - Added making_charges_per_gram)
      */
     public function ajax_add_metal() {
         check_ajax_referer('jpc_admin_nonce', 'nonce');
@@ -371,6 +374,7 @@ class JPC_Metals {
             'display_name' => $_POST['display_name'],
             'metal_group_id' => $_POST['metal_group_id'],
             'price_per_unit' => $_POST['price_per_unit'],
+            'making_charges_per_gram' => isset($_POST['making_charges_per_gram']) ? $_POST['making_charges_per_gram'] : 0, // v2.0.0
         );
         
         $result = self::add($data);
@@ -386,7 +390,7 @@ class JPC_Metals {
     }
     
     /**
-     * AJAX: Update metal
+     * AJAX: Update metal (v2.0.0 - Added making_charges_per_gram)
      */
     public function ajax_update_metal() {
         check_ajax_referer('jpc_admin_nonce', 'nonce');
@@ -401,6 +405,7 @@ class JPC_Metals {
             'display_name' => $_POST['display_name'],
             'metal_group_id' => $_POST['metal_group_id'],
             'price_per_unit' => $_POST['price_per_unit'],
+            'making_charges_per_gram' => isset($_POST['making_charges_per_gram']) ? $_POST['making_charges_per_gram'] : 0, // v2.0.0
         );
         
         $result = self::update($id, $data);
@@ -458,6 +463,7 @@ class JPC_Metals {
                     'display_name' => $metal->display_name,
                     'metal_group_id' => $metal->metal_group_id,
                     'price_per_unit' => $price,
+                    'making_charges_per_gram' => $metal->making_charges_per_gram ?? 0, // v2.0.0 - preserve existing value
                 );
                 
                 if (self::update($id, $data) !== false) {
