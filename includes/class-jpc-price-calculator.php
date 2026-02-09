@@ -228,7 +228,7 @@ class JPC_Price_Calculator {
     
     /**
      * Calculate and store price breakup (for display purposes)
-     * v2.5.0: Enhanced to support percentage calculations for additional costs
+     * v2.5.0: Enhanced to support percentage calculations and custom labels for additional costs
      */
     public static function calculate_and_store_breakup($product_id) {
         // Get metal data
@@ -361,6 +361,11 @@ class JPC_Price_Calculator {
         $gst_label = get_option('jpc_gst_label', 'GST');
         $gst_percentage = $prices['gst_percentage'];
         
+        // Get custom labels for pearl/stone/extra costs - v2.5.0
+        $pearl_cost_label = get_option('jpc_pearl_cost_label', 'Pearl Cost');
+        $stone_cost_label = get_option('jpc_stone_cost_label', 'Stone Cost');
+        $extra_fee_label = get_option('jpc_extra_fee_label', 'Extra Fee');
+        
         // Store price breakup for display
         $breakup = array(
             'metal_price' => $metal_price,
@@ -368,8 +373,11 @@ class JPC_Price_Calculator {
             'making_charge' => $making_charge_amount,
             'wastage_charge' => $wastage_charge_amount,
             'pearl_cost' => $pearl_cost,
+            'pearl_cost_label' => $pearl_cost_label,  // v2.5.0: Store custom label
             'stone_cost' => $stone_cost,
+            'stone_cost_label' => $stone_cost_label,  // v2.5.0: Store custom label
             'extra_fee' => $extra_fee,
+            'extra_fee_label' => $extra_fee_label,  // v2.5.0: Store custom label
             'extra_fields' => $extra_fields,  // Array of extra fields with labels
             'additional_percentage' => $prices['additional_percentage_amount'],
             'additional_percentage_label' => $additional_percentage_label,
