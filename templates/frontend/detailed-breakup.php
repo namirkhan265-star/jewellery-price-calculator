@@ -1,11 +1,17 @@
 <?php
 /**
  * Detailed Price Breakup Template
+ * v2.5.0: Now uses custom labels from settings
  */
 
 if (!defined('ABSPATH')) {
     exit;
 }
+
+// Get custom labels from settings - v2.5.0
+$pearl_cost_label = get_option('jpc_pearl_cost_label', 'Pearl Cost');
+$stone_cost_label = get_option('jpc_stone_cost_label', 'Stone Cost');
+$extra_fee_label = get_option('jpc_extra_fee_label', 'Extra Fee');
 
 // Calculate discount percentage if discount exists
 $discount_percentage = 0;
@@ -56,23 +62,26 @@ if ($breakup['discount'] > 0 && $breakup['subtotal'] > 0) {
                 </tr>
                 <?php endif; ?>
                 
+                <!-- Pearl Cost - v2.5.0 ENHANCED -->
                 <?php if ($breakup['pearl_cost'] > 0): ?>
                 <tr>
-                    <td><?php _e('Pearl Cost', 'jewellery-price-calc'); ?></td>
+                    <td><?php echo esc_html($pearl_cost_label); ?></td>
                     <td><?php echo JPC_Frontend::format_price($breakup['pearl_cost']); ?></td>
                 </tr>
                 <?php endif; ?>
                 
+                <!-- Stone Cost - v2.5.0 ENHANCED -->
                 <?php if ($breakup['stone_cost'] > 0): ?>
                 <tr>
-                    <td><?php _e('Stone Cost', 'jewellery-price-calc'); ?></td>
+                    <td><?php echo esc_html($stone_cost_label); ?></td>
                     <td><?php echo JPC_Frontend::format_price($breakup['stone_cost']); ?></td>
                 </tr>
                 <?php endif; ?>
                 
+                <!-- Extra Fee - v2.5.0 ENHANCED -->
                 <?php if ($breakup['extra_fee'] > 0): ?>
                 <tr>
-                    <td><?php _e('Extra Fee', 'jewellery-price-calc'); ?></td>
+                    <td><?php echo esc_html($extra_fee_label); ?></td>
                     <td><?php echo JPC_Frontend::format_price($breakup['extra_fee']); ?></td>
                 </tr>
                 <?php endif; ?>
