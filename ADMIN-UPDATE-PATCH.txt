@@ -1,0 +1,17 @@
+ADMIN CLASS UPDATE PATCH
+========================
+
+File: includes/class-jpc-admin.php
+Line: ~425
+
+CHANGE FROM:
+    public function render_metals() {
+        include JPC_PLUGIN_DIR . 'templates/admin/metals.php';
+    }
+
+CHANGE TO:
+    public function render_metals() {
+        include JPC_PLUGIN_DIR . 'templates/admin/metals-v2.php';
+    }
+
+This enables the new making charges per gram feature in the metals admin interface.
