@@ -1,6 +1,7 @@
 <?php
 /**
- * General Settings Page Template
+ * General Settings Page Template v2.5.0
+ * NEW: Enhanced Additional Cost Fields with custom labels and fixed/percentage type selection
  */
 
 if (!defined('ABSPATH')) {
@@ -74,35 +75,106 @@ if (isset($_POST['jpc_bulk_update_prices']) && check_admin_referer('jpc_bulk_upd
     <form method="post" action="options.php">
         <?php settings_fields('jpc_general_settings'); ?>
         
+        <!-- ENHANCED ADDITIONAL COST FIELDS v2.5.0 -->
         <div class="jpc-card">
-            <h2><?php _e('Additional Cost Fields', 'jewellery-price-calc'); ?></h2>
+            <h2><?php _e('Additional Cost Fields', 'jewellery-price-calc'); ?> <span class="jpc-new-badge">v2.5 ENHANCED</span></h2>
+            <p class="description"><?php _e('Configure additional cost fields with custom labels and choose between fixed price or percentage calculation.', 'jewellery-price-calc'); ?></p>
             
-            <table class="form-table">
-                <tr>
-                    <th colspan="2">
-                        <label>
-                            <input type="checkbox" name="jpc_enable_pearl_cost" value="yes" <?php checked(get_option('jpc_enable_pearl_cost'), 'yes'); ?>>
-                            <?php _e('Enable Pearl Cost Field', 'jewellery-price-calc'); ?>
-                        </label>
-                    </th>
+            <table class="form-table jpc-enhanced-cost-fields">
+                <!-- Pearl Cost Field -->
+                <tr class="jpc-cost-field-section">
+                    <td colspan="2">
+                        <div class="jpc-cost-field-header">
+                            <label class="jpc-toggle-label">
+                                <input type="checkbox" name="jpc_enable_pearl_cost" value="yes" <?php checked(get_option('jpc_enable_pearl_cost'), 'yes'); ?> class="jpc-field-toggle">
+                                <strong><?php _e('Enable Pearl Cost Field', 'jewellery-price-calc'); ?></strong>
+                            </label>
+                        </div>
+                        <div class="jpc-cost-field-config" style="display: <?php echo get_option('jpc_enable_pearl_cost') === 'yes' ? 'block' : 'none'; ?>;">
+                            <table class="jpc-inner-table">
+                                <tr>
+                                    <th><label><?php _e('Label Name', 'jewellery-price-calc'); ?></label></th>
+                                    <td>
+                                        <input type="text" name="jpc_pearl_cost_label" value="<?php echo esc_attr(get_option('jpc_pearl_cost_label', 'Pearl Cost')); ?>" class="regular-text" placeholder="Pearl Cost">
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th><label><?php _e('Calculation Type', 'jewellery-price-calc'); ?></label></th>
+                                    <td>
+                                        <select name="jpc_pearl_cost_type" class="regular-text">
+                                            <option value="fixed" <?php selected(get_option('jpc_pearl_cost_type', 'fixed'), 'fixed'); ?>><?php _e('Fixed Price (₹)', 'jewellery-price-calc'); ?></option>
+                                            <option value="percentage" <?php selected(get_option('jpc_pearl_cost_type'), 'percentage'); ?>><?php _e('Percentage (%)', 'jewellery-price-calc'); ?></option>
+                                        </select>
+                                        <p class="description"><?php _e('Fixed: Enter exact amount. Percentage: Calculate based on subtotal.', 'jewellery-price-calc'); ?></p>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </td>
                 </tr>
                 
-                <tr>
-                    <th colspan="2">
-                        <label>
-                            <input type="checkbox" name="jpc_enable_stone_cost" value="yes" <?php checked(get_option('jpc_enable_stone_cost'), 'yes'); ?>>
-                            <?php _e('Enable Stone Cost Field', 'jewellery-price-calc'); ?>
-                        </label>
-                    </th>
+                <!-- Stone Cost Field -->
+                <tr class="jpc-cost-field-section">
+                    <td colspan="2">
+                        <div class="jpc-cost-field-header">
+                            <label class="jpc-toggle-label">
+                                <input type="checkbox" name="jpc_enable_stone_cost" value="yes" <?php checked(get_option('jpc_enable_stone_cost'), 'yes'); ?> class="jpc-field-toggle">
+                                <strong><?php _e('Enable Stone Cost Field', 'jewellery-price-calc'); ?></strong>
+                            </label>
+                        </div>
+                        <div class="jpc-cost-field-config" style="display: <?php echo get_option('jpc_enable_stone_cost') === 'yes' ? 'block' : 'none'; ?>;">
+                            <table class="jpc-inner-table">
+                                <tr>
+                                    <th><label><?php _e('Label Name', 'jewellery-price-calc'); ?></label></th>
+                                    <td>
+                                        <input type="text" name="jpc_stone_cost_label" value="<?php echo esc_attr(get_option('jpc_stone_cost_label', 'Stone Cost')); ?>" class="regular-text" placeholder="Stone Cost">
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th><label><?php _e('Calculation Type', 'jewellery-price-calc'); ?></label></th>
+                                    <td>
+                                        <select name="jpc_stone_cost_type" class="regular-text">
+                                            <option value="fixed" <?php selected(get_option('jpc_stone_cost_type', 'fixed'), 'fixed'); ?>><?php _e('Fixed Price (₹)', 'jewellery-price-calc'); ?></option>
+                                            <option value="percentage" <?php selected(get_option('jpc_stone_cost_type'), 'percentage'); ?>><?php _e('Percentage (%)', 'jewellery-price-calc'); ?></option>
+                                        </select>
+                                        <p class="description"><?php _e('Fixed: Enter exact amount. Percentage: Calculate based on subtotal.', 'jewellery-price-calc'); ?></p>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </td>
                 </tr>
                 
-                <tr>
-                    <th colspan="2">
-                        <label>
-                            <input type="checkbox" name="jpc_enable_extra_fee" value="yes" <?php checked(get_option('jpc_enable_extra_fee'), 'yes'); ?>>
-                            <?php _e('Enable Extra Fee Field', 'jewellery-price-calc'); ?>
-                        </label>
-                    </th>
+                <!-- Extra Fee Field -->
+                <tr class="jpc-cost-field-section">
+                    <td colspan="2">
+                        <div class="jpc-cost-field-header">
+                            <label class="jpc-toggle-label">
+                                <input type="checkbox" name="jpc_enable_extra_fee" value="yes" <?php checked(get_option('jpc_enable_extra_fee'), 'yes'); ?> class="jpc-field-toggle">
+                                <strong><?php _e('Enable Extra Fee Field', 'jewellery-price-calc'); ?></strong>
+                            </label>
+                        </div>
+                        <div class="jpc-cost-field-config" style="display: <?php echo get_option('jpc_enable_extra_fee') === 'yes' ? 'block' : 'none'; ?>;">
+                            <table class="jpc-inner-table">
+                                <tr>
+                                    <th><label><?php _e('Label Name', 'jewellery-price-calc'); ?></label></th>
+                                    <td>
+                                        <input type="text" name="jpc_extra_fee_label" value="<?php echo esc_attr(get_option('jpc_extra_fee_label', 'Extra Fee')); ?>" class="regular-text" placeholder="Extra Fee">
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th><label><?php _e('Calculation Type', 'jewellery-price-calc'); ?></label></th>
+                                    <td>
+                                        <select name="jpc_extra_fee_type" class="regular-text">
+                                            <option value="fixed" <?php selected(get_option('jpc_extra_fee_type', 'fixed'), 'fixed'); ?>><?php _e('Fixed Price (₹)', 'jewellery-price-calc'); ?></option>
+                                            <option value="percentage" <?php selected(get_option('jpc_extra_fee_type'), 'percentage'); ?>><?php _e('Percentage (%)', 'jewellery-price-calc'); ?></option>
+                                        </select>
+                                        <p class="description"><?php _e('Fixed: Enter exact amount. Percentage: Calculate based on subtotal.', 'jewellery-price-calc'); ?></p>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </td>
                 </tr>
             </table>
         </div>
@@ -253,3 +325,96 @@ if (isset($_POST['jpc_bulk_update_prices']) && check_admin_referer('jpc_bulk_upd
         <?php submit_button(); ?>
     </form>
 </div>
+
+<style>
+.jpc-new-badge {
+    background: #2196f3;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: bold;
+    margin-left: 10px;
+}
+
+.jpc-enhanced-cost-fields .jpc-cost-field-section {
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.jpc-enhanced-cost-fields .jpc-cost-field-section:last-child {
+    border-bottom: none;
+}
+
+.jpc-cost-field-header {
+    padding: 15px 0;
+    background: #f9f9f9;
+    border-left: 4px solid #2271b1;
+    padding-left: 15px;
+    margin-bottom: 10px;
+}
+
+.jpc-toggle-label {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.jpc-toggle-label input[type="checkbox"] {
+    margin: 0;
+}
+
+.jpc-cost-field-config {
+    padding: 15px;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    margin-bottom: 15px;
+}
+
+.jpc-inner-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.jpc-inner-table tr {
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.jpc-inner-table tr:last-child {
+    border-bottom: none;
+}
+
+.jpc-inner-table th {
+    width: 200px;
+    padding: 12px 10px;
+    text-align: left;
+    font-weight: 600;
+    color: #555;
+}
+
+.jpc-inner-table td {
+    padding: 12px 10px;
+}
+
+.jpc-inner-table .description {
+    margin-top: 5px;
+    font-size: 12px;
+    color: #666;
+    font-style: italic;
+}
+</style>
+
+<script>
+jQuery(document).ready(function($) {
+    // Toggle cost field configuration visibility
+    $('.jpc-field-toggle').on('change', function() {
+        var $config = $(this).closest('.jpc-cost-field-section').find('.jpc-cost-field-config');
+        if ($(this).is(':checked')) {
+            $config.slideDown(200);
+        } else {
+            $config.slideUp(200);
+        }
+    });
+});
+</script>
