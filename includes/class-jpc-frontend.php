@@ -1,7 +1,8 @@
 <?php
 /**
- * Frontend Display Handler
+ * Frontend Display Handler v2.0.0
  * CRITICAL: This class ONLY displays stored data - NO CALCULATIONS!
+ * NEW: Added DIAMOND DETAILS and METAL DETAILS tabs
  */
 
 if (!defined('ABSPATH')) {
@@ -23,8 +24,8 @@ class JPC_Frontend {
         add_action('wp_enqueue_scripts', array($this, 'enqueue_frontend_assets'));
         add_action('woocommerce_single_product_summary', array($this, 'display_price_breakup'), 25);
         
-        // FORCE OVERRIDE: Add custom product tab for price breakup with HIGHEST priority
-        add_filter('woocommerce_product_tabs', array($this, 'add_price_breakup_tab'), 999);
+        // FORCE OVERRIDE: Add custom product tabs with HIGHEST priority
+        add_filter('woocommerce_product_tabs', array($this, 'add_product_details_tabs'), 999);
         
         // FORCE OVERRIDE: Remove any other price breakup tabs
         add_filter('woocommerce_product_tabs', array($this, 'remove_theme_price_breakup_tabs'), 1);
@@ -73,9 +74,9 @@ class JPC_Frontend {
     }
     
     /**
-     * Add Price Breakup tab to WooCommerce product tabs - FORCE OVERRIDE
+     * Add Product Details tabs (Metal Details, Diamond Details, Price Breakup)
      */
-    public function add_price_breakup_tab($tabs) {
+    public function add_product_details_tabs($tabs) {
         global $product;
         
         if (!$product) {
@@ -85,7 +86,7 @@ class JPC_Frontend {
         $product_id = $product->get_id();
         $metal_id = get_post_meta($product_id, '_jpc_metal_id', true);
         
-        // Only add tab if this is a JPC product
+        // Only add tabs if this is a JPC product
         if (!$metal_id) {
             return $tabs;
         }
@@ -97,14 +98,220 @@ class JPC_Frontend {
             }
         }
         
-        // Add our tab with HIGHEST priority
+        // Add METAL DETAILS tab
+        $tabs['jpc_metal_details'] = array(
+            'title'    => __('Metal Details', 'jewellery-price-calc'),
+            'priority' => 5,
+            'callback' => array($this, 'render_metal_details_tab')
+        );
+        
+        // Add DIAMOND DETAILS tab (only if product has diamond)
+        $diamond_id = get_post_meta($product_id, '_jpc_diamond_id', true);
+        $manual_diamond_weight = get_post_meta($product_id, '_jpc_manual_diamond_weight', true);
+        
+        if ($diamond_id || $manual_diamond_weight) {
+            $tabs['jpc_diamond_details'] = array(
+                'title'    => __('Diamond Details', 'jewellery-price-calc'),
+                'priority' => 10,
+                'callback' => array($this, 'render_diamond_details_tab')
+            );
+        }
+        
+        // Add PRICE BREAKUP tab
         $tabs['jpc_price_breakup'] = array(
             'title'    => __('Price Breakup', 'jewellery-price-calc'),
-            'priority' => 5, // Very high priority to show first
+            'priority' => 15,
             'callback' => array($this, 'render_price_breakup_tab_content')
         );
         
         return $tabs;
+    }
+    
+    /**
+     * Render METAL DETAILS tab
+     */
+    public function render_metal_details_tab() {
+        global $product;
+        
+        if (!$product) {
+            return;
+        }
+        
+        $product_id = $product->get_id();
+        $metal_id = get_post_meta($product_id, '_jpc_metal_id', true);
+        $metal = JPC_Metals::get_by_id($metal_id);
+        
+        if (!$metal) {
+            echo '<p>' . __('Metal information not available.', 'jewellery-price-calc') . '</p>';
+            return;
+        }
+        
+        $metal_weight = get_post_meta($product_id, '_jpc_metal_weight', true);
+        $wastage_percentage = get_post_meta($product_id, '_jpc_wastage_percentage', true);
+        
+        ?>
+        <div class="jpc-metal-details-tab" style="padding: 20px;">
+            <h3><?php _e('METAL DETAILS', 'jewellery-price-calc'); ?></h3>
+            
+            <table class="jpc-details-table" style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+                <tbody>
+                    <tr style="border-bottom: 1px solid #ddd;">
+                        <td style="padding: 12px; font-weight: bold; width: 40%;"><?php _e('Metal Type', 'jewellery-price-calc'); ?></td>
+                        <td style="padding: 12px;"><?php echo esc_html($metal->display_name); ?></td>
+                    </tr>
+                    
+                    <tr style="border-bottom: 1px solid #ddd;">
+                        <td style="padding: 12px; font-weight: bold;"><?php _e('Metal Group', 'jewellery-price-calc'); ?></td>
+                        <td style="padding: 12px;"><?php echo esc_html($metal->group_name); ?></td>
+                    </tr>
+                    
+                    <?php if ($metal_weight): ?>
+                    <tr style="border-bottom: 1px solid #ddd;">
+                        <td style="padding: 12px; font-weight: bold;"><?php _e('Metal Weight', 'jewellery-price-calc'); ?></td>
+                        <td style="padding: 12px;"><?php echo esc_html($metal_weight); ?> <?php echo esc_html($metal->unit); ?></td>
+                    </tr>
+                    <?php endif; ?>
+                    
+                    <tr style="border-bottom: 1px solid #ddd;">
+                        <td style="padding: 12px; font-weight: bold;"><?php _e('Price per Unit', 'jewellery-price-calc'); ?></td>
+                        <td style="padding: 12px;"><?php echo wc_price($metal->price_per_unit); ?> / <?php echo esc_html($metal->unit); ?></td>
+                    </tr>
+                    
+                    <?php if ($metal->making_charges_per_gram > 0): ?>
+                    <tr style="border-bottom: 1px solid #ddd;">
+                        <td style="padding: 12px; font-weight: bold;"><?php _e('Making Charges', 'jewellery-price-calc'); ?></td>
+                        <td style="padding: 12px;"><?php echo wc_price($metal->making_charges_per_gram); ?> / gram</td>
+                    </tr>
+                    <?php endif; ?>
+                    
+                    <?php if ($wastage_percentage): ?>
+                    <tr style="border-bottom: 1px solid #ddd;">
+                        <td style="padding: 12px; font-weight: bold;"><?php _e('Wastage Percentage', 'jewellery-price-calc'); ?></td>
+                        <td style="padding: 12px;"><?php echo esc_html($wastage_percentage); ?>%</td>
+                    </tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+        <?php
+    }
+    
+    /**
+     * Render DIAMOND DETAILS tab
+     */
+    public function render_diamond_details_tab() {
+        global $product;
+        
+        if (!$product) {
+            return;
+        }
+        
+        $product_id = $product->get_id();
+        
+        // Check if using pre-created diamond or manual entry
+        $diamond_id = get_post_meta($product_id, '_jpc_diamond_id', true);
+        $manual_diamond_weight = get_post_meta($product_id, '_jpc_manual_diamond_weight', true);
+        $manual_diamond_rate = get_post_meta($product_id, '_jpc_manual_diamond_rate', true);
+        
+        ?>
+        <div class="jpc-diamond-details-tab" style="padding: 20px;">
+            <h3><?php _e('DIAMOND DETAILS', 'jewellery-price-calc'); ?></h3>
+            
+            <table class="jpc-details-table" style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+                <tbody>
+                    <?php if ($diamond_id): 
+                        // Pre-created diamond
+                        $diamond = JPC_Diamonds::get_by_id($diamond_id);
+                        if ($diamond):
+                            // Get related data
+                            $shape = JPC_Diamond_Shapes::get_by_id($diamond->shape_id);
+                            $clarity = JPC_Diamond_Clarities::get_by_id($diamond->clarity_id);
+                            $colour = JPC_Diamond_Colours::get_by_id($diamond->colour_id);
+                            $cut = JPC_Diamond_Cuts::get_by_id($diamond->cut_id);
+                            $certification = JPC_Diamond_Certifications::get_by_id($diamond->certification_id);
+                    ?>
+                        <tr style="border-bottom: 1px solid #ddd;">
+                            <td style="padding: 12px; font-weight: bold; width: 40%;"><?php _e('Diamond Name', 'jewellery-price-calc'); ?></td>
+                            <td style="padding: 12px;"><?php echo esc_html($diamond->display_name); ?></td>
+                        </tr>
+                        
+                        <?php if ($shape): ?>
+                        <tr style="border-bottom: 1px solid #ddd;">
+                            <td style="padding: 12px; font-weight: bold;"><?php _e('Shape', 'jewellery-price-calc'); ?></td>
+                            <td style="padding: 12px;"><?php echo esc_html($shape->name); ?></td>
+                        </tr>
+                        <?php endif; ?>
+                        
+                        <?php if ($clarity): ?>
+                        <tr style="border-bottom: 1px solid #ddd;">
+                            <td style="padding: 12px; font-weight: bold;"><?php _e('Clarity', 'jewellery-price-calc'); ?></td>
+                            <td style="padding: 12px;"><?php echo esc_html($clarity->name); ?></td>
+                        </tr>
+                        <?php endif; ?>
+                        
+                        <?php if ($colour): ?>
+                        <tr style="border-bottom: 1px solid #ddd;">
+                            <td style="padding: 12px; font-weight: bold;"><?php _e('Colour', 'jewellery-price-calc'); ?></td>
+                            <td style="padding: 12px;"><?php echo esc_html($colour->name); ?></td>
+                        </tr>
+                        <?php endif; ?>
+                        
+                        <?php if ($cut): ?>
+                        <tr style="border-bottom: 1px solid #ddd;">
+                            <td style="padding: 12px; font-weight: bold;"><?php _e('Cut', 'jewellery-price-calc'); ?></td>
+                            <td style="padding: 12px;"><?php echo esc_html($cut->name); ?></td>
+                        </tr>
+                        <?php endif; ?>
+                        
+                        <tr style="border-bottom: 1px solid #ddd;">
+                            <td style="padding: 12px; font-weight: bold;"><?php _e('Weight', 'jewellery-price-calc'); ?></td>
+                            <td style="padding: 12px;"><?php echo esc_html($diamond->weight); ?> Carat</td>
+                        </tr>
+                        
+                        <tr style="border-bottom: 1px solid #ddd;">
+                            <td style="padding: 12px; font-weight: bold;"><?php _e('Price per Carat', 'jewellery-price-calc'); ?></td>
+                            <td style="padding: 12px;"><?php echo wc_price($diamond->price_per_carat); ?></td>
+                        </tr>
+                        
+                        <?php if ($certification): ?>
+                        <tr style="border-bottom: 1px solid #ddd;">
+                            <td style="padding: 12px; font-weight: bold;"><?php _e('Certification', 'jewellery-price-calc'); ?></td>
+                            <td style="padding: 12px;"><?php echo esc_html($certification->name); ?></td>
+                        </tr>
+                        <?php endif; ?>
+                        
+                    <?php 
+                        endif;
+                    elseif ($manual_diamond_weight): 
+                        // Manual diamond entry
+                    ?>
+                        <tr style="border-bottom: 1px solid #ddd;">
+                            <td style="padding: 12px; font-weight: bold; width: 40%;"><?php _e('Diamond Type', 'jewellery-price-calc'); ?></td>
+                            <td style="padding: 12px;"><?php _e('Manual Entry', 'jewellery-price-calc'); ?></td>
+                        </tr>
+                        
+                        <tr style="border-bottom: 1px solid #ddd;">
+                            <td style="padding: 12px; font-weight: bold;"><?php _e('Weight', 'jewellery-price-calc'); ?></td>
+                            <td style="padding: 12px;"><?php echo esc_html($manual_diamond_weight); ?> Carat</td>
+                        </tr>
+                        
+                        <?php if ($manual_diamond_rate): ?>
+                        <tr style="border-bottom: 1px solid #ddd;">
+                            <td style="padding: 12px; font-weight: bold;"><?php _e('Rate per Carat', 'jewellery-price-calc'); ?></td>
+                            <td style="padding: 12px;"><?php echo wc_price($manual_diamond_rate); ?></td>
+                        </tr>
+                        <?php endif; ?>
+                        
+                        <tr style="border-bottom: 1px solid #ddd; background: #fff3cd;">
+                            <td colspan="2" style="padding: 12px;">
+                                <em><?php _e('Note: This product uses manually entered diamond specifications. For detailed diamond information (shape, clarity, color, cut), please contact us.', 'jewellery-price-calc'); ?></em>
+                            </td>
+                        </tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+        <?php
     }
     
     /**
@@ -136,7 +343,7 @@ class JPC_Frontend {
         if (!$breakup || !is_array($breakup)) {
             echo '<div style="padding: 20px; background: #fff3cd; border: 2px solid #ffc107; border-radius: 5px;">';
             echo '<p style="color: #856404; font-weight: bold;">⚠️ Price breakup data not found!</p>';
-            echo '<p>Please go to the product editor and click "Regenerate Price Breakup" button.</p>';
+            echo '<p>Please go to the product editor and click \"Regenerate Price Breakup\" button.</p>';
             echo '</div>';
             return;
         }
@@ -342,3 +549,6 @@ class JPC_Frontend {
         return wc_price($price);
     }
 }
+
+// Initialize
+JPC_Frontend::get_instance();
