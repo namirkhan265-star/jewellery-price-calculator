@@ -2,6 +2,7 @@
 /**
  * Metals Management Page Template v2.0.0
  * Enhanced with Making Charges per Gram
+ * FIX: Improved making_charges_per_gram handling for all metals
  */
 
 if (!defined('ABSPATH')) {
@@ -160,7 +161,10 @@ $metal_groups = JPC_Metal_Groups::get_all();
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach ($metals as $metal): ?>
+                        <?php foreach ($metals as $metal): 
+                            // FIX: Ensure making_charges_per_gram is always a number
+                            $making_charges = isset($metal->making_charges_per_gram) ? floatval($metal->making_charges_per_gram) : 0;
+                        ?>
                         <tr>
                             <td><?php echo $metal->id; ?></td>
                             <td><strong><?php echo esc_html($metal->name); ?></strong></td>
@@ -168,8 +172,8 @@ $metal_groups = JPC_Metal_Groups::get_all();
                             <td><?php echo esc_html($metal->group_name); ?></td>
                             <td><strong>₹<?php echo number_format($metal->price_per_unit, 2); ?></strong></td>
                             <td style="background: #f9fcff;">
-                                <strong style="color: #2196f3;">₹<?php echo number_format($metal->making_charges_per_gram ?? 0, 2); ?></strong>
-                                <?php if (($metal->making_charges_per_gram ?? 0) > 0): ?>
+                                <strong style="color: #2196f3;">₹<?php echo number_format($making_charges, 2); ?></strong>
+                                <?php if ($making_charges > 0): ?>
                                     <br><small style="color: #666;">Auto-calc enabled</small>
                                 <?php else: ?>
                                     <br><small style="color: #999;">Not set</small>
@@ -177,12 +181,12 @@ $metal_groups = JPC_Metal_Groups::get_all();
                             </td>
                             <td>
                                 <button type="button" class="button button-small jpc-edit-metal" 
-                                        data-id="<?php echo $metal->id; ?>"
+                                        data-id="<?php echo esc_attr($metal->id); ?>"
                                         data-name="<?php echo esc_attr($metal->name); ?>"
                                         data-display-name="<?php echo esc_attr($metal->display_name); ?>"
                                         data-group-id="<?php echo esc_attr($metal->metal_group_id); ?>"
                                         data-price="<?php echo esc_attr($metal->price_per_unit); ?>"
-                                        data-making-charges="<?php echo esc_attr($metal->making_charges_per_gram ?? 0); ?>">
+                                        data-making-charges="<?php echo esc_attr($making_charges); ?>">
                                     <span class="dashicons dashicons-edit"></span>
                                     <?php _e('Edit', 'jewellery-price-calc'); ?>
                                 </button>
@@ -267,6 +271,12 @@ jQuery(document).ready(function($) {
     $('#jpc-add-metal-form').on('submit', function(e) {
         e.preventDefault();
         
+        // FIX: Get value and ensure it's sent even if 0
+        var makingCharges = $('#making_charges_per_gram').val();
+        if (makingCharges === '' || makingCharges === null) {
+            makingCharges = '0';
+        }
+        
         $.ajax({
             url: ajaxurl,
             type: 'POST',
@@ -277,7 +287,7 @@ jQuery(document).ready(function($) {
                 display_name: $('#metal_display_name').val(),
                 metal_group_id: $('#metal_group').val(),
                 price_per_unit: $('#metal_price').val(),
-                making_charges_per_gram: $('#making_charges_per_gram').val() || 0
+                making_charges_per_gram: makingCharges
             },
             success: function(response) {
                 if (response.success) {
@@ -293,12 +303,18 @@ jQuery(document).ready(function($) {
     $('.jpc-edit-metal').on('click', function() {
         var $btn = $(this);
         
+        // FIX: Get making charges and ensure it's a valid number
+        var makingCharges = $btn.data('making-charges');
+        if (makingCharges === undefined || makingCharges === null || makingCharges === '') {
+            makingCharges = 0;
+        }
+        
         $('#edit_metal_id').val($btn.data('id'));
         $('#edit_metal_name').val($btn.data('name'));
         $('#edit_metal_display_name').val($btn.data('display-name'));
         $('#edit_metal_group').val($btn.data('group-id'));
         $('#edit_metal_price').val($btn.data('price'));
-        $('#edit_making_charges_per_gram').val($btn.data('making-charges') || 0);
+        $('#edit_making_charges_per_gram').val(makingCharges);
         
         $('#jpc-edit-metal-modal').show();
     });
@@ -306,6 +322,12 @@ jQuery(document).ready(function($) {
     // Update metal
     $('#jpc-edit-metal-form').on('submit', function(e) {
         e.preventDefault();
+        
+        // FIX: Get value and ensure it's sent even if 0
+        var makingCharges = $('#edit_making_charges_per_gram').val();
+        if (makingCharges === '' || makingCharges === null) {
+            makingCharges = '0';
+        }
         
         $.ajax({
             url: ajaxurl,
@@ -318,7 +340,7 @@ jQuery(document).ready(function($) {
                 display_name: $('#edit_metal_display_name').val(),
                 metal_group_id: $('#edit_metal_group').val(),
                 price_per_unit: $('#edit_metal_price').val(),
-                making_charges_per_gram: $('#edit_making_charges_per_gram').val() || 0
+                making_charges_per_gram: makingCharges
             },
             success: function(response) {
                 if (response.success) {
