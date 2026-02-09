@@ -1,17 +1,17 @@
 <?php
 /**
  * Detailed Price Breakup Template
- * v2.5.0: Now uses custom labels from settings
+ * v2.5.0: Now uses custom labels from stored breakup data
  */
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
-// Get custom labels from settings - v2.5.0
-$pearl_cost_label = get_option('jpc_pearl_cost_label', 'Pearl Cost');
-$stone_cost_label = get_option('jpc_stone_cost_label', 'Stone Cost');
-$extra_fee_label = get_option('jpc_extra_fee_label', 'Extra Fee');
+// Get custom labels from stored breakup data - v2.5.0 FIX
+$pearl_cost_label = isset($breakup['pearl_cost_label']) ? $breakup['pearl_cost_label'] : 'Pearl Cost';
+$stone_cost_label = isset($breakup['stone_cost_label']) ? $breakup['stone_cost_label'] : 'Stone Cost';
+$extra_fee_label = isset($breakup['extra_fee_label']) ? $breakup['extra_fee_label'] : 'Extra Fee';
 
 // Calculate discount percentage if discount exists
 $discount_percentage = 0;
@@ -62,7 +62,7 @@ if ($breakup['discount'] > 0 && $breakup['subtotal'] > 0) {
                 </tr>
                 <?php endif; ?>
                 
-                <!-- Pearl Cost - v2.5.0 ENHANCED -->
+                <!-- Pearl Cost - v2.5.0 ENHANCED - Uses stored label -->
                 <?php if ($breakup['pearl_cost'] > 0): ?>
                 <tr>
                     <td><?php echo esc_html($pearl_cost_label); ?></td>
@@ -70,7 +70,7 @@ if ($breakup['discount'] > 0 && $breakup['subtotal'] > 0) {
                 </tr>
                 <?php endif; ?>
                 
-                <!-- Stone Cost - v2.5.0 ENHANCED -->
+                <!-- Stone Cost - v2.5.0 ENHANCED - Uses stored label -->
                 <?php if ($breakup['stone_cost'] > 0): ?>
                 <tr>
                     <td><?php echo esc_html($stone_cost_label); ?></td>
@@ -78,7 +78,7 @@ if ($breakup['discount'] > 0 && $breakup['subtotal'] > 0) {
                 </tr>
                 <?php endif; ?>
                 
-                <!-- Extra Fee - v2.5.0 ENHANCED -->
+                <!-- Extra Fee - v2.5.0 ENHANCED - Uses stored label -->
                 <?php if ($breakup['extra_fee'] > 0): ?>
                 <tr>
                     <td><?php echo esc_html($extra_fee_label); ?></td>
