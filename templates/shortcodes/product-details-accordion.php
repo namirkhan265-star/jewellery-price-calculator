@@ -1,11 +1,13 @@
 <?php
 /**
- * Product Details Accordion Template v2.3.6
+ * Product Details Accordion Template v2.4.0
  * Displays product details, diamond details, metal details, price breakup, and tags
  * Usage: [jpc_product_details]
  * 
- * FALLBACK: If diamond_id meta is empty but diamond_quantity exists,
- * tries to find diamond from price breakup or first available diamond
+ * NEW v2.4.0: Full support for manual diamond entry
+ * - Fetches manual diamond data from _jpc_manual_diamond_* meta fields
+ * - Displays manual diamond details in Diamond Details section
+ * - Falls back to dropdown diamond if manual entry not used
  */
 
 if (!defined('ABSPATH')) {
@@ -23,36 +25,82 @@ if (!isset($metal_id)) {
 // Get metal data
 $metal_weight = get_post_meta($product_id, '_jpc_metal_weight', true);
 
-// Get diamond data
-$diamond_id = get_post_meta($product_id, '_jpc_diamond_id', true);
-$diamond_quantity = intval(get_post_meta($product_id, '_jpc_diamond_quantity', true));
+// Check diamond entry mode
+$diamond_entry_mode = get_post_meta($product_id, '_jpc_diamond_entry_mode', true) ?: 'dropdown';
 
-// FALLBACK: If diamond_id is empty but quantity exists, try to find diamond
-if (empty($diamond_id) && $diamond_quantity > 0) {
-    // Try to get from price breakup first
-    $price_breakup_temp = get_post_meta($product_id, '_jpc_price_breakup', true);
-    if (!empty($price_breakup_temp['diamond_price']) && $price_breakup_temp['diamond_price'] > 0) {
-        // Get all diamonds and try to match by price
-        $all_diamonds = JPC_Diamonds::get_all();
-        if (!empty($all_diamonds)) {
-            // Use the first diamond as fallback (better than nothing)
-            $diamond_id = $all_diamonds[0]->id;
-            error_log('JPC FALLBACK: Using first available diamond ID: ' . $diamond_id);
-        }
-    }
-}
-
-// Get diamond details
+// Initialize diamond variables
 $diamond = null;
+$diamond_quantity = 0;
+$diamond_carat = 0;
+$diamond_price_per_carat = 0;
 $diamond_type_label = '';
 $diamond_cert_label = '';
-if ($diamond_id) {
-    $diamond = JPC_Diamonds::get_by_id($diamond_id);
-    if ($diamond) {
-        $types = JPC_Diamonds::get_types();
-        $certs = JPC_Diamonds::get_certifications();
-        $diamond_type_label = isset($types[$diamond->type]) ? $types[$diamond->type] : $diamond->type;
-        $diamond_cert_label = isset($certs[$diamond->certification]) ? $certs[$diamond->certification] : $diamond->certification;
+$diamond_shape_label = '';
+$diamond_colour_label = '';
+$diamond_clarity_label = '';
+$diamond_cut_label = '';
+
+if ($diamond_entry_mode === 'manual') {
+    // MANUAL DIAMOND ENTRY MODE
+    $diamond_quantity = intval(get_post_meta($product_id, '_jpc_manual_diamond_quantity', true));
+    $diamond_carat = floatval(get_post_meta($product_id, '_jpc_manual_diamond_carat', true));
+    $diamond_price_per_carat = floatval(get_post_meta($product_id, '_jpc_manual_diamond_price_per_carat', true));
+    
+    // Get manual diamond details
+    $manual_diamond_group_id = get_post_meta($product_id, '_jpc_manual_diamond_group_id', true);
+    $manual_diamond_cert_id = get_post_meta($product_id, '_jpc_manual_diamond_certification_id', true);
+    $manual_diamond_shape_id = get_post_meta($product_id, '_jpc_manual_diamond_shape_id', true);
+    $manual_diamond_colour_id = get_post_meta($product_id, '_jpc_manual_diamond_colour_id', true);
+    $manual_diamond_clarity_id = get_post_meta($product_id, '_jpc_manual_diamond_clarity_id', true);
+    $manual_diamond_cut_id = get_post_meta($product_id, '_jpc_manual_diamond_cut_id', true);
+    
+    // Get labels for manual diamond
+    if ($manual_diamond_group_id) {
+        $diamond_group = JPC_Diamond_Groups::get_by_id($manual_diamond_group_id);
+        $diamond_type_label = $diamond_group ? $diamond_group->name : '';
+    }
+    
+    if ($manual_diamond_cert_id) {
+        $cert = JPC_Diamond_Certifications::get_by_id($manual_diamond_cert_id);
+        $diamond_cert_label = $cert ? $cert->name : '';
+    }
+    
+    if ($manual_diamond_shape_id) {
+        $shape = JPC_Diamond_Shapes::get_by_id($manual_diamond_shape_id);
+        $diamond_shape_label = $shape ? $shape->name : '';
+    }
+    
+    if ($manual_diamond_colour_id) {
+        $colour = JPC_Diamond_Colours::get_by_id($manual_diamond_colour_id);
+        $diamond_colour_label = $colour ? $colour->name : '';
+    }
+    
+    if ($manual_diamond_clarity_id) {
+        $clarity = JPC_Diamond_Clarities::get_by_id($manual_diamond_clarity_id);
+        $diamond_clarity_label = $clarity ? $clarity->name : '';
+    }
+    
+    if ($manual_diamond_cut_id) {
+        $cut = JPC_Diamond_Cuts::get_by_id($manual_diamond_cut_id);
+        $diamond_cut_label = $cut ? $cut->name : '';
+    }
+    
+} else {
+    // DROPDOWN DIAMOND MODE (Original)
+    $diamond_id = get_post_meta($product_id, '_jpc_diamond_id', true);
+    $diamond_quantity = intval(get_post_meta($product_id, '_jpc_diamond_quantity', true));
+    
+    if ($diamond_id) {
+        $diamond = JPC_Diamonds::get_by_id($diamond_id);
+        if ($diamond) {
+            $diamond_carat = $diamond->carat;
+            $diamond_price_per_carat = $diamond->price_per_carat;
+            
+            $types = JPC_Diamonds::get_types();
+            $certs = JPC_Diamonds::get_certifications();
+            $diamond_type_label = isset($types[$diamond->type]) ? $types[$diamond->type] : $diamond->type;
+            $diamond_cert_label = isset($certs[$diamond->certification]) ? $certs[$diamond->certification] : $diamond->certification;
+        }
     }
 }
 
@@ -118,8 +166,8 @@ if ($price_breakup && is_array($price_breakup)) {
 $tags = wp_get_post_terms($product_id, 'product_tag');
 
 // Check if we have any data to display
-$has_product_details = $product_weight || $metal || $diamond;
-$has_diamond_details = $diamond && $diamond_quantity > 0;
+$has_product_details = $product_weight || $metal || ($diamond_quantity > 0);
+$has_diamond_details = $diamond_quantity > 0 && ($diamond_carat > 0 || $diamond_price_per_carat > 0);
 $has_metal_details = $metal;
 $has_price_breakup = $price_breakup && is_array($price_breakup);
 $has_tags = !empty($tags);
@@ -160,12 +208,14 @@ $has_tags = !empty($tags);
             </div>
             <?php endif; ?>
             
-            <?php if ($diamond): ?>
+            <?php if ($diamond_type_label): ?>
             <div class="jpc-detail-row">
                 <span class="jpc-detail-label">Diamond Type</span>
                 <span class="jpc-detail-value"><?php echo esc_html($diamond_type_label); ?></span>
             </div>
+            <?php endif; ?>
             
+            <?php if ($diamond_cert_label): ?>
             <div class="jpc-detail-row">
                 <span class="jpc-detail-label">Certificate</span>
                 <span class="jpc-detail-value"><?php echo esc_html($diamond_cert_label); ?></span>
@@ -221,33 +271,69 @@ $has_tags = !empty($tags);
             <span class="jpc-accordion-toggle">+</span>
         </div>
         <div class="jpc-accordion-content">
+            <?php if ($diamond_carat > 0): ?>
             <div class="jpc-detail-row">
                 <span class="jpc-detail-label">
                     Total Weight 
                     <span class="jpc-info-icon" title="Weight per diamond">ⓘ</span>
                 </span>
-                <span class="jpc-detail-value"><?php echo number_format($diamond->carat, 3); ?> Ct</span>
+                <span class="jpc-detail-value"><?php echo number_format($diamond_carat, 3); ?> Ct</span>
             </div>
+            <?php endif; ?>
             
             <div class="jpc-detail-row">
                 <span class="jpc-detail-label">Total No. Of Diamonds</span>
                 <span class="jpc-detail-value"><?php echo esc_html($diamond_quantity); ?></span>
             </div>
             
+            <?php if ($diamond_price_per_carat > 0): ?>
             <div class="jpc-detail-row">
                 <span class="jpc-detail-label">Price Per Carat</span>
-                <span class="jpc-detail-value">₹ <?php echo number_format($diamond->price_per_carat, 0); ?>/-</span>
+                <span class="jpc-detail-value">₹ <?php echo number_format($diamond_price_per_carat, 0); ?>/-</span>
             </div>
+            <?php endif; ?>
             
+            <?php if ($diamond_type_label): ?>
             <div class="jpc-detail-row">
                 <span class="jpc-detail-label">Diamond Type</span>
                 <span class="jpc-detail-value"><?php echo esc_html($diamond_type_label); ?></span>
             </div>
+            <?php endif; ?>
             
+            <?php if ($diamond_cert_label): ?>
             <div class="jpc-detail-row">
                 <span class="jpc-detail-label">Certificate</span>
                 <span class="jpc-detail-value"><?php echo esc_html($diamond_cert_label); ?></span>
             </div>
+            <?php endif; ?>
+            
+            <?php if ($diamond_shape_label): ?>
+            <div class="jpc-detail-row">
+                <span class="jpc-detail-label">Shape</span>
+                <span class="jpc-detail-value"><?php echo esc_html($diamond_shape_label); ?></span>
+            </div>
+            <?php endif; ?>
+            
+            <?php if ($diamond_colour_label): ?>
+            <div class="jpc-detail-row">
+                <span class="jpc-detail-label">Colour</span>
+                <span class="jpc-detail-value"><?php echo esc_html($diamond_colour_label); ?></span>
+            </div>
+            <?php endif; ?>
+            
+            <?php if ($diamond_clarity_label): ?>
+            <div class="jpc-detail-row">
+                <span class="jpc-detail-label">Clarity</span>
+                <span class="jpc-detail-value"><?php echo esc_html($diamond_clarity_label); ?></span>
+            </div>
+            <?php endif; ?>
+            
+            <?php if ($diamond_cut_label): ?>
+            <div class="jpc-detail-row">
+                <span class="jpc-detail-label">Cut</span>
+                <span class="jpc-detail-value"><?php echo esc_html($diamond_cut_label); ?></span>
+            </div>
+            <?php endif; ?>
         </div>
     </div>
     <?php endif; ?>
