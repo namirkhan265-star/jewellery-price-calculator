@@ -419,10 +419,10 @@ class JPC_Admin {
     }
     
     /**
-     * Render metals page
+     * Render metals page (v2.0.0 - Updated to use metals-v2.php)
      */
     public function render_metals() {
-        include JPC_PLUGIN_DIR . 'templates/admin/metals.php';
+        include JPC_PLUGIN_DIR . 'templates/admin/metals-v2.php';
     }
     
     /**
