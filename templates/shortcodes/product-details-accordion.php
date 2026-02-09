@@ -24,12 +24,18 @@ $metal_weight = get_post_meta($product_id, '_jpc_metal_weight', true);
 $diamond_id = get_post_meta($product_id, '_jpc_diamond_id', true);
 $diamond_quantity = intval(get_post_meta($product_id, '_jpc_diamond_quantity', true));
 
+// DEBUG: Log diamond data
+error_log('JPC DEBUG - Product ID: ' . $product_id);
+error_log('JPC DEBUG - Diamond ID: ' . $diamond_id);
+error_log('JPC DEBUG - Diamond Quantity: ' . $diamond_quantity);
+
 // Get diamond details
 $diamond = null;
 $diamond_type_label = '';
 $diamond_cert_label = '';
 if ($diamond_id) {
     $diamond = JPC_Diamonds::get_by_id($diamond_id);
+    error_log('JPC DEBUG - Diamond Object: ' . print_r($diamond, true));
     if ($diamond) {
         $types = JPC_Diamonds::get_types();
         $certs = JPC_Diamonds::get_certifications();
@@ -105,6 +111,11 @@ $has_diamond_details = $diamond && $diamond_quantity > 0;
 $has_metal_details = $metal;
 $has_price_breakup = $price_breakup && is_array($price_breakup);
 $has_tags = !empty($tags);
+
+// DEBUG: Log visibility flags
+error_log('JPC DEBUG - has_diamond_details: ' . ($has_diamond_details ? 'YES' : 'NO'));
+error_log('JPC DEBUG - Diamond exists: ' . ($diamond ? 'YES' : 'NO'));
+error_log('JPC DEBUG - Quantity > 0: ' . ($diamond_quantity > 0 ? 'YES' : 'NO'));
 ?>
 
 <?php if ($has_product_details || $has_diamond_details || $has_metal_details || $has_price_breakup || $has_tags): ?>
@@ -232,6 +243,9 @@ $has_tags = !empty($tags);
             </div>
         </div>
     </div>
+    <?php else: ?>
+    <!-- DEBUG: Diamond Details Not Showing -->
+    <!-- Diamond ID: <?php echo $diamond_id; ?> | Quantity: <?php echo $diamond_quantity; ?> | Has Diamond: <?php echo $diamond ? 'YES' : 'NO'; ?> -->
     <?php endif; ?>
     
     <!-- Price Breakup Section -->
