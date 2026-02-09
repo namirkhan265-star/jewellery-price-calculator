@@ -2,6 +2,7 @@
 /**
  * Metals Handler v2.0.0
  * Enhanced with making_charges_per_gram support
+ * CRITICAL FIX: Proper handling of making_charges_per_gram in AJAX
  */
 
 if (!defined('ABSPATH')) {
@@ -50,16 +51,8 @@ class JPC_Metals {
     public static function get_by_id($id) {
         global $wpdb;
         $table = $wpdb->prefix . 'jpc_metals';
+        
         return $wpdb->get_row($wpdb->prepare("SELECT * FROM $table WHERE id = %d", $id));
-    }
-    
-    /**
-     * Get metals by group ID
-     */
-    public static function get_by_group($group_id) {
-        global $wpdb;
-        $table = $wpdb->prefix . 'jpc_metals';
-        return $wpdb->get_results($wpdb->prepare("SELECT * FROM $table WHERE metal_group_id = %d ORDER BY id ASC", $group_id));
     }
     
     /**
@@ -68,6 +61,16 @@ class JPC_Metals {
     public static function add($data) {
         global $wpdb;
         $table = $wpdb->prefix . 'jpc_metals';
+        
+        // Check if metal with same name exists
+        $exists = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM $table WHERE name = %s",
+            $data['name']
+        ));
+        
+        if ($exists) {
+            return false;
+        }
         
         $insert_data = array(
             'name' => sanitize_text_field($data['name']),
@@ -151,37 +154,29 @@ class JPC_Metals {
         }
         
         // Get item name
-        $item_name = '';
         if ($item_type === 'metal') {
             $metal = self::get_by_id($item_id);
-            $item_name = $metal ? $metal->display_name : 'Unknown Metal';
-        } elseif ($item_type === 'diamond') {
-            $diamond = JPC_Diamonds::get_by_id($item_id);
-            $item_name = $diamond ? $diamond->display_name : 'Unknown Diamond';
+            $item_name = $metal ? $metal->name : '';
+        } else {
+            $item_name = ''; // Will be set by diamond handler
         }
         
-        $insert_data = array(
+        $wpdb->insert($table, array(
+            'metal_id' => $item_type === 'metal' ? $item_id : null,
+            'item_type' => $item_type,
+            'diamond_id' => $item_type === 'diamond' ? $item_id : null,
+            'item_name' => $item_name,
             'old_price' => $old_price,
             'new_price' => $new_price,
             'changed_by' => get_current_user_id(),
-            'item_type' => $item_type,
-            'item_name' => $item_name,
-        );
-        
-        if ($item_type === 'metal') {
-            $insert_data['metal_id'] = $item_id;
-        } elseif ($item_type === 'diamond') {
-            $insert_data['diamond_id'] = $item_id;
-            $insert_data['metal_id'] = 0; // Set to 0 for diamonds
-        }
-        
-        $wpdb->insert($table, $insert_data);
+            'changed_at' => current_time('mysql')
+        ));
     }
     
     /**
-     * Update all product prices using this metal
+     * Update all product prices that use this metal
      */
-    private static function update_product_prices($metal_id) {
+    public static function update_product_prices($metal_id) {
         $products = self::get_products_using_metal($metal_id);
         
         foreach ($products as $product_id) {
@@ -190,9 +185,9 @@ class JPC_Metals {
     }
     
     /**
-     * Get products using a specific metal
+     * Get products using this metal
      */
-    private static function get_products_using_metal($metal_id) {
+    public static function get_products_using_metal($metal_id) {
         global $wpdb;
         
         $query = $wpdb->prepare("
@@ -302,7 +297,10 @@ class JPC_Metals {
         $ids = array_map('intval', $ids);
         $placeholders = implode(',', array_fill(0, count($ids), '%d'));
         
-        return $wpdb->query($wpdb->prepare("DELETE FROM $table WHERE id IN ($placeholders)", $ids));
+        return $wpdb->query($wpdb->prepare(
+            "DELETE FROM $table WHERE id IN ($placeholders)",
+            $ids
+        ));
     }
     
     /**
@@ -369,12 +367,18 @@ class JPC_Metals {
             wp_send_json_error(array('message' => __('Permission denied', 'jewellery-price-calc')));
         }
         
+        // CRITICAL FIX: Properly handle making_charges_per_gram
+        $making_charges = 0;
+        if (isset($_POST['making_charges_per_gram']) && $_POST['making_charges_per_gram'] !== '') {
+            $making_charges = floatval($_POST['making_charges_per_gram']);
+        }
+        
         $data = array(
             'name' => $_POST['name'],
             'display_name' => $_POST['display_name'],
             'metal_group_id' => $_POST['metal_group_id'],
             'price_per_unit' => $_POST['price_per_unit'],
-            'making_charges_per_gram' => isset($_POST['making_charges_per_gram']) ? $_POST['making_charges_per_gram'] : 0, // v2.0.0
+            'making_charges_per_gram' => $making_charges, // v2.0.0
         );
         
         $result = self::add($data);
@@ -391,6 +395,7 @@ class JPC_Metals {
     
     /**
      * AJAX: Update metal (v2.0.0 - Added making_charges_per_gram)
+     * CRITICAL FIX: Properly handle making_charges_per_gram to prevent overwriting
      */
     public function ajax_update_metal() {
         check_ajax_referer('jpc_admin_nonce', 'nonce');
@@ -400,12 +405,26 @@ class JPC_Metals {
         }
         
         $id = intval($_POST['id']);
+        
+        // CRITICAL FIX: Properly handle making_charges_per_gram
+        // If not sent or empty, preserve existing value
+        $making_charges = 0;
+        if (isset($_POST['making_charges_per_gram']) && $_POST['making_charges_per_gram'] !== '') {
+            $making_charges = floatval($_POST['making_charges_per_gram']);
+        } else {
+            // Preserve existing value if not sent
+            $existing_metal = self::get_by_id($id);
+            if ($existing_metal && isset($existing_metal->making_charges_per_gram)) {
+                $making_charges = floatval($existing_metal->making_charges_per_gram);
+            }
+        }
+        
         $data = array(
             'name' => $_POST['name'],
             'display_name' => $_POST['display_name'],
             'metal_group_id' => $_POST['metal_group_id'],
             'price_per_unit' => $_POST['price_per_unit'],
-            'making_charges_per_gram' => isset($_POST['making_charges_per_gram']) ? $_POST['making_charges_per_gram'] : 0, // v2.0.0
+            'making_charges_per_gram' => $making_charges, // v2.0.0
         );
         
         $result = self::update($id, $data);
@@ -440,7 +459,7 @@ class JPC_Metals {
     }
     
     /**
-     * AJAX: Bulk update prices
+     * AJAX: Bulk update all product prices
      */
     public function ajax_bulk_update_prices() {
         check_ajax_referer('jpc_admin_nonce', 'nonce');
@@ -449,31 +468,40 @@ class JPC_Metals {
             wp_send_json_error(array('message' => __('Permission denied', 'jewellery-price-calc')));
         }
         
-        $updates = $_POST['updates'];
-        $updated_count = 0;
+        $updated = 0;
+        $errors = 0;
         
-        foreach ($updates as $update) {
-            $id = intval($update['id']);
-            $price = floatval($update['price']);
-            
-            $metal = self::get_by_id($id);
-            if ($metal) {
-                $data = array(
-                    'name' => $metal->name,
-                    'display_name' => $metal->display_name,
-                    'metal_group_id' => $metal->metal_group_id,
-                    'price_per_unit' => $price,
-                    'making_charges_per_gram' => $metal->making_charges_per_gram ?? 0, // v2.0.0 - preserve existing value
-                );
-                
-                if (self::update($id, $data) !== false) {
-                    $updated_count++;
-                }
+        // Get all products with JPC data
+        $args = array(
+            'post_type' => 'product',
+            'posts_per_page' => -1,
+            'post_status' => 'publish',
+            'meta_query' => array(
+                array(
+                    'key' => '_jpc_metal_id',
+                    'compare' => 'EXISTS'
+                )
+            )
+        );
+        
+        $products = get_posts($args);
+        
+        foreach ($products as $product) {
+            $result = JPC_Price_Calculator::calculate_and_update_price($product->ID);
+            if ($result !== false) {
+                $updated++;
+            } else {
+                $errors++;
             }
         }
         
         wp_send_json_success(array(
-            'message' => sprintf(__('%d metal prices updated successfully. All product prices have been recalculated.', 'jewellery-price-calc'), $updated_count)
+            'message' => sprintf(__('Updated %d products. Errors: %d', 'jewellery-price-calc'), $updated, $errors),
+            'updated' => $updated,
+            'errors' => $errors
         ));
     }
 }
+
+// Initialize
+JPC_Metals::get_instance();
