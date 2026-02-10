@@ -1,17 +1,29 @@
 <?php
 /**
  * Detailed Price Breakup Template
- * v2.5.0: Now uses custom labels from stored breakup data
+ * v2.5.1: Fetches custom labels directly from settings (not from breakup data)
  */
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
-// Get custom labels from stored breakup data - v2.5.0 FIX
-$pearl_cost_label = isset($breakup['pearl_cost_label']) ? $breakup['pearl_cost_label'] : 'Pearl Cost';
-$stone_cost_label = isset($breakup['stone_cost_label']) ? $breakup['stone_cost_label'] : 'Stone Cost';
-$extra_fee_label = isset($breakup['extra_fee_label']) ? $breakup['extra_fee_label'] : 'Extra Fee';
+// v2.5.1 FIX: Fetch custom labels directly from WordPress settings
+// This way labels update immediately without needing to regenerate breakup
+$pearl_cost_label = get_option('jpc_pearl_cost_label', 'Pearl Cost');
+$stone_cost_label = get_option('jpc_stone_cost_label', 'Stone Cost');
+$extra_fee_label = get_option('jpc_extra_fee_label', 'Extra Fee');
+
+// Fallback to stored labels if they exist (for backwards compatibility)
+if (isset($breakup['pearl_cost_label']) && !empty($breakup['pearl_cost_label'])) {
+    $pearl_cost_label = $breakup['pearl_cost_label'];
+}
+if (isset($breakup['stone_cost_label']) && !empty($breakup['stone_cost_label'])) {
+    $stone_cost_label = $breakup['stone_cost_label'];
+}
+if (isset($breakup['extra_fee_label']) && !empty($breakup['extra_fee_label'])) {
+    $extra_fee_label = $breakup['extra_fee_label'];
+}
 
 // Calculate discount percentage if discount exists
 $discount_percentage = 0;
@@ -62,7 +74,7 @@ if ($breakup['discount'] > 0 && $breakup['subtotal'] > 0) {
                 </tr>
                 <?php endif; ?>
                 
-                <!-- Pearl Cost - v2.5.0 ENHANCED - Uses stored label -->
+                <!-- Pearl Cost - v2.5.1 FIX - Fetches label from settings -->
                 <?php if ($breakup['pearl_cost'] > 0): ?>
                 <tr>
                     <td><?php echo esc_html($pearl_cost_label); ?></td>
@@ -70,7 +82,7 @@ if ($breakup['discount'] > 0 && $breakup['subtotal'] > 0) {
                 </tr>
                 <?php endif; ?>
                 
-                <!-- Stone Cost - v2.5.0 ENHANCED - Uses stored label -->
+                <!-- Stone Cost - v2.5.1 FIX - Fetches label from settings -->
                 <?php if ($breakup['stone_cost'] > 0): ?>
                 <tr>
                     <td><?php echo esc_html($stone_cost_label); ?></td>
@@ -78,7 +90,7 @@ if ($breakup['discount'] > 0 && $breakup['subtotal'] > 0) {
                 </tr>
                 <?php endif; ?>
                 
-                <!-- Extra Fee - v2.5.0 ENHANCED - Uses stored label -->
+                <!-- Extra Fee - v2.5.1 FIX - Fetches label from settings -->
                 <?php if ($breakup['extra_fee'] > 0): ?>
                 <tr>
                     <td><?php echo esc_html($extra_fee_label); ?></td>
@@ -100,36 +112,16 @@ if ($breakup['discount'] > 0 && $breakup['subtotal'] > 0) {
                 
                 <?php if ($breakup['discount'] > 0): ?>
                 <tr class="discount-row">
-                    <td>
-                        <?php _e('Discount', 'jewellery-price-calc'); ?>
-                        <?php if ($discount_percentage > 0): ?>
-                            <span style="color: #46b450; font-weight: 600;">(<?php printf('%.0f%%', $discount_percentage); ?>)</span>
-                        <?php endif; ?>
-                    </td>
-                    <td style="color: #46b450;">-<?php echo JPC_Frontend::format_price($breakup['discount']); ?></td>
-                </tr>
-                <tr>
-                    <td><strong><?php _e('Subtotal (After Discount)', 'jewellery-price-calc'); ?></strong></td>
-                    <td><strong><?php echo JPC_Frontend::format_price($breakup['subtotal']); ?></strong></td>
-                </tr>
-                <?php endif; ?>
-                
-                <?php if ($breakup['gst'] > 0): ?>
-                <tr class="gst-row">
-                    <td><?php echo get_option('jpc_gst_label', 'Tax'); ?></td>
-                    <td><?php echo JPC_Frontend::format_price($breakup['gst']); ?></td>
+                    <td><?php _e('Discount', 'jewellery-price-calc'); ?> (<?php echo number_format($discount_percentage, 0); ?>%)</td>
+                    <td class="discount-amount">-<?php echo JPC_Frontend::format_price($breakup['discount']); ?></td>
                 </tr>
                 <?php endif; ?>
                 
                 <tr class="total-row">
-                    <td><?php _e('Total Price', 'jewellery-price-calc'); ?></td>
-                    <td><?php echo JPC_Frontend::format_price($breakup['final_price']); ?></td>
+                    <td><strong><?php _e('Final Price', 'jewellery-price-calc'); ?></strong></td>
+                    <td><strong><?php echo JPC_Frontend::format_price($breakup['subtotal']); ?></strong></td>
                 </tr>
             </tbody>
         </table>
-        
-        <p class="jpc-breakup-note">
-            <small><?php _e('* All prices are inclusive of applicable taxes', 'jewellery-price-calc'); ?></small>
-        </p>
     </div>
 </details>
