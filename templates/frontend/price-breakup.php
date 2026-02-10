@@ -2,7 +2,7 @@
 /**
  * Frontend Price Breakup Template - USES ONLY STORED BREAKUP DATA
  * NO CALCULATIONS - DISPLAYS STORED DATA ONLY
- * v2.5.0: Now uses custom labels from stored breakup data
+ * v2.5.1: Fetches custom labels directly from settings (not from breakup data)
  */
 
 if (!defined('ABSPATH')) {
@@ -46,10 +46,22 @@ if (!$metal) {
     return;
 }
 
-// Get custom labels from stored breakup data - v2.5.0 FIX
-$pearl_cost_label = isset($breakup['pearl_cost_label']) ? $breakup['pearl_cost_label'] : 'Pearl Cost';
-$stone_cost_label = isset($breakup['stone_cost_label']) ? $breakup['stone_cost_label'] : 'Stone Cost';
-$extra_fee_label = isset($breakup['extra_fee_label']) ? $breakup['extra_fee_label'] : 'Extra Fee';
+// v2.5.1 FIX: Fetch custom labels directly from WordPress settings
+// This way labels update immediately without needing to regenerate breakup
+$pearl_cost_label = get_option('jpc_pearl_cost_label', 'Pearl Cost');
+$stone_cost_label = get_option('jpc_stone_cost_label', 'Stone Cost');
+$extra_fee_label = get_option('jpc_extra_fee_label', 'Extra Fee');
+
+// Fallback to stored labels if they exist (for backwards compatibility)
+if (isset($breakup['pearl_cost_label']) && !empty($breakup['pearl_cost_label'])) {
+    $pearl_cost_label = $breakup['pearl_cost_label'];
+}
+if (isset($breakup['stone_cost_label']) && !empty($breakup['stone_cost_label'])) {
+    $stone_cost_label = $breakup['stone_cost_label'];
+}
+if (isset($breakup['extra_fee_label']) && !empty($breakup['extra_fee_label'])) {
+    $extra_fee_label = $breakup['extra_fee_label'];
+}
 ?>
 
 <div class="jpc-price-breakup">
@@ -87,7 +99,7 @@ $extra_fee_label = isset($breakup['extra_fee_label']) ? $breakup['extra_fee_labe
             </tr>
             <?php endif; ?>
             
-            <!-- Pearl Cost - v2.5.0 ENHANCED - Uses stored label -->
+            <!-- Pearl Cost - v2.5.1 FIX - Fetches label from settings -->
             <?php if (!empty($breakup['pearl_cost']) && $breakup['pearl_cost'] > 0): ?>
             <tr>
                 <td><?php echo esc_html($pearl_cost_label); ?></td>
@@ -95,7 +107,7 @@ $extra_fee_label = isset($breakup['extra_fee_label']) ? $breakup['extra_fee_labe
             </tr>
             <?php endif; ?>
             
-            <!-- Stone Cost - v2.5.0 ENHANCED - Uses stored label -->
+            <!-- Stone Cost - v2.5.1 FIX - Fetches label from settings -->
             <?php if (!empty($breakup['stone_cost']) && $breakup['stone_cost'] > 0): ?>
             <tr>
                 <td><?php echo esc_html($stone_cost_label); ?></td>
@@ -103,7 +115,7 @@ $extra_fee_label = isset($breakup['extra_fee_label']) ? $breakup['extra_fee_labe
             </tr>
             <?php endif; ?>
             
-            <!-- Extra Fee - v2.5.0 ENHANCED - Uses stored label -->
+            <!-- Extra Fee - v2.5.1 FIX - Fetches label from settings -->
             <?php if (!empty($breakup['extra_fee']) && $breakup['extra_fee'] > 0): ?>
             <tr>
                 <td><?php echo esc_html($extra_fee_label); ?></td>
@@ -111,147 +123,125 @@ $extra_fee_label = isset($breakup['extra_fee_label']) ? $breakup['extra_fee_labe
             </tr>
             <?php endif; ?>
             
-            <!-- Extra Fields #1-5 (from array) -->
-            <?php
-            if (!empty($breakup['extra_fields']) && is_array($breakup['extra_fields'])) {
-                foreach ($breakup['extra_fields'] as $extra_field) {
-                    if (!empty($extra_field['value']) && $extra_field['value'] > 0) {
-                        ?>
-                        <tr>
-                            <td><?php echo esc_html($extra_field['label']); ?></td>
-                            <td><?php echo wc_price($extra_field['value']); ?></td>
-                        </tr>
-                        <?php
-                    }
-                }
-            }
-            ?>
-            
             <!-- Additional Percentage -->
             <?php if (!empty($breakup['additional_percentage']) && $breakup['additional_percentage'] > 0): ?>
             <tr>
-                <td><?php echo esc_html($breakup['additional_percentage_label'] ?? 'Additional Percentage'); ?></td>
+                <td><?php echo esc_html($breakup['additional_percentage_label']); ?></td>
                 <td><?php echo wc_price($breakup['additional_percentage']); ?></td>
             </tr>
             <?php endif; ?>
             
-            <!-- Discount Row - USES STORED DISCOUNT FROM BREAKUP -->
-            <?php if ($discount_percentage > 0 && $discount_amount > 0): ?>
-            <tr class="discount-row" style="color: #d63638;">
-                <td>
-                    <?php _e('Discount', 'jewellery-price-calc'); ?>
-                    <span style="color: #d63638; font-weight: bold;">
-                        (<?php echo number_format($discount_percentage, 1); ?>% OFF)
-                    </span>
-                </td>
-                <td style="color: #d63638; font-weight: bold;">
-                    - <?php echo wc_price($discount_amount); ?>
-                </td>
+            <!-- Extra Fields (1-5) -->
+            <?php for ($i = 1; $i <= 5; $i++): ?>
+                <?php if (!empty($breakup['extra_field_' . $i]) && $breakup['extra_field_' . $i] > 0): ?>
+                <tr>
+                    <td><?php echo esc_html($breakup['extra_field_label_' . $i]); ?></td>
+                    <td><?php echo wc_price($breakup['extra_field_' . $i]); ?></td>
+                </tr>
+                <?php endif; ?>
+            <?php endfor; ?>
+            
+            <!-- Subtotal (Before GST) -->
+            <tr class="jpc-subtotal">
+                <td><strong><?php _e('Subtotal (Before GST)', 'jewellery-price-calc'); ?></strong></td>
+                <td><strong><?php echo wc_price($breakup['subtotal_before_gst']); ?></strong></td>
+            </tr>
+            
+            <!-- GST -->
+            <?php if (!empty($breakup['gst']) && $breakup['gst'] > 0): ?>
+            <tr>
+                <td><?php echo esc_html($breakup['gst_label']); ?></td>
+                <td><?php echo wc_price($breakup['gst']); ?></td>
             </tr>
             <?php endif; ?>
             
-            <!-- GST - USES STORED GST FROM BREAKUP -->
-            <?php 
-            $gst_value = isset($breakup['gst']) ? floatval($breakup['gst']) : 0;
-            $gst_label = isset($breakup['gst_label']) ? $breakup['gst_label'] : get_option('jpc_gst_label', 'GST');
-            $gst_percentage = isset($breakup['gst_percentage']) ? $breakup['gst_percentage'] : 0;
-            
-            if ($gst_value > 0): 
-            ?>
-            <tr class="gst-row">
-                <td><?php echo esc_html($gst_label) . ' (' . number_format($gst_percentage, 2) . '%)'; ?></td>
-                <td><?php echo wc_price($gst_value); ?></td>
-            </tr>
-            <?php endif; ?>
-            
-            <!-- Separator -->
-            <tr style="border-top: 2px solid #000;">
-                <td colspan="2" style="padding: 5px;">&nbsp;</td>
+            <!-- Total (Before Discount) -->
+            <tr class="jpc-total-before-discount">
+                <td><strong><?php _e('Total (Before Discount)', 'jewellery-price-calc'); ?></strong></td>
+                <td><strong><?php echo wc_price($regular_price); ?></strong></td>
             </tr>
             
-            <!-- REGULAR PRICE - FROM DATABASE -->
-            <tr class="regular-price-row">
-                <td><strong><?php _e('Price Before Discount', 'jewellery-price-calc'); ?></strong></td>
-                <td>
-                    <strong style="<?php echo ($discount_percentage > 0) ? 'text-decoration: line-through; color: #999;' : 'color: #0066cc;'; ?>">
-                        <?php echo wc_price($regular_price); ?>
-                    </strong>
+            <!-- Discount -->
+            <?php if ($discount_amount > 0): ?>
+            <tr class="jpc-discount">
+                <td><?php _e('Discount', 'jewellery-price-calc'); ?> 
+                    <?php if ($discount_percentage > 0): ?>
+                        (<?php echo number_format($discount_percentage, 2); ?>%)
+                    <?php endif; ?>
                 </td>
-            </tr>
-            
-            <!-- SALE PRICE - FROM DATABASE (only if discount exists) -->
-            <?php if ($discount_percentage > 0 && $discount_amount > 0): ?>
-            <tr class="sale-price-row">
-                <td><strong style="color: #d63638; font-size: 1.1em;"><?php _e('Price After Discount', 'jewellery-price-calc'); ?></strong></td>
-                <td><strong style="color: #d63638; font-size: 1.2em;"><?php echo wc_price($sale_price); ?></strong></td>
+                <td class="discount-amount">-<?php echo wc_price($discount_amount); ?></td>
             </tr>
             <?php endif; ?>
+            
+            <!-- Final Price -->
+            <tr class="jpc-final-price">
+                <td><strong><?php _e('Final Price', 'jewellery-price-calc'); ?></strong></td>
+                <td><strong><?php echo wc_price($sale_price); ?></strong></td>
+            </tr>
         </tbody>
     </table>
-    
-    <!-- Savings Badge - USES STORED DISCOUNT -->
-    <?php if ($discount_percentage > 0 && $discount_amount > 0): ?>
-    <div class="jpc-savings-badge" style="margin-top: 15px; padding: 10px; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 4px; text-align: center;">
-        <strong style="color: #155724; font-size: 1.1em;">
-            🎉 You Save: <?php echo wc_price($discount_amount); ?> 
-            (<?php echo number_format($discount_percentage, 0); ?>% OFF)
-        </strong>
-    </div>
-    <?php endif; ?>
 </div>
 
-<!-- DEBUG INFO - SHOWS STORED VALUES -->
-<div style="background: #fff3cd; padding: 15px; margin-top: 20px; border: 2px solid #ffc107; border-radius: 5px;">
-    <h4 style="margin: 0 0 10px 0; color: #856404;">🔍 DEBUG INFO (Stored Values)</h4>
-    <table style="width: 100%; font-size: 13px;">
-        <tr>
-            <td><strong>Product ID:</strong></td>
-            <td><?php echo $product_id; ?></td>
-        </tr>
-        <tr>
-            <td><strong>Regular Price (DB):</strong></td>
-            <td style="color: #0066cc; font-weight: bold;">₹<?php echo number_format($regular_price, 2); ?></td>
-        </tr>
-        <tr>
-            <td><strong>Sale Price (DB):</strong></td>
-            <td style="color: #d63638; font-weight: bold;">₹<?php echo number_format($sale_price, 2); ?></td>
-        </tr>
-        <tr>
-            <td><strong>Discount % (DB):</strong></td>
-            <td><?php echo $discount_percentage; ?>%</td>
-        </tr>
-        <tr>
-            <td><strong>Discount Amount (BREAKUP):</strong></td>
-            <td style="color: #d63638; font-weight: bold;">₹<?php echo number_format($discount_amount, 2); ?></td>
-        </tr>
-        <tr>
-            <td><strong>GST (BREAKUP):</strong></td>
-            <td>₹<?php echo number_format($gst_value, 2); ?></td>
-        </tr>
-        <tr>
-            <td><strong>Extra Fields Count:</strong></td>
-            <td><?php echo !empty($breakup['extra_fields']) ? count($breakup['extra_fields']) : 0; ?></td>
-        </tr>
-        <tr>
-            <td><strong>Additional %:</strong></td>
-            <td>₹<?php echo !empty($breakup['additional_percentage']) ? number_format($breakup['additional_percentage'], 2) : '0.00'; ?></td>
-        </tr>
-        <tr>
-            <td><strong>Pearl Cost Label:</strong></td>
-            <td style="color: #28a745; font-weight: bold;"><?php echo esc_html($pearl_cost_label); ?></td>
-        </tr>
-        <tr>
-            <td><strong>Stone Cost Label:</strong></td>
-            <td style="color: #28a745; font-weight: bold;"><?php echo esc_html($stone_cost_label); ?></td>
-        </tr>
-        <tr>
-            <td><strong>Extra Fee Label:</strong></td>
-            <td style="color: #28a745; font-weight: bold;"><?php echo esc_html($extra_fee_label); ?></td>
-        </tr>
-        <tr>
-            <td colspan="2" style="padding-top: 10px; border-top: 1px solid #ccc; margin-top: 10px;">
-                <em style="color: #28a745;">✓ All values from stored breakup data - NO calculations!</em>
-            </td>
-        </tr>
-    </table>
-</div>
+<style>
+.jpc-price-breakup {
+    margin: 20px 0;
+    padding: 20px;
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+
+.jpc-price-breakup h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 18px;
+    color: #333;
+    border-bottom: 2px solid #0073aa;
+    padding-bottom: 10px;
+}
+
+.jpc-price-breakup-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.jpc-price-breakup-table td {
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.jpc-price-breakup-table td:first-child {
+    font-weight: 500;
+    color: #555;
+}
+
+.jpc-price-breakup-table td:last-child {
+    text-align: right;
+    font-weight: 600;
+    color: #333;
+}
+
+.jpc-price-breakup-table tr.jpc-subtotal td,
+.jpc-price-breakup-table tr.jpc-total-before-discount td,
+.jpc-price-breakup-table tr.jpc-final-price td {
+    font-size: 16px;
+    padding: 12px 10px;
+    background: #fff;
+}
+
+.jpc-price-breakup-table tr.jpc-final-price td {
+    font-size: 18px;
+    color: #0073aa;
+    border-top: 2px solid #0073aa;
+    border-bottom: 2px solid #0073aa;
+}
+
+.jpc-price-breakup-table tr.jpc-discount td {
+    color: #d63638;
+}
+
+.jpc-price-breakup-table tr.jpc-discount .discount-amount {
+    color: #d63638;
+    font-weight: bold;
+}
+</style>
