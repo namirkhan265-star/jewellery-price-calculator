@@ -1,282 +1,297 @@
-# Jewellery Price Calculator - WordPress Plugin
+# 💎 Jewellery Price Calculator for WooCommerce
 
-A comprehensive WordPress/WooCommerce plugin for automatic jewellery price calculation based on metal rates with support for Gold, Silver, Diamond, and Platinum.
-
-## Features
-
-### Core Features
-- ✅ **Multi-Metal Support**: Gold, Silver, Diamond, Platinum
-- ✅ **Automatic Price Calculation**: Metal weight × rate + making charges + wastage
-- ✅ **Manual Rate Updates**: Update rates daily, auto-calculates all product prices
-- ✅ **Simple & Variable Products**: Full support for both product types
-- ✅ **INR Currency**: Optimized for Indian market
-- ✅ **Price Breakup Display**: Show detailed price breakdown on product pages
-- ✅ **Admin Dashboard**: Comprehensive metal rate management
-- ✅ **Price History/Logs**: Track all price changes
-- ✅ **Bulk Updates**: Update multiple metal prices at once
-
-### Advanced Features
-- **Metal Groups**: Organize metals into groups (Gold, Silver, etc.)
-- **Flexible Charges**: Making and wastage charges (percentage or fixed)
-- **Additional Costs**: Pearl cost, stone cost, extra fees
-- **GST Support**: Configurable GST with metal-specific rates
-- **Discount System**: Apply discounts on metals, making, or wastage
-- **Price Rounding**: Multiple rounding options
-- **Shortcodes**: Display today's metal rates anywhere
-- **Extra Fields**: 5 customizable fields per product
-
-## Installation
-
-### Requirements
-- WordPress 5.8 or higher
-- WooCommerce 5.0 or higher
-- PHP 7.4 or higher
-- MySQL 5.6 or higher
-
-### Steps
-
-1. **Download the Plugin**
-   ```bash
-   git clone https://github.com/namirkhan265-star/jewellery-price-calculator.git
-   ```
-
-2. **Upload to WordPress**
-   - Compress the `jewellery-price-calculator` folder to a ZIP file
-   - Go to WordPress Admin → Plugins → Add New → Upload Plugin
-   - Upload the ZIP file and click "Install Now"
-   - Activate the plugin
-
-3. **Initial Setup**
-   - Go to **Jewellery Price → Metal Groups**
-   - Default groups (Gold, Silver, Diamond, Platinum) are pre-configured
-   - Go to **Jewellery Price → Metals**
-   - Default metals (14kt Gold, 18kt Gold, 22kt Gold, Silver, Platinum) are pre-configured with sample prices
-
-## Usage
-
-### Setting Up Metal Rates
-
-1. **Navigate to Jewellery Price → Metals**
-2. **Update Metal Prices**:
-   - Edit existing metals or add new ones
-   - Enter price per gram/carat
-   - Click "Update Metal"
-   - All products using this metal will automatically recalculate
-
-### Configuring Products
-
-1. **Edit a Product** in WooCommerce
-2. **Scroll to "Jewellery Price Calculator" Meta Box**
-3. **Configure**:
-   - Select Metal (e.g., 18kt Gold)
-   - Enter Weight (in grams/carats)
-   - Enter Making Charge (% or fixed amount)
-   - Enter Wastage Charge (% or fixed amount)
-   - Add Pearl Cost, Stone Cost, Extra Fees (optional)
-   - Set Discount Percentage (optional)
-4. **Save Product** - Price calculates automatically!
-
-### Price Calculation Formula
-
-```
-Metal Price = Weight × Metal Rate per Unit
-
-Making Charge = Metal Price × Making % (or fixed amount)
-
-Wastage Charge = Metal Price × Wastage % (or fixed amount)
-
-Subtotal = Metal Price + Making + Wastage + Pearl + Stone + Extra Fee
-
-Discount = (Discountable Amount × Discount %)
-
-Subtotal After Discount = Subtotal - Discount
-
-GST = Subtotal After Discount × GST %
-
-Final Price = Subtotal After Discount + GST
-```
-
-### General Settings
-
-**Navigate to Jewellery Price → General**
-
-- **Enable Pearl Cost Field**: Add pearl cost to products
-- **Enable Stone Cost Field**: Add stone cost to products
-- **Enable Extra Fee Field**: Add additional fees
-- **Additional Percentage**: Add percentage to total before tax
-- **Extra Fields (1-5)**: Custom fields with labels
-- **GST Settings**:
-  - Enable/Disable GST
-  - Set GST label and percentage
-  - Metal-specific GST rates
-- **Price Rounding**: Choose rounding method
-- **Show Price Breakup**: Display on product pages
-
-### Discount Settings
-
-**Navigate to Jewellery Price → Discount**
-
-- **Enable Discount Feature**: Turn on/off discounts
-- **Enable Discount on Metals**: Apply discount to metal price
-- **Enable Discount on Making Charge**: Apply discount to making charges
-- **Enable Discount on Wastage Charge**: Apply discount to wastage charges
-
-### Shortcodes
-
-Display today's metal rates on any page:
-
-**List View:**
-```
-[jpc_metal_rates]
-```
-
-**Table View:**
-```
-[jpc_metal_rates template="table"]
-```
-
-**Marquee View:**
-```
-[jpc_metal_rates template="marquee"]
-```
-
-**Specific Metals Only:**
-```
-[jpc_metal_rates metals="1,2,3"]
-```
-
-### Variable Products
-
-For variable products (different sizes/variants):
-
-1. Create product variations as usual
-2. Each variation gets its own metal configuration
-3. Set different weights/charges per variation
-4. Prices calculate independently for each variation
-
-## Database Structure
-
-The plugin creates 4 custom tables:
-
-- `wp_jpc_metal_groups` - Metal group definitions
-- `wp_jpc_metals` - Individual metals with prices
-- `wp_jpc_price_history` - Metal price change log
-- `wp_jpc_product_price_log` - Product price change log
-
-## Price History
-
-**Navigate to Jewellery Price → Price History**
-
-View complete history of:
-- Metal price changes
-- Who made the change
-- When it was changed
-- Old vs new prices
-- Affected products
-
-## Bulk Operations
-
-**Update Multiple Metal Prices:**
-
-1. Go to **Jewellery Price → Metals**
-2. Edit prices directly in the table
-3. Click **"Update All Prices"**
-4. All product prices recalculate automatically
-
-## Frontend Display
-
-### Price Breakup on Product Page
-
-When enabled, shows:
-- Metal price breakdown
-- Making charges
-- Wastage charges
-- Additional costs
-- Discount applied
-- GST amount
-- Final price
-
-### Customization
-
-Templates are located in:
-```
-templates/frontend/price-breakup.php
-templates/frontend/detailed-breakup.php
-```
-
-Copy to your theme to customize:
-```
-your-theme/jewellery-price-calculator/price-breakup.php
-```
-
-## Developer Hooks
-
-### Actions
-
-```php
-// After price calculation
-do_action('jpc_after_price_calculation', $product_id, $final_price);
-
-// After metal price update
-do_action('jpc_after_metal_update', $metal_id, $old_price, $new_price);
-```
-
-### Filters
-
-```php
-// Modify calculated price
-apply_filters('jpc_calculated_price', $price, $product_id);
-
-// Modify price breakup
-apply_filters('jpc_price_breakup', $breakup, $product_id);
-```
-
-## Troubleshooting
-
-### Prices Not Updating?
-
-1. Check if metal is assigned to product
-2. Verify weight is entered
-3. Check if WooCommerce is active
-4. Clear cache if using caching plugin
-
-### Price Breakup Not Showing?
-
-1. Go to **Jewellery Price → General**
-2. Enable "Show Price Breakup"
-3. Clear theme cache
-
-### Database Issues?
-
-Deactivate and reactivate plugin to recreate tables.
-
-## Support
-
-For issues, feature requests, or contributions:
-- GitHub: https://github.com/namirkhan265-star/jewellery-price-calculator
-- Email: brandwitty@gmail.com
-
-## Changelog
-
-### Version 1.0.0
-- Initial release
-- Multi-metal support (Gold, Silver, Diamond, Platinum)
-- Automatic price calculation
-- Price history logging
-- Bulk update functionality
-- Shortcodes for metal rates display
-- GST and discount support
-- Variable product support
-
-## License
-
-GPL v2 or later
-
-## Credits
-
-Developed by Brand Witty
-Powered by Bhindi.io
+A comprehensive WordPress plugin for calculating jewellery prices based on metal rates, weight, making charges, and additional costs.
 
 ---
 
-**Made with ❤️ for the Jewellery Industry**
+## 🚀 Quick Download & Install (v2.5.1)
+
+### **Latest Version: v2.5.1 - Custom Labels with Instant Updates**
+
+**New in v2.5.1:**
+- ✅ Custom labels for Pearl Cost, Stone Cost, and Extra Fee
+- ✅ **Instant updates** - no regeneration needed!
+- ✅ Change labels anytime, see results immediately
+- ✅ Works with all existing products
+
+---
+
+## 📥 Download & Install
+
+### **Step 1: Download Plugin**
+
+Click the green **"Code"** button above → **"Download ZIP"**
+
+### **Step 2: Extract & Rename**
+
+1. Extract the ZIP file
+2. Rename folder from `jewellery-price-calculator-main` to `jewellery-price-calculator`
+
+### **Step 3: Upload via FTP**
+
+1. Backup your current plugin folder (rename to `jewellery-price-calculator-backup`)
+2. Upload `jewellery-price-calculator` to `/wp-content/plugins/`
+3. Activate in WordPress Admin > Plugins
+
+### **Step 4: Configure Custom Labels**
+
+1. Go to **Jewellery Price > General Settings**
+2. Scroll to **"Additional Cost Fields"**
+3. Set custom labels:
+   - Pearl Cost Label: "Gemstone Cost" (or any name you want)
+   - Stone Cost Label: "Packaging Fee" (or any name you want)
+   - Extra Fee Label: "Certification Fee" (or any name you want)
+4. Click **Save Changes**
+5. View any product - labels appear **instantly**!
+
+**No regeneration needed!** Labels update immediately when you change settings.
+
+---
+
+## 📚 Complete Documentation
+
+- **[Complete Installation Guide](DOWNLOAD-COMPLETE-PLUGIN-v2.5.1.md)** - Detailed step-by-step instructions
+- **[Instant Fix Guide](INSTANT-FIX-v2.5.1.md)** - Quick 2-file update method
+- **[Custom Labels Testing](TEST-CUSTOM-LABELS.md)** - How to test and verify custom labels
+
+---
+
+## ✨ Features
+
+### Core Features:
+- ✅ **Dynamic Price Calculation** - Based on live metal rates
+- ✅ **Multiple Metals** - Gold (24K, 22K, 18K, 14K), Silver, Platinum
+- ✅ **Diamond Pricing** - Automatic diamond cost calculation
+- ✅ **Making Charges** - Percentage or fixed amount
+- ✅ **Wastage Charges** - Configurable wastage percentage
+- ✅ **GST Support** - Automatic GST calculation
+- ✅ **Discount System** - Percentage-based discounts
+- ✅ **Price Breakup Display** - Detailed cost breakdown on frontend
+
+### v2.5.1 Features:
+- ✅ **Custom Labels** - Rename Pearl Cost, Stone Cost, Extra Fee
+- ✅ **Instant Updates** - No regeneration needed
+- ✅ **Dynamic Fetching** - Labels always reflect current settings
+- ✅ **Backwards Compatible** - Works with existing products
+
+### Additional Features:
+- ✅ **Extra Fields** - Up to 5 additional cost fields
+- ✅ **Additional Percentage** - Extra percentage-based charges
+- ✅ **Bulk Price Update** - Update all products at once
+- ✅ **Product-Level Settings** - Override global settings per product
+- ✅ **Responsive Design** - Mobile-friendly price breakup display
+
+---
+
+## 🎯 Quick Start
+
+### 1. Install & Activate
+Upload plugin and activate in WordPress
+
+### 2. Configure Settings
+Go to **Jewellery Price > General Settings**
+
+### 3. Set Metal Rates
+Configure current metal prices (auto-updates available)
+
+### 4. Add Products
+Create WooCommerce products with JPC data
+
+### 5. Customize Labels (NEW!)
+Set custom names for additional cost fields
+
+### 6. View Frontend
+Check price breakup on product pages
+
+---
+
+## 🔧 System Requirements
+
+- **WordPress:** 5.0 or higher
+- **WooCommerce:** 3.0 or higher
+- **PHP:** 7.0 or higher
+- **MySQL:** 5.6 or higher
+
+---
+
+## 📖 How It Works
+
+### Price Calculation Formula:
+
+```
+Metal Price = Weight × Metal Rate × Purity
+Diamond Price = Calculated from diamond data
+Making Charge = Metal Price × Making %
+Wastage Charge = Metal Price × Wastage %
+Pearl Cost = Custom amount (with custom label)
+Stone Cost = Custom amount (with custom label)
+Extra Fee = Custom amount (with custom label)
+Additional % = Subtotal × Additional %
+Extra Fields = Custom amounts (1-5)
+
+Subtotal = Sum of all above
+GST = Subtotal × GST %
+Total = Subtotal + GST
+Discount = Total × Discount %
+Final Price = Total - Discount
+```
+
+---
+
+## 🎨 Custom Labels Feature
+
+### Before v2.5.1:
+- Fixed labels: "Pearl Cost", "Stone Cost", "Extra Fee"
+- No customization possible
+
+### After v2.5.1:
+- **Fully customizable labels**
+- Change to any name you want
+- Updates **instantly** on frontend
+- No regeneration needed
+
+### Example Use Cases:
+
+**Gemstone Jewellery:**
+- Pearl Cost → "Gemstone Cost"
+- Stone Cost → "Semi-Precious Stones"
+- Extra Fee → "Setting Charges"
+
+**Luxury Jewellery:**
+- Pearl Cost → "Premium Pearls"
+- Stone Cost → "Precious Stones"
+- Extra Fee → "Certification Fee"
+
+**Custom Jewellery:**
+- Pearl Cost → "Custom Design Fee"
+- Stone Cost → "Engraving Cost"
+- Extra Fee → "Packaging Premium"
+
+---
+
+## 📋 File Structure
+
+```
+jewellery-price-calculator/
+├── includes/
+│   ├── class-jpc-price-calculator.php  (Core calculation engine)
+│   ├── class-jpc-admin.php             (Admin interface)
+│   ├── class-jpc-frontend.php          (Frontend display)
+│   ├── class-jpc-metals.php            (Metal management)
+│   └── class-jpc-diamonds.php          (Diamond calculations)
+├── templates/
+│   ├── admin/
+│   │   ├── general-settings.php        (Settings page)
+│   │   └── product-meta-box.php        (Product editor)
+│   └── frontend/
+│       ├── price-breakup.php           (Price display - v2.5.1)
+│       └── detailed-breakup.php        (Detailed view - v2.5.1)
+├── assets/
+│   ├── css/                            (Stylesheets)
+│   └── js/                             (JavaScript)
+└── jewellery-price-calculator.php      (Main plugin file)
+```
+
+---
+
+## 🔄 Updating from Previous Versions
+
+### From v2.5.0 to v2.5.1:
+
+**Option 1: Full Plugin Update (Recommended)**
+1. Download complete plugin
+2. Backup current plugin folder
+3. Upload new plugin folder
+4. Activate plugin
+5. Settings are preserved automatically
+
+**Option 2: Quick 2-File Update**
+1. Download `price-breakup.php` and `detailed-breakup.php`
+2. Upload to `templates/frontend/`
+3. Clear cache
+4. Done!
+
+### From Earlier Versions:
+- Follow full installation guide
+- Settings and data are preserved
+- Test on staging site first (recommended)
+
+---
+
+## 🆘 Troubleshooting
+
+### Labels Not Showing Custom Names
+
+**Solution:**
+1. Clear browser cache (Ctrl+Shift+R)
+2. Verify settings are saved
+3. Check you uploaded v2.5.1 files
+4. Clear WordPress cache
+
+### Plugin Not Activating
+
+**Solution:**
+1. Check PHP version (7.0+ required)
+2. Check WooCommerce is active
+3. Check file permissions (644 for files, 755 for folders)
+4. Check WordPress error logs
+
+### Prices Not Calculating
+
+**Solution:**
+1. Verify metal rates are set
+2. Check product has JPC data
+3. Regenerate price breakup (product editor)
+4. Check for JavaScript errors in browser console
+
+---
+
+## 📞 Support
+
+- **Documentation:** See guides in repository
+- **Issues:** Check troubleshooting section
+- **Updates:** Watch repository for new releases
+
+---
+
+## 📝 Changelog
+
+### v2.5.1 (February 9, 2026)
+- ✅ **NEW:** Instant label updates - no regeneration needed
+- ✅ **IMPROVED:** Labels fetch directly from settings
+- ✅ **FIXED:** Backwards compatibility with stored labels
+- ✅ **ENHANCED:** Better user experience for label management
+
+### v2.5.0 (February 9, 2026)
+- ✅ Custom labels for Pearl Cost, Stone Cost, Extra Fee
+- ✅ Settings page integration
+- ✅ Label storage in breakup data
+
+### Earlier Versions
+- See [CHANGELOG.md](CHANGELOG.md) for complete history
+
+---
+
+## 📄 License
+
+This plugin is proprietary software. All rights reserved.
+
+---
+
+## 🎉 Get Started Now!
+
+1. **Download** the plugin (green "Code" button → Download ZIP)
+2. **Install** following the guide above
+3. **Configure** your settings
+4. **Customize** labels to match your business
+5. **Enjoy** instant price calculations!
+
+---
+
+**Latest Version:** v2.5.1  
+**Last Updated:** February 9, 2026  
+**Compatibility:** WordPress 5.0+, WooCommerce 3.0+
+
+---
+
+**Questions? Check the [Complete Installation Guide](DOWNLOAD-COMPLETE-PLUGIN-v2.5.1.md) for detailed instructions!**
