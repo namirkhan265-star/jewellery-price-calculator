@@ -2,7 +2,7 @@
 /**
  * Frontend Price Breakup Template - USES ONLY STORED BREAKUP DATA
  * NO CALCULATIONS - DISPLAYS STORED DATA ONLY
- * v2.5.1 FINAL: Uses stored labels from breakup data (same as Extra Fields)
+ * v2.5.2: Fetch labels directly from settings (simple solution)
  */
 
 if (!defined('ABSPATH')) {
@@ -19,7 +19,7 @@ $breakup = get_post_meta($product_id, '_jpc_price_breakup', true);
 if (!$breakup || !is_array($breakup)) {
     echo '<div style="padding: 20px; background: #fff3cd; border: 2px solid #ffc107; border-radius: 5px;">';
     echo '<p style="color: #856404; font-weight: bold;">⚠️ Price breakup data not found!</p>';
-    echo '<p>Please go to the product editor and click "Regenerate Price Breakup" button.</p>';
+    echo '<p>Please go to the product editor and click \"Regenerate Price Breakup\" button.</p>';
     echo '</div>';
     return;
 }
@@ -46,19 +46,10 @@ if (!$metal) {
     return;
 }
 
-// v2.5.1 FINAL FIX: Use stored labels from breakup data (same as Extra Fields)
-// Fallback to default labels if not found in breakup
-$pearl_cost_label = isset($breakup['pearl_cost_label']) && !empty($breakup['pearl_cost_label']) 
-    ? $breakup['pearl_cost_label'] 
-    : 'Pearl Cost';
-
-$stone_cost_label = isset($breakup['stone_cost_label']) && !empty($breakup['stone_cost_label']) 
-    ? $breakup['stone_cost_label'] 
-    : 'Stone Cost';
-
-$extra_fee_label = isset($breakup['extra_fee_label']) && !empty($breakup['extra_fee_label']) 
-    ? $breakup['extra_fee_label'] 
-    : 'Extra Fee';
+// v2.5.2 SIMPLE FIX: Fetch labels directly from settings (same as how Extra Fields work)
+$pearl_cost_label = get_option('jpc_pearl_cost_label', 'Pearl Cost');
+$stone_cost_label = get_option('jpc_stone_cost_label', 'Stone Cost');
+$extra_fee_label = get_option('jpc_extra_fee_label', 'Extra Fee');
 ?>
 
 <div class="jpc-price-breakup">
@@ -80,10 +71,10 @@ $extra_fee_label = isset($breakup['extra_fee_label']) && !empty($breakup['extra_
             </tr>
             <?php endif; ?>
             
-            <!-- Making Charges -->
+            <!-- Making Charge -->
             <?php if (!empty($breakup['making_charge']) && $breakup['making_charge'] > 0): ?>
             <tr>
-                <td><?php _e('Making Charges', 'jewellery-price-calc'); ?></td>
+                <td><?php _e('Making Charge', 'jewellery-price-calc'); ?></td>
                 <td><?php echo wc_price($breakup['making_charge']); ?></td>
             </tr>
             <?php endif; ?>
@@ -96,7 +87,7 @@ $extra_fee_label = isset($breakup['extra_fee_label']) && !empty($breakup['extra_
             </tr>
             <?php endif; ?>
             
-            <!-- Pearl Cost - v2.5.1 FINAL - Uses stored label from breakup -->
+            <!-- Pearl Cost - v2.5.2 - Uses label from settings -->
             <?php if (!empty($breakup['pearl_cost']) && $breakup['pearl_cost'] > 0): ?>
             <tr>
                 <td><?php echo esc_html($pearl_cost_label); ?></td>
@@ -104,7 +95,7 @@ $extra_fee_label = isset($breakup['extra_fee_label']) && !empty($breakup['extra_
             </tr>
             <?php endif; ?>
             
-            <!-- Stone Cost - v2.5.1 FINAL - Uses stored label from breakup -->
+            <!-- Stone Cost - v2.5.2 - Uses label from settings -->
             <?php if (!empty($breakup['stone_cost']) && $breakup['stone_cost'] > 0): ?>
             <tr>
                 <td><?php echo esc_html($stone_cost_label); ?></td>
@@ -112,7 +103,7 @@ $extra_fee_label = isset($breakup['extra_fee_label']) && !empty($breakup['extra_
             </tr>
             <?php endif; ?>
             
-            <!-- Extra Fee - v2.5.1 FINAL - Uses stored label from breakup -->
+            <!-- Extra Fee - v2.5.2 - Uses label from settings -->
             <?php if (!empty($breakup['extra_fee']) && $breakup['extra_fee'] > 0): ?>
             <tr>
                 <td><?php echo esc_html($extra_fee_label); ?></td>
@@ -128,21 +119,42 @@ $extra_fee_label = isset($breakup['extra_fee_label']) && !empty($breakup['extra_
             </tr>
             <?php endif; ?>
             
-            <!-- Extra Fields (1-5) - Uses stored labels from breakup -->
-            <?php for ($i = 1; $i <= 5; $i++): ?>
-                <?php if (!empty($breakup['extra_field_' . $i]) && $breakup['extra_field_' . $i] > 0): ?>
-                <tr>
-                    <td><?php echo esc_html($breakup['extra_field_label_' . $i]); ?></td>
-                    <td><?php echo wc_price($breakup['extra_field_' . $i]); ?></td>
-                </tr>
-                <?php endif; ?>
-            <?php endfor; ?>
+            <!-- Extra Fields (1-5) - Fetch labels from settings like pearl/stone/extra -->
+            <?php 
+            // Check if extra_fields is stored as nested array (old format)
+            if (isset($breakup['extra_fields']) && is_array($breakup['extra_fields'])) {
+                // Old format: nested array
+                foreach ($breakup['extra_fields'] as $field) {
+                    if (!empty($field['value']) && $field['value'] > 0) {
+                        echo '<tr>';
+                        echo '<td>' . esc_html($field['label']) . '</td>';
+                        echo '<td>' . wc_price($field['value']) . '</td>';
+                        echo '</tr>';
+                    }
+                }
+            } else {
+                // New format: flat keys - fetch labels from settings
+                for ($i = 1; $i <= 5; $i++) {
+                    $field_key = 'extra_field_' . $i;
+                    if (!empty($breakup[$field_key]) && $breakup[$field_key] > 0) {
+                        // Fetch label from settings
+                        $field_label = get_option('jpc_extra_field_label_' . $i, 'Extra Field #' . $i);
+                        echo '<tr>';
+                        echo '<td>' . esc_html($field_label) . '</td>';
+                        echo '<td>' . wc_price($breakup[$field_key]) . '</td>';
+                        echo '</tr>';
+                    }
+                }
+            }
+            ?>
             
             <!-- Subtotal (Before GST) -->
+            <?php if (isset($breakup['subtotal_before_gst'])): ?>
             <tr class="jpc-subtotal">
                 <td><strong><?php _e('Subtotal (Before GST)', 'jewellery-price-calc'); ?></strong></td>
                 <td><strong><?php echo wc_price($breakup['subtotal_before_gst']); ?></strong></td>
             </tr>
+            <?php endif; ?>
             
             <!-- GST -->
             <?php if (!empty($breakup['gst']) && $breakup['gst'] > 0): ?>
@@ -153,37 +165,26 @@ $extra_fee_label = isset($breakup['extra_fee_label']) && !empty($breakup['extra_
             <?php endif; ?>
             
             <!-- Total (Before Discount) -->
-            <tr class="jpc-total-before-discount">
+            <?php if ($discount_amount > 0): ?>
+            <tr class="jpc-subtotal">
                 <td><strong><?php _e('Total (Before Discount)', 'jewellery-price-calc'); ?></strong></td>
                 <td><strong><?php echo wc_price($regular_price); ?></strong></td>
             </tr>
             
             <!-- Discount -->
-            <?php if ($discount_amount > 0): ?>
             <tr class="jpc-discount">
-                <td><?php _e('Discount', 'jewellery-price-calc'); ?> 
-                    <?php if ($discount_percentage > 0): ?>
-                        (<?php echo number_format($discount_percentage, 2); ?>%)
-                    <?php endif; ?>
-                </td>
-                <td class="discount-amount">-<?php echo wc_price($discount_amount); ?></td>
+                <td><?php printf(__('Discount (%s%%)', 'jewellery-price-calc'), number_format($discount_percentage, 2)); ?></td>
+                <td>-<?php echo wc_price($discount_amount); ?></td>
             </tr>
             <?php endif; ?>
             
             <!-- Final Price -->
             <tr class="jpc-final-price">
-                <td><strong><?php _e('Final Price', 'jewellery-price-calc'); ?></strong></td>
+                <td><strong><?php _e('FINAL PRICE', 'jewellery-price-calc'); ?></strong></td>
                 <td><strong><?php echo wc_price($sale_price); ?></strong></td>
             </tr>
         </tbody>
     </table>
-    
-    <!-- View Detailed Breakup Link -->
-    <div class="jpc-detailed-breakup-link">
-        <a href="#" class="jpc-view-detailed-breakup" data-product-id="<?php echo esc_attr($product_id); ?>">
-            <?php _e('View Detailed Breakup', 'jewellery-price-calc'); ?>
-        </a>
-    </div>
 </div>
 
 <style>
@@ -196,13 +197,11 @@ $extra_fee_label = isset($breakup['extra_fee_label']) && !empty($breakup['extra_
 }
 
 .jpc-price-breakup h3 {
-    margin-top: 0;
-    margin-bottom: 15px;
+    margin: 0 0 15px 0;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #333;
     font-size: 18px;
     font-weight: bold;
-    color: #333;
-    border-bottom: 2px solid #0073aa;
-    padding-bottom: 10px;
 }
 
 .jpc-price-breakup-table {
@@ -210,71 +209,41 @@ $extra_fee_label = isset($breakup['extra_fee_label']) && !empty($breakup['extra_
     border-collapse: collapse;
 }
 
-.jpc-price-breakup-table td {
-    padding: 10px;
+.jpc-price-breakup-table tr {
     border-bottom: 1px solid #eee;
 }
 
-.jpc-price-breakup-table tr:last-child td {
-    border-bottom: none;
+.jpc-price-breakup-table td {
+    padding: 10px 5px;
 }
 
 .jpc-price-breakup-table td:first-child {
+    text-align: left;
     font-weight: 500;
-    color: #555;
 }
 
 .jpc-price-breakup-table td:last-child {
     text-align: right;
     font-weight: 600;
-    color: #333;
 }
 
-.jpc-subtotal td,
-.jpc-total-before-discount td,
-.jpc-final-price td {
-    background: #f0f0f0;
-    font-weight: bold !important;
+.jpc-price-breakup-table tr.jpc-subtotal td,
+.jpc-price-breakup-table tr.jpc-final-price td {
+    padding-top: 15px;
+    font-size: 16px;
 }
 
-.jpc-discount td {
-    color: #d63638;
+.jpc-price-breakup-table tr.jpc-final-price {
+    border-top: 2px solid #333;
+    border-bottom: 2px solid #333;
 }
 
-.jpc-discount .discount-amount {
-    color: #d63638;
+.jpc-price-breakup-table tr.jpc-final-price td {
+    font-size: 18px;
+    color: #2c3e50;
 }
 
-.jpc-detailed-breakup-link {
-    margin-top: 15px;
-    text-align: center;
-}
-
-.jpc-view-detailed-breakup {
-    display: inline-block;
-    padding: 10px 20px;
-    background: #0073aa;
-    color: white;
-    text-decoration: none;
-    border-radius: 3px;
-    font-weight: 500;
-    transition: background 0.3s;
-}
-
-.jpc-view-detailed-breakup:hover {
-    background: #005a87;
-    color: white;
-}
-
-/* Responsive */
-@media (max-width: 600px) {
-    .jpc-price-breakup {
-        padding: 15px;
-    }
-    
-    .jpc-price-breakup-table td {
-        padding: 8px 5px;
-        font-size: 14px;
-    }
+.jpc-price-breakup-table tr.jpc-discount td {
+    color: #27ae60;
 }
 </style>
