@@ -1,0 +1,90 @@
+═══════════════════════════════════════════════════════════════
+  QUICK FIX FOR ADDITIONAL COST FIELDS - NO CODING NEEDED!
+═══════════════════════════════════════════════════════════════
+
+PROBLEM: Test 6.1, Test 7.1, Test 8.1 not showing in price breakup
+
+SOLUTION: Run the automatic fix file (takes 2 minutes!)
+
+═══════════════════════════════════════════════════════════════
+  SIMPLE 5-STEP PROCESS
+═══════════════════════════════════════════════════════════════
+
+1. DOWNLOAD
+   ↓
+   Download file: fix-additional-costs-SIMPLE.php
+   (It's in your GitHub repository)
+
+2. UPLOAD
+   ↓
+   Upload to: /wp-content/plugins/jewellery-price-calculator/
+   (Use File Manager or FTP)
+
+3. RUN
+   ↓
+   Visit: https://YOURSITE.com/wp-content/plugins/jewellery-price-calculator/fix-additional-costs-SIMPLE.php
+   Click the blue button
+   Wait for "SUCCESS!" message
+
+4. DELETE
+   ↓
+   Delete the fix-additional-costs-SIMPLE.php file
+   (For security)
+
+5. TEST
+   ↓
+   Check any product → Price Breakup tab
+   Your fields should now show!
+
+═══════════════════════════════════════════════════════════════
+  DETAILED INSTRUCTIONS
+═══════════════════════════════════════════════════════════════
+
+Read: HOW-TO-FIX-FOR-NON-CODERS.md
+(Complete step-by-step guide with screenshots)
+
+═══════════════════════════════════════════════════════════════
+  NEED HELP?
+═══════════════════════════════════════════════════════════════
+
+Stuck? Can't do it yourself?
+
+Option 1: Ask your hosting support to:
+   - Upload the file
+   - Visit the URL
+   - Click the button
+   - Delete the file
+
+Option 2: Hire a developer on Fiverr/Upwork
+   - Show them this file
+   - Should take 5 minutes
+   - Cost: $5-10
+
+Option 3: Contact me
+   - I can guide you step-by-step
+   - Or do it for you remotely
+
+═══════════════════════════════════════════════════════════════
+  WHAT GETS FIXED
+═══════════════════════════════════════════════════════════════
+
+✓ All products with Test 6.1, Test 7.1, Test 8.1
+✓ Price breakup will show these fields
+✓ Calculations will be correct
+✓ No data loss
+✓ Safe to run multiple times
+
+═══════════════════════════════════════════════════════════════
+  FILES IN YOUR REPOSITORY
+═══════════════════════════════════════════════════════════════
+
+fix-additional-costs-SIMPLE.php  ← THE FIX FILE (download this!)
+HOW-TO-FIX-FOR-NON-CODERS.md    ← Detailed instructions
+QUICK-START-FIX.txt             ← This file
+MIGRATION-v2.5.10-README.md     ← Technical details
+
+═══════════════════════════════════════════════════════════════
+
+That's it! Download the fix file and follow the 5 steps above.
+
+Good luck! 🍀
