@@ -2,6 +2,7 @@
 /**
  * Frontend Price Breakup Template - USES ONLY STORED BREAKUP DATA
  * NO CALCULATIONS - DISPLAYS STORED DATA ONLY
+ * v2.5.8: Show "Metal Cost" label instead of metal name
  * v2.5.6: CRITICAL FIX - Always show Metal Price + Fix GST percentage display
  */
 
@@ -37,15 +38,6 @@ if (empty($sale_price) || $sale_price <= 0) {
     $sale_price = $regular_price;
 }
 
-// Get metal info
-$metal_id = get_post_meta($product_id, '_jpc_metal_id', true);
-$metal = JPC_Metals::get_by_id($metal_id);
-
-if (!$metal) {
-    echo '<p>' . __('Invalid metal configuration.', 'jewellery-price-calc') . '</p>';
-    return;
-}
-
 // Fetch labels directly from settings
 $pearl_cost_label = get_option('jpc_pearl_cost_label', 'Pearl Cost');
 $stone_cost_label = get_option('jpc_stone_cost_label', 'Stone Cost');
@@ -64,7 +56,7 @@ $gst_percentage = isset($breakup['gst_percentage']) ? floatval($breakup['gst_per
             <!-- Metal Price - ALWAYS SHOW (CRITICAL) -->
             <?php if (isset($breakup['metal_price'])): ?>
             <tr>
-                <td><?php echo esc_html($metal->display_name); ?></td>
+                <td><?php _e('Metal Cost', 'jewellery-price-calc'); ?></td>
                 <td><?php echo wc_price($breakup['metal_price']); ?></td>
             </tr>
             <?php endif; ?>
@@ -254,48 +246,55 @@ $gst_percentage = isset($breakup['gst_percentage']) ? floatval($breakup['gst_per
     font-weight: 600;
 }
 
-.jpc-price-breakup-table tr.jpc-separator {
-    border-bottom: 2px solid #333;
-    height: 5px;
+.jpc-separator td {
+    padding: 5px !important;
+    border-bottom: 2px solid #333 !important;
 }
 
-.jpc-price-breakup-table tr.jpc-separator td {
-    padding: 0;
+.jpc-discount td {
+    color: #d9534f;
 }
 
-.jpc-price-breakup-table tr.jpc-discount td {
-    color: #27ae60;
-    font-weight: 600;
-}
-
-.jpc-price-breakup-table tr.jpc-regular-price td {
+.jpc-regular-price td {
     color: #999;
 }
 
-.jpc-price-breakup-table tr.jpc-final-price {
-    border-top: 2px solid #333;
-    border-bottom: 2px solid #333;
+.jpc-final-price {
+    background: #f0f0f0;
+    font-size: 1.1em;
 }
 
-.jpc-price-breakup-table tr.jpc-final-price td {
-    padding-top: 15px;
-    font-size: 18px;
-    color: #2c3e50;
+.jpc-final-price td {
+    padding: 15px 5px !important;
 }
 
-.jpc-price-breakup-table tr.jpc-savings {
-    border-bottom: none;
+.jpc-savings td {
+    padding: 0 !important;
+    border: none !important;
 }
 
 .jpc-savings-badge {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
-    padding: 12px 20px;
-    border-radius: 8px;
+    padding: 12px;
     text-align: center;
-    font-weight: 600;
-    font-size: 16px;
+    border-radius: 5px;
+    font-weight: bold;
     margin-top: 10px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+@media (max-width: 768px) {
+    .jpc-price-breakup {
+        padding: 15px;
+    }
+    
+    .jpc-price-breakup h3 {
+        font-size: 16px;
+    }
+    
+    .jpc-price-breakup-table td {
+        padding: 8px 3px;
+        font-size: 14px;
+    }
 }
 </style>
