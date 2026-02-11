@@ -49,19 +49,11 @@ class JPC_Metal_Groups {
     /**
      * Get metal group by ID
      */
-    public static function get_by_id($id) {
+    public static function get($id) {
         global $wpdb;
         $table = $wpdb->prefix . 'jpc_metal_groups';
+        
         return $wpdb->get_row($wpdb->prepare("SELECT * FROM $table WHERE id = %d", $id));
-    }
-    
-    /**
-     * Get metal group by name
-     */
-    public static function get_by_name($name) {
-        global $wpdb;
-        $table = $wpdb->prefix . 'jpc_metal_groups';
-        return $wpdb->get_row($wpdb->prepare("SELECT * FROM $table WHERE name = %s", $name));
     }
     
     /**
@@ -71,37 +63,39 @@ class JPC_Metal_Groups {
         global $wpdb;
         $table = $wpdb->prefix . 'jpc_metal_groups';
         
-        // Check if group with same name exists
-        $existing = self::get_by_name($data['name']);
-        if ($existing) {
-            return new WP_Error('duplicate', __('A metal group with this name already exists', 'jewellery-price-calc'));
+        // Check for duplicate name
+        $existing = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM $table WHERE name = %s",
+            $data['name']
+        ));
+        
+        if ($existing > 0) {
+            return new WP_Error('duplicate_name', __('A metal group with this name already exists', 'jewellery-price-calc'));
         }
         
         $insert_data = array(
             'name' => sanitize_text_field($data['name']),
             'unit' => sanitize_text_field($data['unit']),
-            'enable_making_charge' => isset($data['enable_making_charge']) ? 1 : 0,
+            'enable_making_charge' => isset($data['enable_making_charge']) && $data['enable_making_charge'] ? 1 : 0,
             'making_charge_type' => isset($data['making_charge_type']) ? sanitize_text_field($data['making_charge_type']) : 'percentage',
-            'enable_wastage_charge' => isset($data['enable_wastage_charge']) ? 1 : 0,
+            'enable_wastage_charge' => isset($data['enable_wastage_charge']) && $data['enable_wastage_charge'] ? 1 : 0,
             'wastage_charge_type' => isset($data['wastage_charge_type']) ? sanitize_text_field($data['wastage_charge_type']) : 'percentage',
         );
         
         $result = $wpdb->insert($table, $insert_data);
         
-        if ($wpdb->last_error) {
-            error_log('JPC Add Group Error: ' . $wpdb->last_error);
-            return new WP_Error('db_error', $wpdb->last_error);
+        if ($result === false) {
+            error_log('JPC Add Metal Group Error: ' . $wpdb->last_error);
+            error_log('JPC Insert Data: ' . print_r($insert_data, true));
+            return false;
         }
         
-        if ($result) {
-            return $wpdb->insert_id;
-        }
-        
-        return false;
+        return $wpdb->insert_id;
     }
     
     /**
      * Update metal group
+     * CRITICAL FIX: Now correctly handles checkbox values by checking actual value, not just isset()
      */
     public static function update($id, $data) {
         global $wpdb;
@@ -110,9 +104,9 @@ class JPC_Metal_Groups {
         $update_data = array(
             'name' => sanitize_text_field($data['name']),
             'unit' => sanitize_text_field($data['unit']),
-            'enable_making_charge' => isset($data['enable_making_charge']) ? 1 : 0,
+            'enable_making_charge' => (isset($data['enable_making_charge']) && $data['enable_making_charge']) ? 1 : 0,
             'making_charge_type' => isset($data['making_charge_type']) ? sanitize_text_field($data['making_charge_type']) : 'percentage',
-            'enable_wastage_charge' => isset($data['enable_wastage_charge']) ? 1 : 0,
+            'enable_wastage_charge' => (isset($data['enable_wastage_charge']) && $data['enable_wastage_charge']) ? 1 : 0,
             'wastage_charge_type' => isset($data['wastage_charge_type']) ? sanitize_text_field($data['wastage_charge_type']) : 'percentage',
         );
         
@@ -155,9 +149,9 @@ class JPC_Metal_Groups {
         $data = array(
             'name' => $_POST['name'],
             'unit' => $_POST['unit'],
-            'enable_making_charge' => isset($_POST['enable_making_charge']) ? true : false,
+            'enable_making_charge' => isset($_POST['enable_making_charge']) ? 1 : 0,
             'making_charge_type' => isset($_POST['making_charge_type']) ? $_POST['making_charge_type'] : 'percentage',
-            'enable_wastage_charge' => isset($_POST['enable_wastage_charge']) ? true : false,
+            'enable_wastage_charge' => isset($_POST['enable_wastage_charge']) ? 1 : 0,
             'wastage_charge_type' => isset($_POST['wastage_charge_type']) ? $_POST['wastage_charge_type'] : 'percentage',
         );
         
@@ -177,6 +171,7 @@ class JPC_Metal_Groups {
     
     /**
      * AJAX: Update metal group
+     * CRITICAL FIX: Now passes integer values (1/0) instead of boolean (true/false)
      */
     public function ajax_update_metal_group() {
         check_ajax_referer('jpc_admin_nonce', 'nonce');
@@ -195,9 +190,9 @@ class JPC_Metal_Groups {
         $data = array(
             'name' => $_POST['name'],
             'unit' => $_POST['unit'],
-            'enable_making_charge' => isset($_POST['enable_making_charge']) ? true : false,
+            'enable_making_charge' => isset($_POST['enable_making_charge']) ? 1 : 0,
             'making_charge_type' => isset($_POST['making_charge_type']) ? $_POST['making_charge_type'] : 'percentage',
-            'enable_wastage_charge' => isset($_POST['enable_wastage_charge']) ? true : false,
+            'enable_wastage_charge' => isset($_POST['enable_wastage_charge']) ? 1 : 0,
             'wastage_charge_type' => isset($_POST['wastage_charge_type']) ? $_POST['wastage_charge_type'] : 'percentage',
         );
         
