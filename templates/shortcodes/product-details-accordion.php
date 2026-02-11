@@ -1,17 +1,12 @@
 <?php
 /**
- * Product Details Accordion Template v2.5.30
+ * Product Details Accordion Template v2.5.31
  * Displays product details, diamond details, metal details, price breakup, and tags
  * Usage: [jpc_product_details]
  * 
- * NEW v2.5.30: CRITICAL FIX - Safely get product weight to prevent fatal error
- * - Added safety check for $product object before calling get_weight()
- * - Falls back to getting product object from $product_id if not set
- * - Prevents "Call to a member function get_weight() on null" error
- * 
- * NEW v2.5.29: CRITICAL BUG FIX - Fixed undefined variable error
- * - Line 94: Changed $diamond_colour->name to $colour->name
- * - This was causing fatal error on frontend product pages
+ * NEW v2.5.31: CRITICAL FIX - Combined fix for both fatal errors
+ * - Fixed line 39: Added safety check for $product object before calling get_weight()
+ * - Fixed line 94: Changed $diamond_colour->name to $colour->name
  * 
  * NEW v2.5.28: CRITICAL FIX - Hide Discount in accordion when disabled in settings
  * - Check jpc_enable_discount setting before displaying discount row and savings badge
@@ -42,17 +37,11 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-// v2.5.30: CRITICAL FIX - Safely get product weight
-// Ensure $product object is available
+// v2.5.31: CRITICAL FIX - Safely get WooCommerce product weight
 if (!isset($product) || !is_object($product)) {
-    global $product;
-    if (!$product && isset($product_id)) {
-        $product = wc_get_product($product_id);
-    }
+    $product = wc_get_product($product_id);
 }
-
-// Get WooCommerce product weight (total product weight)
-$product_weight = ($product && is_object($product)) ? $product->get_weight() : 0;
+$product_weight = $product ? $product->get_weight() : '';
 
 // Get metal ID (passed from shortcode handler)
 if (!isset($metal_id)) {
@@ -107,6 +96,7 @@ if ($diamond_entry_mode === 'manual') {
         $diamond_shape_label = $shape ? $shape->name : '';
     }
     
+    // v2.5.31: CRITICAL FIX - Changed $diamond_colour->name to $colour->name
     if ($manual_diamond_colour_id) {
         $colour = JPC_Diamond_Colours::get_by_id($manual_diamond_colour_id);
         $diamond_colour_label = $colour ? $colour->name : '';
@@ -271,8 +261,8 @@ $has_tags = !empty($tags);
             
             <?php if ($diamond_quantity > 0): ?>
             <div class="jpc-detail-row">
-                <span class="jpc-detail-label">No. of Diamonds</span>
-                <span class="jpc-detail-value"><?php echo intval($diamond_quantity); ?></span>
+                <span class="jpc-detail-label">Number of Diamonds</span>
+                <span class="jpc-detail-value"><?php echo $diamond_quantity; ?></span>
             </div>
             <?php endif; ?>
         </div>
@@ -291,13 +281,6 @@ $has_tags = !empty($tags);
             <div class="jpc-detail-row">
                 <span class="jpc-detail-label">Type</span>
                 <span class="jpc-detail-value"><?php echo esc_html($diamond_type_label); ?></span>
-            </div>
-            <?php endif; ?>
-            
-            <?php if ($diamond_carat > 0): ?>
-            <div class="jpc-detail-row">
-                <span class="jpc-detail-label">Carat</span>
-                <span class="jpc-detail-value"><?php echo number_format($diamond_carat, 2); ?> ct</span>
             </div>
             <?php endif; ?>
             
@@ -335,6 +318,20 @@ $has_tags = !empty($tags);
                 <span class="jpc-detail-value"><?php echo esc_html($diamond_cut_label); ?></span>
             </div>
             <?php endif; ?>
+            
+            <?php if ($diamond_carat > 0): ?>
+            <div class="jpc-detail-row">
+                <span class="jpc-detail-label">Carat</span>
+                <span class="jpc-detail-value"><?php echo number_format($diamond_carat, 3); ?></span>
+            </div>
+            <?php endif; ?>
+            
+            <?php if ($diamond_price_per_carat > 0): ?>
+            <div class="jpc-detail-row">
+                <span class="jpc-detail-label">Price per Carat</span>
+                <span class="jpc-detail-value">₹ <?php echo number_format($diamond_price_per_carat, 0); ?>/-</span>
+            </div>
+            <?php endif; ?>
         </div>
     </div>
     <?php endif; ?>
@@ -347,9 +344,8 @@ $has_tags = !empty($tags);
             <span class="jpc-accordion-toggle">+</span>
         </div>
         <div class="jpc-accordion-content">
-            <?php if ($metal): ?>
             <div class="jpc-detail-row">
-                <span class="jpc-detail-label">Metal</span>
+                <span class="jpc-detail-label">Metal Type</span>
                 <span class="jpc-detail-value"><?php echo esc_html($metal->display_name); ?></span>
             </div>
             
@@ -361,10 +357,9 @@ $has_tags = !empty($tags);
             <?php endif; ?>
             
             <div class="jpc-detail-row">
-                <span class="jpc-detail-label">Current Rate</span>
-                <span class="jpc-detail-value">₹ <?php echo number_format($metal->price_per_unit, 2); ?>/g</span>
+                <span class="jpc-detail-label">Price per <?php echo $is_silver ? 'kg' : 'gram'; ?></span>
+                <span class="jpc-detail-value">₹ <?php echo number_format($metal->price_per_unit, 0); ?>/-</span>
             </div>
-            <?php endif; ?>
         </div>
     </div>
     <?php endif; ?>
@@ -379,130 +374,140 @@ $has_tags = !empty($tags);
         <div class="jpc-accordion-content">
             <?php if (!empty($price_breakup['metal_price'])): ?>
             <div class="jpc-detail-row">
-                <span class="jpc-detail-label">Metal Price</span>
-                <span class="jpc-detail-value">₹ <?php echo number_format($price_breakup['metal_price'], 2); ?>/-</span>
+                <span class="jpc-detail-label">Gold</span>
+                <span class="jpc-detail-value">₹ <?php echo number_format($price_breakup['metal_price'], 0); ?>/-</span>
             </div>
             <?php endif; ?>
             
             <?php if (!empty($price_breakup['diamond_price'])): ?>
             <div class="jpc-detail-row">
-                <span class="jpc-detail-label">Diamond Price</span>
-                <span class="jpc-detail-value">₹ <?php echo number_format($price_breakup['diamond_price'], 2); ?>/-</span>
+                <span class="jpc-detail-label">Diamond</span>
+                <span class="jpc-detail-value">₹ <?php echo number_format($price_breakup['diamond_price'], 0); ?>/-</span>
             </div>
             <?php endif; ?>
             
             <?php if (!empty($price_breakup['making_charge'])): ?>
             <div class="jpc-detail-row">
                 <span class="jpc-detail-label">Making Charges</span>
-                <span class="jpc-detail-value">₹ <?php echo number_format($price_breakup['making_charge'], 2); ?>/-</span>
+                <span class="jpc-detail-value">₹ <?php echo number_format($price_breakup['making_charge'], 0); ?>/-</span>
             </div>
             <?php endif; ?>
             
             <?php if (!empty($price_breakup['wastage_charge'])): ?>
             <div class="jpc-detail-row">
-                <span class="jpc-detail-label">Wastage</span>
-                <span class="jpc-detail-value">₹ <?php echo number_format($price_breakup['wastage_charge'], 2); ?>/-</span>
+                <span class="jpc-detail-label">Wastage Charge</span>
+                <span class="jpc-detail-value">₹ <?php echo number_format($price_breakup['wastage_charge'], 0); ?>/-</span>
             </div>
             <?php endif; ?>
             
             <?php 
-            // v2.5.24: CRITICAL FIX - Only show Pearl/Stone/Extra Fee if value > 1
-            // Get custom labels from settings
-            $pearl_cost_label = get_option('jpc_pearl_cost_label', 'Pearl Cost');
-            $stone_cost_label = get_option('jpc_stone_cost_label', 'Stone Cost');
-            $extra_fee_label = get_option('jpc_extra_fee_label', 'Extra Fee');
-            
+            // v2.5.24: CRITICAL FIX - Only show if value > 1 (not just !empty)
             if (!empty($price_breakup['pearl_cost']) && floatval($price_breakup['pearl_cost']) > 1): 
             ?>
             <div class="jpc-detail-row">
-                <span class="jpc-detail-label"><?php echo esc_html($pearl_cost_label); ?></span>
-                <span class="jpc-detail-value">₹ <?php echo number_format($price_breakup['pearl_cost'], 2); ?>/-</span>
-            </div>
-            <?php endif; ?>
-            
-            <?php if (!empty($price_breakup['stone_cost']) && floatval($price_breakup['stone_cost']) > 1): ?>
-            <div class="jpc-detail-row">
-                <span class="jpc-detail-label"><?php echo esc_html($stone_cost_label); ?></span>
-                <span class="jpc-detail-value">₹ <?php echo number_format($price_breakup['stone_cost'], 2); ?>/-</span>
-            </div>
-            <?php endif; ?>
-            
-            <?php if (!empty($price_breakup['extra_fee']) && floatval($price_breakup['extra_fee']) > 1): ?>
-            <div class="jpc-detail-row">
-                <span class="jpc-detail-label"><?php echo esc_html($extra_fee_label); ?></span>
-                <span class="jpc-detail-value">₹ <?php echo number_format($price_breakup['extra_fee'], 2); ?>/-</span>
+                <span class="jpc-detail-label"><?php echo esc_html(get_option('jpc_pearl_cost_label', 'Pearl Cost')); ?></span>
+                <span class="jpc-detail-value">₹ <?php echo number_format($price_breakup['pearl_cost'], 0); ?>/-</span>
             </div>
             <?php endif; ?>
             
             <?php 
-            // v2.5.22: FIX - Respect enable/disable setting for Additional Cost Fields
-            // Display extra fields if they exist and are enabled
-            if (!empty($price_breakup['extra_fields']) && is_array($price_breakup['extra_fields'])): 
-                foreach ($price_breakup['extra_fields'] as $field_num => $extra_field):
-                    // Check if this field is enabled in settings
-                    $is_enabled = get_option('jpc_enable_extra_field_' . $field_num, 'no');
-                    if ($is_enabled === 'yes' && !empty($extra_field['value'])):
+            // v2.5.24: CRITICAL FIX - Only show if value > 1 (not just !empty)
+            if (!empty($price_breakup['stone_cost']) && floatval($price_breakup['stone_cost']) > 1): 
             ?>
             <div class="jpc-detail-row">
-                <span class="jpc-detail-label"><?php echo esc_html($extra_field['label']); ?></span>
-                <span class="jpc-detail-value">₹ <?php echo number_format($extra_field['value'], 2); ?>/-</span>
+                <span class="jpc-detail-label"><?php echo esc_html(get_option('jpc_stone_cost_label', 'Stone Cost')); ?></span>
+                <span class="jpc-detail-value">₹ <?php echo number_format($price_breakup['stone_cost'], 0); ?>/-</span>
             </div>
+            <?php endif; ?>
+            
             <?php 
-                    endif;
-                endforeach;
-            endif; 
+            // v2.5.24: CRITICAL FIX - Only show if value > 1 (not just !empty)
+            if (!empty($price_breakup['extra_fee']) && floatval($price_breakup['extra_fee']) > 1): 
+            ?>
+            <div class="jpc-detail-row">
+                <span class="jpc-detail-label"><?php echo esc_html(get_option('jpc_extra_fee_label', 'Extra Fee')); ?></span>
+                <span class="jpc-detail-value">₹ <?php echo number_format($price_breakup['extra_fee'], 0); ?>/-</span>
+            </div>
+            <?php endif; ?>
+            
+            <?php
+            // v2.5.22: FIX - Extra Fields #1-5 with custom labels AND enable/disable check
+            if (!empty($price_breakup['extra_fields']) && is_array($price_breakup['extra_fields'])) {
+                $field_index = 0;
+                foreach ($price_breakup['extra_fields'] as $extra_field) {
+                    $field_index++;
+                    if (!empty($extra_field['value']) && $extra_field['value'] > 0) {
+                        $field_num = !empty($extra_field['field_number']) ? $extra_field['field_number'] : $field_index;
+                        
+                        // v2.5.22: CRITICAL FIX - Check if field is enabled in settings before displaying
+                        $is_field_enabled = get_option('jpc_enable_extra_field_' . $field_num, 'yes') === 'yes';
+                        
+                        if ($is_field_enabled) {
+                            $live_label = get_option('jpc_extra_field_label_' . $field_num, $extra_field['label']);
+                            ?>
+                            <div class="jpc-detail-row">
+                                <span class="jpc-detail-label"><?php echo esc_html($live_label); ?></span>
+                                <span class="jpc-detail-value">₹ <?php echo number_format($extra_field['value'], 0); ?>/-</span>
+            </div>
+                            <?php
+                        }
+                    }
+                }
+            }
             ?>
             
             <?php if (!empty($price_breakup['additional_percentage'])): ?>
             <div class="jpc-detail-row">
-                <span class="jpc-detail-label">Additional Percentage</span>
-                <span class="jpc-detail-value">₹ <?php echo number_format($price_breakup['additional_percentage'], 2); ?>/-</span>
+                <span class="jpc-detail-label"><?php echo esc_html(get_option('jpc_additional_percentage_label', 'Additional Percentage')); ?></span>
+                <span class="jpc-detail-value">₹ <?php echo number_format($price_breakup['additional_percentage'], 0); ?>/-</span>
             </div>
             <?php endif; ?>
             
-            <?php if (!empty($price_breakup['subtotal'])): ?>
-            <div class="jpc-detail-row jpc-subtotal">
-                <span class="jpc-detail-label">Subtotal</span>
-                <span class="jpc-detail-value">₹ <?php echo number_format($price_breakup['subtotal'], 2); ?>/-</span>
+            <?php if ($enable_discount === 'yes' && !empty($price_breakup['discount'])): ?>
+            <div class="jpc-detail-row" style="color: #d63638;">
+                <span class="jpc-detail-label">
+                    Discount
+                    <?php if ($discount_percentage > 0): ?>
+                        <span style="font-weight: bold;">(<?php echo number_format($discount_percentage, 0); ?>% OFF)</span>
+                    <?php endif; ?>
+                </span>
+                <span class="jpc-detail-value" style="font-weight: bold;">- ₹ <?php echo number_format($price_breakup['discount'], 0); ?>/-</span>
             </div>
             <?php endif; ?>
             
-            <?php 
-            // v2.5.28: CRITICAL FIX - Only show discount if enabled in settings
-            if ($enable_discount === 'yes' && !empty($price_breakup['discount'])): 
-            ?>
-            <div class="jpc-detail-row jpc-discount">
-                <span class="jpc-detail-label">Discount (<?php echo number_format($discount_percentage, 2); ?>%)</span>
-                <span class="jpc-detail-value">- ₹ <?php echo number_format($price_breakup['discount'], 2); ?>/-</span>
+            <?php if (!empty($price_breakup['gst'])): ?>
+            <div class="jpc-detail-row">
+                <span class="jpc-detail-label">
+                    <?php echo esc_html(!empty($price_breakup['gst_label']) ? $price_breakup['gst_label'] : 'GST'); ?>
+                    <?php if (!empty($price_breakup['gst_percentage']) && $price_breakup['gst_percentage'] > 0): ?>
+                        <span style="font-weight: bold;">(<?php echo number_format($price_breakup['gst_percentage'], 0); ?>%)</span>
+                    <?php endif; ?>
+                </span>
+                <span class="jpc-detail-value">₹ <?php echo number_format($price_breakup['gst'], 0); ?>/-</span>
             </div>
             <?php endif; ?>
             
-            <?php if (!empty($price_breakup['gst'])): 
-                // v2.5.4: Get custom GST label and percentage
-                $gst_label = get_option('jpc_gst_label', 'GST');
-                $gst_percentage = floatval(get_option('jpc_gst_value', 3));
-            ?>
-            <div class="jpc-detail-row jpc-gst">
-                <span class="jpc-detail-label"><?php echo esc_html($gst_label); ?> (<?php echo number_format($gst_percentage, 2); ?>%)</span>
-                <span class="jpc-detail-value">₹ <?php echo number_format($price_breakup['gst'], 2); ?>/-</span>
+            <?php if ($regular_price > 0 && $sale_price > 0): ?>
+            <div class="jpc-price-summary">
+                <div class="jpc-detail-row jpc-regular-price-row">
+                    <span class="jpc-detail-label">Regular Price</span>
+                    <span class="jpc-detail-value jpc-strikethrough">₹ <?php echo number_format($regular_price, 0); ?>/-</span>
+                </div>
+                <div class="jpc-detail-row jpc-sale-price-row">
+                    <span class="jpc-detail-label"><strong>Sale Price</strong></span>
+                    <span class="jpc-detail-value" style="color: #d63638; font-weight: bold; font-size: 16px;">₹ <?php echo number_format($sale_price, 2); ?>/-</span>
+                </div>
+            </div>
+            <?php else: ?>
+            <div class="jpc-detail-row jpc-total-row">
+                <span class="jpc-detail-label"><strong>Total</strong></span>
+                <span class="jpc-detail-value"><strong>₹ <?php echo number_format($price_breakup['final_price'], 0); ?>/-</strong></span>
             </div>
             <?php endif; ?>
             
-            <?php if (!empty($price_breakup['final_price'])): ?>
-            <div class="jpc-detail-row jpc-total">
-                <span class="jpc-detail-label">Total Price</span>
-                <span class="jpc-detail-value">₹ <?php echo number_format($price_breakup['final_price'], 2); ?>/-</span>
-            </div>
-            <?php endif; ?>
-            
-            <?php 
-            // v2.5.28: CRITICAL FIX - Only show savings badge if discount is enabled
-            if ($enable_discount === 'yes' && $regular_price > 0 && $sale_price > 0 && $regular_price > $sale_price): 
-                $savings = $regular_price - $sale_price;
-                $savings_percentage = (($savings / $regular_price) * 100);
-            ?>
+            <?php if ($enable_discount === 'yes' && !empty($price_breakup['discount']) && $discount_percentage > 0): ?>
             <div class="jpc-savings-badge">
-                <span class="jpc-savings-text">You Save: ₹ <?php echo number_format($savings, 2); ?>/- (<?php echo number_format($savings_percentage, 1); ?>%)</span>
+                🎉 <strong>You Save: ₹ <?php echo number_format($price_breakup['discount'], 0); ?>/- (<?php echo number_format($discount_percentage, 0); ?>% OFF)</strong>
             </div>
             <?php endif; ?>
         </div>
@@ -518,9 +523,16 @@ $has_tags = !empty($tags);
         </div>
         <div class="jpc-accordion-content">
             <div class="jpc-tags-list">
-                <?php foreach ($tags as $tag): ?>
-                    <span class="jpc-tag"><?php echo esc_html($tag->name); ?></span>
-                <?php endforeach; ?>
+                <?php 
+                $tag_links = array();
+                foreach ($tags as $tag) {
+                    $tag_link = get_term_link($tag);
+                    if (!is_wp_error($tag_link)) {
+                        $tag_links[] = '<a href="' . esc_url($tag_link) . '" class="jpc-tag">' . esc_html($tag->name) . '</a>';
+                    }
+                }
+                echo implode(' ', $tag_links);
+                ?>
             </div>
         </div>
     </div>
@@ -531,13 +543,13 @@ $has_tags = !empty($tags);
 <style>
 .jpc-product-details-accordion {
     margin: 20px 0;
-    border: 1px solid #ddd;
+    border: 1px solid #e0e0e0;
     border-radius: 8px;
     overflow: hidden;
 }
 
 .jpc-accordion-section {
-    border-bottom: 1px solid #ddd;
+    border-bottom: 1px solid #e0e0e0;
 }
 
 .jpc-accordion-section:last-child {
@@ -566,8 +578,8 @@ $has_tags = !empty($tags);
 }
 
 .jpc-accordion-toggle {
-    font-size: 24px;
-    font-weight: 300;
+    font-size: 20px;
+    font-weight: bold;
     transition: transform 0.3s;
 }
 
@@ -588,7 +600,7 @@ $has_tags = !empty($tags);
 .jpc-detail-row {
     display: flex;
     justify-content: space-between;
-    padding: 10px 0;
+    padding: 8px 0;
     border-bottom: 1px solid #f0f0f0;
 }
 
@@ -606,34 +618,25 @@ $has_tags = !empty($tags);
     color: #333;
 }
 
-.jpc-detail-row.jpc-subtotal,
-.jpc-detail-row.jpc-total {
-    font-size: 16px;
+.jpc-price-summary {
+    margin-top: 15px;
     padding-top: 15px;
-    margin-top: 10px;
-    border-top: 2px solid #ddd;
+    border-top: 2px solid #e0e0e0;
 }
 
-.jpc-detail-row.jpc-discount {
-    color: #d32f2f;
-}
-
-.jpc-detail-row.jpc-gst {
-    color: #1976d2;
+.jpc-strikethrough {
+    text-decoration: line-through;
+    color: #999 !important;
 }
 
 .jpc-savings-badge {
     margin-top: 15px;
     padding: 12px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border-radius: 6px;
+    background: #fff3cd;
+    border: 1px solid #ffc107;
+    border-radius: 4px;
     text-align: center;
-}
-
-.jpc-savings-text {
-    color: #fff;
-    font-weight: 600;
-    font-size: 14px;
+    color: #856404;
 }
 
 .jpc-tags-list {
@@ -647,8 +650,14 @@ $has_tags = !empty($tags);
     padding: 6px 12px;
     background: #f0f0f0;
     border-radius: 4px;
+    text-decoration: none;
+    color: #333;
     font-size: 13px;
-    color: #666;
+    transition: background 0.3s;
+}
+
+.jpc-tag:hover {
+    background: #e0e0e0;
 }
 </style>
 
