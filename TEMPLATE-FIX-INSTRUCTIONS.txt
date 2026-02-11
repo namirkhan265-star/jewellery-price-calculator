@@ -1,0 +1,81 @@
+═══════════════════════════════════════════════════════════════
+  TEMPLATE FIX - Fixes GST Display & Diamond Price!
+═══════════════════════════════════════════════════════════════
+
+THE REAL PROBLEM:
+The data is correct (diamonds ARE calculated), but the DISPLAY 
+TEMPLATE is using old code that doesn't show them properly.
+
+THIS FIX:
+Updates the display template to fetch GST settings dynamically
+and always show diamond prices.
+
+═══════════════════════════════════════════════════════════════
+  SUPER SIMPLE 3-STEP PROCESS
+═══════════════════════════════════════════════════════════════
+
+1. DOWNLOAD & UPLOAD
+   ↓
+   Download BOTH files from GitHub:
+   - price-breakup-FIXED.php
+   - apply-template-fix.php
+   
+   Upload BOTH to: /wp-content/plugins/jewellery-price-calculator-main/templates/frontend/
+
+2. RUN THE FIX
+   ↓
+   Visit: https://detailx.co.in/wp-content/plugins/jewellery-price-calculator-main/apply-template-fix.php
+   Click the button
+   Wait for "SUCCESS!" message
+
+3. TEST & DELETE
+   ↓
+   - Check any product → Price Breakup tab
+   - You should see diamond prices and "GST (3%)"
+   - Delete apply-template-fix.php file
+
+═══════════════════════════════════════════════════════════════
+  WHAT GETS FIXED
+═══════════════════════════════════════════════════════════════
+
+BEFORE:
+- GST (no percentage)
+- Diamond price missing
+- Labels not updating when you change settings
+
+AFTER:
+- GST (3%) with percentage
+- Diamond price showing
+- Labels update dynamically from settings
+
+═══════════════════════════════════════════════════════════════
+  WHY THIS IS DIFFERENT
+═══════════════════════════════════════════════════════════════
+
+Previous fixes: Updated the DATA (calculations)
+This fix: Updates the DISPLAY TEMPLATE (what you see)
+
+The data was always correct! The template just wasn't showing it.
+
+═══════════════════════════════════════════════════════════════
+  BENEFITS
+═══════════════════════════════════════════════════════════════
+
+✓ GST label fetched dynamically from settings
+✓ GST percentage fetched dynamically from settings
+✓ Change settings → updates immediately (no regeneration needed)
+✓ Diamond prices always show if they exist
+✓ Shows "3%" instead of "3.00%"
+
+═══════════════════════════════════════════════════════════════
+  BACKUP
+═══════════════════════════════════════════════════════════════
+
+The script automatically creates a backup of your old template:
+price-breakup-BACKUP-[date-time].php
+
+If anything goes wrong, you can restore from the backup.
+
+═══════════════════════════════════════════════════════════════
+
+This should FINALLY fix everything! 🎉
