@@ -1,6 +1,6 @@
 <?php
 /**
- * Price Calculator Class v2.5.18
+ * Price Calculator Class v2.5.19
  * Enhanced with:
  * - Auto/Manual Making Charges
  * - Manual Diamond Entry with 4Cs
@@ -10,6 +10,7 @@
  * - CRITICAL FIX: Use price_per_unit instead of price_per_gram (v2.5.7)
  * - CRITICAL FIX: Use _jpc_diamond_entry_mode instead of _jpc_diamond_mode (v2.5.15)
  * - CRITICAL FIX: Correct GST calculation for "Before Discount" option (v2.5.18)
+ * - CRITICAL FIX: Restore missing methods that broke metals page (v2.5.19)
  */
 
 if (!defined('ABSPATH')) {
@@ -285,12 +286,20 @@ class JPC_Price_Calculator {
             return false;
         }
         
-        // Get labels
-        $gst_label = get_option('jpc_gst_label', 'GST');
-        $additional_percentage_label = get_option('jpc_additional_percentage_label', 'Processing Fee');
-        $pearl_cost_label = get_option('jpc_pearl_cost_label', 'Pearl Cost');
-        $stone_cost_label = get_option('jpc_stone_cost_label', 'Stone Cost');
-        $extra_fee_label = get_option('jpc_extra_fee_label', 'Extra Fee');
+        // Get extra field costs with labels
+        $extra_fields = array();
+        for ($i = 1; $i <= 5; $i++) {
+            $enabled = get_option('jpc_enable_extra_field_' . $i);
+            if ($enabled === 'yes' || $enabled === '1' || $enabled === 1 || $enabled === true) {
+                $label = get_option('jpc_extra_field_label_' . $i, 'Extra Field #' . $i);
+                $value = floatval(get_post_meta($product_id, '_jpc_extra_field_' . $i, true));
+                $extra_fields[] = array(
+                    'field_number' => $i,
+                    'label' => $label,
+                    'value' => $value
+                );
+            }
+        }
         
         // v2.5.18: CRITICAL FIX - Show correct GST amount based on calculation base
         $gst_to_display = 0;
@@ -308,97 +317,115 @@ class JPC_Price_Calculator {
             $gst_to_display = $prices['gst_on_full'];
         }
         
-        // Build breakup array
+        // Get labels
+        $additional_percentage_label = get_option('jpc_additional_percentage_label', 'Additional Percentage');
+        $additional_percentage_value = floatval(get_option('jpc_additional_percentage_value', 0));
+        $gst_label = get_option('jpc_gst_label', 'GST');
+        
+        // Store price breakup for display
         $breakup = array(
             'metal_price' => $prices['metal_price'],
             'diamond_price' => $prices['diamond_price'],
             'making_charge' => $prices['making_charge'],
             'wastage_charge' => $prices['wastage_charge'],
             'pearl_cost' => $prices['pearl_cost'],
-            'pearl_cost_label' => $pearl_cost_label,
             'stone_cost' => $prices['stone_cost'],
-            'stone_cost_label' => $stone_cost_label,
             'extra_fee' => $prices['extra_fee'],
-            'extra_fee_label' => $extra_fee_label,
+            'extra_fields' => $extra_fields,
             'additional_percentage' => $prices['additional_percentage_amount'],
             'additional_percentage_label' => $additional_percentage_label,
+            'additional_percentage_value' => $additional_percentage_value,
             'discount' => $prices['discount_amount'],
             'gst' => $gst_to_display,
             'gst_percentage' => $prices['gst_percentage'],
             'gst_label' => $gst_label,
-            'gst_calculation_base' => $prices['gst_calculation_base'],
             'gst_on_full' => $prices['gst_on_full'],
             'gst_on_discounted' => $prices['gst_on_discounted'],
-            'subtotal_before_gst' => $prices['subtotal_after_additional'],
             'subtotal' => $prices['sale_price'],
             'final_price' => $prices['sale_price'],
         );
         
-        // Add extra fields
-        for ($i = 1; $i <= 5; $i++) {
-            $enabled = get_option('jpc_enable_extra_field_' . $i);
-            if ($enabled === 'yes' || $enabled === '1' || $enabled === 1 || $enabled === true) {
-                $label = get_option('jpc_extra_field_label_' . $i, 'Extra Field #' . $i);
-                $value = floatval(get_post_meta($product_id, '_jpc_extra_field_' . $i, true));
-                
-                $breakup['extra_field_' . $i] = $value;
-                $breakup['extra_field_label_' . $i] = $label;
-            }
-        }
-        
-        // Store breakup
         update_post_meta($product_id, '_jpc_price_breakup', $breakup);
         
         return $breakup;
     }
     
     /**
-     * Update product prices in WooCommerce
+     * Calculate and update product price - RETURNS SUCCESS STATUS
+     * v2.5.19: Restored this method (was accidentally removed in v2.5.18)
      */
-    public static function update_product_prices($product_id) {
+    public static function calculate_and_update_price($product_id) {
         // Prevent infinite loops
-        if (in_array($product_id, self::$calculating_products)) {
-            return;
+        if (isset(self::$calculating_products[$product_id])) {
+            return false;
         }
         
-        self::$calculating_products[] = $product_id;
+        self::$calculating_products[$product_id] = true;
         
-        $prices = self::calculate_product_prices($product_id);
-        
-        if ($prices) {
-            // Update WooCommerce prices
-            update_post_meta($product_id, '_regular_price', $prices['regular_price']);
-            update_post_meta($product_id, '_price', $prices['sale_price']);
+        try {
+            // Calculate prices
+            $prices = self::calculate_product_prices($product_id);
             
-            // Only set sale price if there's a discount
-            if ($prices['discount_percentage'] > 0) {
-                update_post_meta($product_id, '_sale_price', $prices['sale_price']);
-            } else {
-                delete_post_meta($product_id, '_sale_price');
+            if (!$prices) {
+                unset(self::$calculating_products[$product_id]);
+                return false;
             }
             
-            // Store price breakup
+            // Clear all WooCommerce caches first
+            wp_cache_delete('product-' . $product_id, 'products');
+            wp_cache_delete($product_id, 'post_meta');
+            wc_delete_product_transients($product_id);
+            
+            // Get WooCommerce product (fresh from database)
+            $product = wc_get_product($product_id);
+            
+            if (!$product) {
+                unset(self::$calculating_products[$product_id]);
+                return false;
+            }
+            
+            // Set prices using both WooCommerce methods AND direct meta updates
+            $product->set_regular_price($prices['regular_price']);
+            $product->set_sale_price($prices['sale_price']);
+            $product->set_price($prices['sale_price']);
+            
+            // Save product (this triggers WooCommerce hooks)
+            $product->save();
+            
+            // Direct meta updates to ensure values are stored
+            update_post_meta($product_id, '_regular_price', $prices['regular_price']);
+            update_post_meta($product_id, '_sale_price', $prices['sale_price']);
+            update_post_meta($product_id, '_price', $prices['sale_price']);
+            
+            // Store discount percentage
+            update_post_meta($product_id, '_jpc_discount_percentage', $prices['discount_percentage']);
+            
+            // Calculate and store breakup
             self::calculate_and_store_breakup($product_id);
             
-            // Clear WooCommerce transients
+            // Clear caches again after update
+            wp_cache_delete('product-' . $product_id, 'products');
+            wp_cache_delete($product_id, 'post_meta');
             wc_delete_product_transients($product_id);
-        }
-        
-        // Remove from calculating list
-        $key = array_search($product_id, self::$calculating_products);
-        if ($key !== false) {
-            unset(self::$calculating_products[$key]);
+            clean_post_cache($product_id);
+            
+            unset(self::$calculating_products[$product_id]);
+            return true;
+            
+        } catch (Exception $e) {
+            unset(self::$calculating_products[$product_id]);
+            return false;
         }
     }
     
     /**
-     * Bulk update all product prices
+     * Recalculate all product prices
+     * v2.5.19: Restored this method (was accidentally removed in v2.5.18)
      */
-    public static function bulk_update_all_products() {
+    public static function recalculate_all_prices() {
         $args = array(
             'post_type' => 'product',
             'posts_per_page' => -1,
-            'fields' => 'ids',
             'meta_query' => array(
                 array(
                     'key' => '_jpc_metal_id',
@@ -407,14 +434,12 @@ class JPC_Price_Calculator {
             )
         );
         
-        $product_ids = get_posts($args);
-        $updated_count = 0;
+        $products = get_posts($args);
         
-        foreach ($product_ids as $product_id) {
-            self::update_product_prices($product_id);
-            $updated_count++;
+        foreach ($products as $product) {
+            self::calculate_and_update_price($product->ID);
         }
         
-        return $updated_count;
+        return count($products);
     }
 }
