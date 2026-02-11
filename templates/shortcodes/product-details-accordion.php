@@ -1,8 +1,13 @@
 <?php
 /**
- * Product Details Accordion Template v2.5.29
+ * Product Details Accordion Template v2.5.30
  * Displays product details, diamond details, metal details, price breakup, and tags
  * Usage: [jpc_product_details]
+ * 
+ * NEW v2.5.30: CRITICAL FIX - Safely get product weight to prevent fatal error
+ * - Added safety check for $product object before calling get_weight()
+ * - Falls back to getting product object from $product_id if not set
+ * - Prevents "Call to a member function get_weight() on null" error
  * 
  * NEW v2.5.29: CRITICAL BUG FIX - Fixed undefined variable error
  * - Line 94: Changed $diamond_colour->name to $colour->name
@@ -37,8 +42,17 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+// v2.5.30: CRITICAL FIX - Safely get product weight
+// Ensure $product object is available
+if (!isset($product) || !is_object($product)) {
+    global $product;
+    if (!$product && isset($product_id)) {
+        $product = wc_get_product($product_id);
+    }
+}
+
 // Get WooCommerce product weight (total product weight)
-$product_weight = $product->get_weight();
+$product_weight = ($product && is_object($product)) ? $product->get_weight() : 0;
 
 // Get metal ID (passed from shortcode handler)
 if (!isset($metal_id)) {
