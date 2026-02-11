@@ -1,7 +1,8 @@
 <?php
 /**
- * Other Costs Section Template v2.5.26
+ * Other Costs Section Template v2.5.27
  * Stones, Pearls, Extra Fees, Discount, Extra Fields
+ * v2.5.27: FIX - Hide disabled Additional Cost Fields & separate Discount section
  * v2.5.26: CRITICAL FIX - Correct field names to match calculation (_value suffix)
  * v2.5.3: Extra fields now show custom labels and only enabled fields
  * v2.5.0: Now uses custom labels from settings
@@ -10,6 +11,11 @@
 if (!defined('ABSPATH')) {
     exit;
 }
+
+// Get enable/disable settings for Additional Cost Fields 1-3
+$enable_field_1 = get_option('jpc_enable_additional_cost_field_1', 'no');
+$enable_field_2 = get_option('jpc_enable_additional_cost_field_2', 'no');
+$enable_field_3 = get_option('jpc_enable_additional_cost_field_3', 'no');
 
 // Get custom labels and types from settings
 $pearl_cost_label = get_option('jpc_pearl_cost_label', 'Pearl Cost');
@@ -27,7 +33,7 @@ $pearl_cost_value = get_post_meta($post->ID, '_jpc_pearl_cost_value', true);
 $stone_cost_value = get_post_meta($post->ID, '_jpc_stone_cost_value', true);
 $extra_fee_value = get_post_meta($post->ID, '_jpc_extra_fee_value', true);
 
-// Get extra field settings
+// Get extra field settings (Extra Fields 4-5)
 $extra_field_settings = array();
 for ($i = 1; $i <= 5; $i++) {
     $extra_field_settings[$i] = array(
@@ -35,13 +41,18 @@ for ($i = 1; $i <= 5; $i++) {
         'label' => get_option('jpc_extra_field_label_' . $i, 'Extra Field ' . $i)
     );
 }
+
+// Check if any Additional Cost Field is enabled
+$has_additional_costs = ($enable_field_1 === 'yes' || $enable_field_2 === 'yes' || $enable_field_3 === 'yes');
 ?>
 
-<!-- Other Costs Section -->
+<?php if ($has_additional_costs): ?>
+<!-- Other Costs Section - v2.5.27: Only show if at least one field is enabled -->
 <div class="jpc-section">
     <h3><?php _e('Other Costs', 'jewellery-price-calc'); ?></h3>
     
-    <!-- Stone Cost - v2.5.26 FIXED field name -->
+    <?php if ($enable_field_1 === 'yes'): ?>
+    <!-- Additional Cost Field 1 (Stone Cost) - v2.5.27: Check if enabled -->
     <div class="jpc-form-field">
         <label for="jpc_stone_cost_value">
             <?php echo esc_html($stone_cost_label); ?>
@@ -62,8 +73,10 @@ for ($i = 1; $i <= 5; $i++) {
             <?php endif; ?>
         </p>
     </div>
+    <?php endif; ?>
     
-    <!-- Pearl Cost - v2.5.26 FIXED field name -->
+    <?php if ($enable_field_2 === 'yes'): ?>
+    <!-- Additional Cost Field 2 (Pearl Cost) - v2.5.27: Check if enabled -->
     <div class="jpc-form-field">
         <label for="jpc_pearl_cost_value">
             <?php echo esc_html($pearl_cost_label); ?>
@@ -74,7 +87,7 @@ for ($i = 1; $i <= 5; $i++) {
             <?php endif; ?>
         </label>
         <input type="number" id="jpc_pearl_cost_value" name="jpc_pearl_cost_value" 
-               value="<?php echo esc_attr($pearl_cost_value); ?>" 
+               value="<?php echo esc_attr($pearl_cost_value); ?>\" 
                step="0.01" min="0">
         <p class="jpc-help-text">
             <?php if ($pearl_cost_type === 'percentage'): ?>
@@ -84,8 +97,10 @@ for ($i = 1; $i <= 5; $i++) {
             <?php endif; ?>
         </p>
     </div>
+    <?php endif; ?>
     
-    <!-- Extra Fee - v2.5.26 FIXED field name -->
+    <?php if ($enable_field_3 === 'yes'): ?>
+    <!-- Additional Cost Field 3 (Extra Fee) - v2.5.27: Check if enabled -->
     <div class="jpc-form-field">
         <label for="jpc_extra_fee_value">
             <?php echo esc_html($extra_fee_label); ?>
@@ -96,7 +111,7 @@ for ($i = 1; $i <= 5; $i++) {
             <?php endif; ?>
         </label>
         <input type="number" id="jpc_extra_fee_value" name="jpc_extra_fee_value" 
-               value="<?php echo esc_attr($extra_fee_value); ?>" 
+               value="<?php echo esc_attr($extra_fee_value); ?>\" 
                step="0.01" min="0">
         <p class="jpc-help-text">
             <?php if ($extra_fee_type === 'percentage'): ?>
@@ -106,6 +121,13 @@ for ($i = 1; $i <= 5; $i++) {
             <?php endif; ?>
         </p>
     </div>
+    <?php endif; ?>
+</div>
+<?php endif; ?>
+
+<!-- Discount Section - v2.5.27: Moved to separate section -->
+<div class="jpc-section">
+    <h3><?php _e('Discount', 'jewellery-price-calc'); ?></h3>
     
     <div class="jpc-form-field">
         <label for="jpc_discount_percentage"><?php _e('Discount (%)', 'jewellery-price-calc'); ?></label>
@@ -117,7 +139,7 @@ for ($i = 1; $i <= 5; $i++) {
 </div>
 
 <?php
-// Check if any extra fields are enabled
+// Check if any extra fields (4-5) are enabled
 $has_enabled_fields = false;
 foreach ($extra_field_settings as $settings) {
     if ($settings['enabled'] === 'yes') {
@@ -128,7 +150,7 @@ foreach ($extra_field_settings as $settings) {
 ?>
 
 <?php if ($has_enabled_fields): ?>
-<!-- Extra Fields Section -->
+<!-- Extra Fields Section (Fields 4-5) -->
 <div class="jpc-section">
     <h3><?php _e('Extra Fields (Optional)', 'jewellery-price-calc'); ?></h3>
     <p style="margin-top: 0; color: #666; font-size: 13px;">
@@ -141,9 +163,9 @@ foreach ($extra_field_settings as $settings) {
                 <label for="jpc_extra_field_<?php echo $i; ?>">
                     <?php echo esc_html($extra_field_settings[$i]['label']); ?>
                 </label>
-                <input type="text" id="jpc_extra_field_<?php echo $i; ?>" 
-                       name="jpc_extra_field_<?php echo $i; ?>" 
-                       value="<?php echo esc_attr($extra_fields[$i]); ?>" 
+                <input type="text" id="jpc_extra_field_<?php echo $i; ?>\" 
+                       name="jpc_extra_field_<?php echo $i; ?>\" 
+                       value="<?php echo esc_attr($extra_fields[$i]); ?>\" 
                        class="regular-text">
             </div>
         <?php endif; ?>
