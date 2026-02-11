@@ -1,6 +1,7 @@
 <?php
 /**
  * Discount Settings Page Template - Enhanced with Multiple Calculation Methods
+ * v2.5.17: Removed GST Calculation Base section (moved to General Settings)
  */
 
 if (!defined('ABSPATH')) {
@@ -10,7 +11,7 @@ if (!defined('ABSPATH')) {
 // Get current settings
 $discount_method = get_option('jpc_discount_calculation_method', 'simple');
 $discount_timing = get_option('jpc_discount_timing', 'before_additional');
-$gst_calculation_base = get_option('jpc_gst_calculation_base', 'after_discount');
+$gst_calculation_base = get_option('jpc_gst_calculation_base', 'after_discount'); // Read for display only
 ?>
 
 <div class="wrap jpc-admin-wrap">
@@ -19,6 +20,18 @@ $gst_calculation_base = get_option('jpc_gst_calculation_base', 'after_discount')
     <p class="description" style="font-size: 14px; margin-bottom: 20px;">
         <?php _e('Configure how discounts are calculated and applied to your products. Choose the method that best fits your business requirements.', 'jewellery-price-calc'); ?>
     </p>
+    
+    <!-- v2.5.17: GST Calculation Base moved to General Settings -->
+    <div class="notice notice-info" style="margin-bottom: 20px;">
+        <p>
+            <strong><?php _e('Note:', 'jewellery-price-calc'); ?></strong>
+            <?php _e('GST Calculation Base setting has been moved to', 'jewellery-price-calc'); ?>
+            <a href="<?php echo admin_url('admin.php?page=jewellery-price-calc'); ?>" style="font-weight: 600;">
+                <?php _e('General Settings', 'jewellery-price-calc'); ?>
+            </a>
+            <?php _e('for better organization.', 'jewellery-price-calc'); ?>
+        </p>
+    </div>
     
     <form method="post" action="options.php">
         <?php settings_fields('jpc_discount_settings'); ?>
@@ -215,37 +228,6 @@ $gst_calculation_base = get_option('jpc_gst_calculation_base', 'after_discount')
             </table>
         </div>
         
-        <!-- SECTION 5: GST CALCULATION BASE -->
-        <div class="jpc-card" style="margin-bottom: 20px;">
-            <h2 style="margin-top: 0;"><?php _e('5. GST Calculation Base', 'jewellery-price-calc'); ?></h2>
-            <p class="description" style="margin-bottom: 15px;">
-                <?php _e('Should GST be calculated on the original price or discounted price?', 'jewellery-price-calc'); ?>
-            </p>
-            
-            <table class="form-table">
-                <tr>
-                    <th scope="row"><?php _e('Calculate GST On', 'jewellery-price-calc'); ?></th>
-                    <td>
-                        <label style="display: block; margin-bottom: 10px;">
-                            <input type="radio" name="jpc_gst_calculation_base" value="after_discount" <?php checked($gst_calculation_base, 'after_discount'); ?>>
-                            <strong><?php _e('Discounted Price (Recommended)', 'jewellery-price-calc'); ?></strong>
-                            <p class="description" style="margin-left: 25px;">
-                                <?php _e('GST is calculated on the price after discount is applied. Customer pays less GST.', 'jewellery-price-calc'); ?>
-                            </p>
-                        </label>
-                        
-                        <label style="display: block; margin-bottom: 10px;">
-                            <input type="radio" name="jpc_gst_calculation_base" value="before_discount" <?php checked($gst_calculation_base, 'before_discount'); ?>>
-                            <strong><?php _e('Original Price', 'jewellery-price-calc'); ?></strong>
-                            <p class="description" style="margin-left: 25px;">
-                                <?php _e('GST is calculated on the original price before discount. Discount is applied after GST.', 'jewellery-price-calc'); ?>
-                            </p>
-                        </label>
-                    </td>
-                </tr>
-            </table>
-        </div>
-        
         <!-- CALCULATION FLOW SUMMARY -->
         <div class="jpc-card" style="background: #f0f6fc; border-left: 4px solid #2271b1;">
             <h3 style="margin-top: 0;"><?php _e('📊 Current Calculation Flow', 'jewellery-price-calc'); ?></h3>
@@ -260,6 +242,9 @@ $gst_calculation_base = get_option('jpc_gst_calculation_base', 'after_discount')
 
 <script>
 jQuery(document).ready(function($) {
+    // v2.5.17: Read GST calculation base from PHP (no longer in this form)
+    var gstBaseFromDB = '<?php echo esc_js($gst_calculation_base); ?>';
+    
     // Show/hide component selection based on method
     $('input[name="jpc_discount_calculation_method"]').on('change', function() {
         if ($(this).val() === 'simple') {
@@ -279,7 +264,7 @@ jQuery(document).ready(function($) {
     function updateCalculationFlow() {
         var method = $('input[name="jpc_discount_calculation_method"]:checked').val();
         var timing = $('input[name="jpc_discount_timing"]:checked').val();
-        var gstBase = $('input[name="jpc_gst_calculation_base"]:checked').val();
+        var gstBase = gstBaseFromDB; // v2.5.17: Use value from database
         
         var flow = '<strong>Step-by-Step Calculation:</strong><br><br>';
         
@@ -302,10 +287,12 @@ jQuery(document).ready(function($) {
         
         if (gstBase === 'after_discount') {
             flow += '4️⃣ Calculate GST on Discounted Amount<br>';
-            flow += '   → GST = (Discounted Subtotal × GST %)<br><br>';
+            flow += '   → GST = (Discounted Subtotal × GST %)<br>';
+            flow += '   <em style="color: #666;">(Configure in <a href="<?php echo admin_url('admin.php?page=jewellery-price-calc'); ?>">General Settings</a>)</em><br><br>';
         } else {
             flow += '4️⃣ Calculate GST on Original Amount<br>';
-            flow += '   → GST = (Original Subtotal × GST %)<br><br>';
+            flow += '   → GST = (Original Subtotal × GST %)<br>';
+            flow += '   <em style="color: #666;">(Configure in <a href="<?php echo admin_url('admin.php?page=jewellery-price-calc'); ?>">General Settings</a>)</em><br><br>';
         }
         
         flow += '5️⃣ <strong>Final Price = Subtotal + GST</strong>';
