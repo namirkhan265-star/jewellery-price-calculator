@@ -3,7 +3,7 @@
  * Plugin Name: Jewellery Price Calculator
  * Plugin URI: https://github.com/yourusername/jewellery-price-calculator
  * Description: Advanced price calculator for jewellery products with metal rates, making charges, and GST
- * Version: 2.5.30
+ * Version: 2.5.33
  * Author: Your Name
  * Author URI: https://yourwebsite.com
  * Text Domain: jewellery-price-calc
@@ -19,7 +19,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('JPC_VERSION', '2.5.30');
+define('JPC_VERSION', '2.5.33');
 define('JPC_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('JPC_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('JPC_PLUGIN_BASENAME', plugin_basename(__FILE__));
@@ -100,93 +100,59 @@ function jpc_activate() {
     if (!get_option('jpc_gst_calculation_base')) {
         update_option('jpc_gst_calculation_base', 'after_discount');
     }
+    if (!get_option('jpc_enable_gst')) {
+        update_option('jpc_enable_gst', 'yes');
+    }
+    if (!get_option('jpc_gst_value')) {
+        update_option('jpc_gst_value', 3);
+    }
+    if (!get_option('jpc_enable_discount')) {
+        update_option('jpc_enable_discount', 'yes');
+    }
+    if (!get_option('jpc_discount_calculation_method')) {
+        update_option('jpc_discount_calculation_method', '1');
+    }
+    if (!get_option('jpc_enable_additional_percentage')) {
+        update_option('jpc_enable_additional_percentage', 'no');
+    }
+    if (!get_option('jpc_additional_percentage_value')) {
+        update_option('jpc_additional_percentage_value', 0);
+    }
+    if (!get_option('jpc_additional_percentage_label')) {
+        update_option('jpc_additional_percentage_label', 'Additional Percentage');
+    }
     
-    // v2.0.0 Migration
-    jpc_v2_migration();
+    // Additional Cost Fields 1-3 (Pearl/Stone/Extra Fee)
+    if (!get_option('jpc_enable_pearl_cost')) {
+        update_option('jpc_enable_pearl_cost', 'yes');
+    }
+    if (!get_option('jpc_pearl_cost_label')) {
+        update_option('jpc_pearl_cost_label', 'Pearl Cost');
+    }
+    if (!get_option('jpc_enable_stone_cost')) {
+        update_option('jpc_enable_stone_cost', 'yes');
+    }
+    if (!get_option('jpc_stone_cost_label')) {
+        update_option('jpc_stone_cost_label', 'Stone Cost');
+    }
+    if (!get_option('jpc_enable_extra_fee')) {
+        update_option('jpc_enable_extra_fee', 'yes');
+    }
+    if (!get_option('jpc_extra_fee_label')) {
+        update_option('jpc_extra_fee_label', 'Extra Fee');
+    }
+    
+    // Extra Fields 1-5
+    for ($i = 1; $i <= 5; $i++) {
+        if (!get_option('jpc_enable_extra_field_' . $i)) {
+            update_option('jpc_enable_extra_field_' . $i, 'yes');
+        }
+        if (!get_option('jpc_extra_field_label_' . $i)) {
+            update_option('jpc_extra_field_label_' . $i, 'Extra Field #' . $i);
+        }
+    }
     
     flush_rewrite_rules();
-}
-
-// v2.0.0 Migration Function
-function jpc_v2_migration() {
-    // Check if already migrated
-    if (get_option('jpc_v2_migrated')) {
-        return;
-    }
-    
-    // Run database v2 migration (adds making_charges_per_gram column)
-    JPC_Database::create_tables();
-    
-    // Migrate existing products to v2 defaults
-    $args = array(
-        'post_type' => 'product',
-        'posts_per_page' => -1,
-        'meta_query' => array(
-            array(
-                'key' => '_jpc_metal_id',
-                'compare' => 'EXISTS'
-            )
-        )
-    );
-    
-    $products = get_posts($args);
-    
-    foreach ($products as $product) {
-        // Set default modes if not set
-        if (!get_post_meta($product->ID, '_jpc_making_charges_mode', true)) {
-            update_post_meta($product->ID, '_jpc_making_charges_mode', 'auto');
-        }
-        
-        if (!get_post_meta($product->ID, '_jpc_diamond_entry_mode', true)) {
-            update_post_meta($product->ID, '_jpc_diamond_entry_mode', 'dropdown');
-        }
-    }
-    
-    // Set migration flag
-    update_option('jpc_v2_migrated', true);
-    
-    // Add admin notice
-    set_transient('jpc_v2_migration_notice', true, 60);
-}
-
-// Show migration notice
-add_action('admin_notices', 'jpc_v2_migration_notice');
-
-function jpc_v2_migration_notice() {
-    if (get_transient('jpc_v2_migration_notice')) {
-        ?>
-        <div class="notice notice-success is-dismissible">
-            <p><strong>Jewellery Price Calculator v2.0.0:</strong> Migration completed successfully! New features are now available.</p>
-            <ul style="list-style: disc; margin-left: 20px;">
-                <li>Making Charges per Gram (Auto-calculation)</li>
-                <li>Manual Diamond Entry with 4Cs</li>
-                <li>Enhanced price calculation</li>
-            </ul>
-        </div>
-        <?php
-        delete_transient('jpc_v2_migration_notice');
-    }
-}
-
-// v2.5.10 Migration Notice
-add_action('admin_notices', 'jpc_v2510_migration_notice');
-
-function jpc_v2510_migration_notice() {
-    // Only show if migration is needed and not completed
-    if (JPC_Data_Migration_v2510::is_migration_needed() && !get_option('jpc_migration_v2510_completed')) {
-        $migration_url = admin_url('admin.php?page=jpc-migration-v2510');
-        ?>
-        <div class="notice notice-warning">
-            <p>
-                <strong>Jewellery Price Calculator v2.5.10:</strong> 
-                Your products need to be migrated to support the new Additional Cost Fields format.
-                <a href="<?php echo esc_url($migration_url); ?>" class="button button-primary" style="margin-left: 10px;">
-                    Run Migration Now
-                </a>
-            </p>
-        </div>
-        <?php
-    }
 }
 
 // Deactivation hook
