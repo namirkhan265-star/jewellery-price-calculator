@@ -31,8 +31,16 @@ class JPC_Shortcodes {
     public function product_details_shortcode($atts) {
         global $product;
         
+        // v2.5.32: CRITICAL FIX - Get product even if global $product is not set
         if (!$product) {
-            return '';
+            $product_id = get_the_ID();
+            if (!$product_id) {
+                return '';
+            }
+            $product = wc_get_product($product_id);
+            if (!$product) {
+                return '';
+            }
         }
         
         $product_id = $product->get_id();
