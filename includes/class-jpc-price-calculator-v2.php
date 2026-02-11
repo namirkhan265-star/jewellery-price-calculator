@@ -1,6 +1,6 @@
 <?php
 /**
- * Price Calculator Class v2.5.20
+ * Price Calculator Class v2.5.23
  * Enhanced with:
  * - Auto/Manual Making Charges
  * - Manual Diamond Entry with 4Cs
@@ -12,6 +12,7 @@
  * - CRITICAL FIX: Correct GST calculation for "Before Discount" option (v2.5.18)
  * - CRITICAL FIX: Restore missing methods that broke metals page (v2.5.19)
  * - CRITICAL FIX: Support both numeric and text discount method values (v2.5.20)
+ * - CRITICAL FIX: Respect enable/disable for Additional Cost Fields in calculation (v2.5.23)
  */
 
 if (!defined('ABSPATH')) {
@@ -129,7 +130,7 @@ class JPC_Price_Calculator {
     }
     
     /**
-     * Calculate product prices (v2.5.20 - Fixed discount method normalization)
+     * Calculate product prices (v2.5.23 - Fixed extra fields to respect enable/disable)
      */
     public static function calculate_product_prices($product_id) {
         // Get metal info
@@ -172,10 +173,16 @@ class JPC_Price_Calculator {
         $stone_cost = self::calculate_additional_cost($product_id, 'stone_cost', $subtotal_for_percentage);
         $extra_fee = self::calculate_additional_cost($product_id, 'extra_fee', $subtotal_for_percentage);
         
-        // Get extra field costs
+        // v2.5.23: CRITICAL FIX - Get extra field costs ONLY if enabled
         $extra_field_costs = 0;
         for ($i = 1; $i <= 5; $i++) {
-            $extra_field_costs += floatval(get_post_meta($product_id, '_jpc_extra_field_' . $i, true));
+            // Check if field is enabled in settings
+            $is_enabled = get_option('jpc_enable_extra_field_' . $i, 'yes');
+            
+            // Only add to total if enabled
+            if ($is_enabled === 'yes' || $is_enabled === '1' || $is_enabled === 1 || $is_enabled === true) {
+                $extra_field_costs += floatval(get_post_meta($product_id, '_jpc_extra_field_' . $i, true));
+            }
         }
         
         // Calculate subtotal before additional percentage
