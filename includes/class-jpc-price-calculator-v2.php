@@ -6,7 +6,7 @@
  * - Manual Diamond Entry with 4Cs
  * - Pearl/Stone/Extra Fee percentage vs fixed calculation (v2.5.4)
  * - Additional Percentage enable/disable respect (v2.5.5)
- * - GST enable/disable respect (v2.5.5)
+ * - GST enable/disable respect with generic rate (v2.5.5)
  */
 
 if (!defined('ABSPATH')) {
@@ -99,101 +99,61 @@ class JPC_Price_Calculator {
                 return 0;
             }
             
-            // Get 4Cs IDs
-            $shape_id = get_post_meta($product_id, '_jpc_manual_diamond_shape_id', true);
-            $colour_id = get_post_meta($product_id, '_jpc_manual_diamond_colour_id', true);
-            $clarity_id = get_post_meta($product_id, '_jpc_manual_diamond_clarity_id', true);
-            $cut_id = get_post_meta($product_id, '_jpc_manual_diamond_cut_id', true);
-            $cert_id = get_post_meta($product_id, '_jpc_manual_diamond_certification_id', true);
+            // Get 4Cs adjustments
+            $cut_adjustment = floatval(get_post_meta($product_id, '_jpc_manual_diamond_cut_adjustment', true));
+            $color_adjustment = floatval(get_post_meta($product_id, '_jpc_manual_diamond_color_adjustment', true));
+            $clarity_adjustment = floatval(get_post_meta($product_id, '_jpc_manual_diamond_clarity_adjustment', true));
             
-            // Apply adjustments
-            $adjusted_price = $base_price;
+            // Calculate adjusted price per carat
+            $adjusted_price = $base_price * (1 + ($cut_adjustment / 100)) * 
+                             (1 + ($color_adjustment / 100)) * 
+                             (1 + ($clarity_adjustment / 100));
             
-            if ($shape_id) {
-                $shape = JPC_Diamond_Shapes::get_by_id($shape_id);
-                $adjusted_price = self::apply_adjustment($adjusted_price, $shape);
-            }
-            
-            if ($colour_id) {
-                $colour = JPC_Diamond_Colours::get_by_id($colour_id);
-                $adjusted_price = self::apply_adjustment($adjusted_price, $colour);
-            }
-            
-            if ($clarity_id) {
-                $clarity = JPC_Diamond_Clarities::get_by_id($clarity_id);
-                $adjusted_price = self::apply_adjustment($adjusted_price, $clarity);
-            }
-            
-            if ($cut_id) {
-                $cut = JPC_Diamond_Cuts::get_by_id($cut_id);
-                $adjusted_price = self::apply_adjustment($adjusted_price, $cut);
-            }
-            
-            if ($cert_id) {
-                $cert = JPC_Diamond_Certifications::get_by_id($cert_id);
-                $adjusted_price = self::apply_adjustment($adjusted_price, $cert);
-            }
-            
+            // Total diamond cost
             return $adjusted_price * $carat * $quantity;
         }
     }
     
     /**
-     * Apply 4Cs adjustment to price
-     */
-    private static function apply_adjustment($price, $attribute) {
-        if (!$attribute) return $price;
-        
-        if ($attribute->adjustment_type === 'percentage') {
-            return $price * (1 + ($attribute->adjustment_value / 100));
-        } else {
-            return $price + $attribute->adjustment_value;
-        }
-    }
-    
-    /**
-     * Calculate product prices with GST (v2.5.5)
+     * Calculate product prices (v2.0.0 - Enhanced with all features)
      */
     public static function calculate_product_prices($product_id) {
-        // Get metal data
+        // Get metal info
         $metal_id = get_post_meta($product_id, '_jpc_metal_id', true);
+        $metal_weight = floatval(get_post_meta($product_id, '_jpc_metal_weight', true));
         
-        if (!$metal_id) {
+        if (!$metal_id || $metal_weight <= 0) {
             return false;
         }
         
         $metal = JPC_Metals::get_by_id($metal_id);
-        
         if (!$metal) {
             return false;
         }
         
-        $metal_group = JPC_Metal_Groups::get_by_id($metal->metal_group_id);
-        
-        // Get product metal data
-        $weight = floatval(get_post_meta($product_id, '_jpc_metal_weight', true));
-        $wastage = floatval(get_post_meta($product_id, '_jpc_wastage', true));
-        
-        // Calculate base metal price
-        $metal_price = $weight * $metal->price_per_unit;
-        
-        // Calculate making charges (v2.0.0 - Auto/Manual)
-        $making_charge_amount = self::calculate_making_charges($product_id, $metal_price, $metal_id, $weight);
-        
-        // Calculate wastage charge
-        $wastage_charge_amount = 0;
-        if ($wastage > 0) {
-            $wastage_charge_amount = ($metal_price * $wastage) / 100;
+        // Get metal group for GST calculation
+        $metal_group = null;
+        if (!empty($metal->metal_group_id)) {
+            $metal_group = JPC_Metal_Groups::get_by_id($metal->metal_group_id);
         }
         
-        // Calculate diamond cost (v2.0.0 - Dropdown/Manual)
+        // Calculate metal price
+        $metal_price = $metal->price_per_gram * $metal_weight;
+        
+        // Calculate diamond cost
         $diamond_price = self::calculate_diamond_cost($product_id);
         
+        // Calculate making charges
+        $making_charge_amount = self::calculate_making_charges($product_id, $metal_price, $metal_id, $metal_weight);
+        
+        // Calculate wastage charges
+        $wastage_percentage = floatval(get_post_meta($product_id, '_jpc_wastage_percentage', true));
+        $wastage_charge_amount = ($metal_price * $wastage_percentage) / 100;
+        
         // Calculate subtotal for percentage-based additional costs
-        // This is the base for percentage calculations: Metal + Diamond + Making + Wastage
         $subtotal_for_percentage = $metal_price + $diamond_price + $making_charge_amount + $wastage_charge_amount;
         
-        // Get additional costs (v2.5.4 - Respect percentage vs fixed type)
+        // Calculate additional costs (v2.5.4 - Percentage or Fixed)
         $pearl_cost = self::calculate_additional_cost($product_id, 'pearl_cost', $subtotal_for_percentage);
         $stone_cost = self::calculate_additional_cost($product_id, 'stone_cost', $subtotal_for_percentage);
         $extra_fee = self::calculate_additional_cost($product_id, 'extra_fee', $subtotal_for_percentage);
@@ -257,25 +217,15 @@ class JPC_Price_Calculator {
         // Subtotal after discount
         $subtotal_after_discount = $subtotal_after_additional - $discount_amount;
         
-        // Get GST settings (v2.5.5 - Respect enable/disable)
+        // Get GST settings (v2.5.5 - Use generic rate)
         $enable_gst = get_option('jpc_enable_gst', 'yes');
-        $gst_calculation_base = get_option('jpc_gst_calculation_base', 'after_discount');
-        
-        // Determine GST percentage based on metal group (only if GST is enabled)
         $gst_percentage = 0;
-        if ($enable_gst === 'yes' && $metal_group) {
-            $metal_group_name = strtolower($metal_group->name);
-            
-            if ($metal_group_name === 'gold') {
-                $gst_percentage = floatval(get_option('jpc_gst_gold', 3));
-            } elseif ($metal_group_name === 'silver') {
-                $gst_percentage = floatval(get_option('jpc_gst_silver', 3));
-            } elseif ($metal_group_name === 'platinum') {
-                $gst_percentage = floatval(get_option('jpc_gst_platinum', 3));
-            } else {
-                $gst_percentage = floatval(get_option('jpc_gst_default', 3));
-            }
+        
+        if ($enable_gst === 'yes') {
+            $gst_percentage = floatval(get_option('jpc_gst_value', 3));
         }
+        
+        $gst_calculation_base = get_option('jpc_gst_calculation_base', 'after_discount');
         
         // Calculate GST (only if enabled)
         $gst_on_full = 0;
