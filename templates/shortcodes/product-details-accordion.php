@@ -1,8 +1,13 @@
 <?php
 /**
- * Product Details Accordion Template v2.5.4
+ * Product Details Accordion Template v2.5.21
  * Displays product details, diamond details, metal details, price breakup, and tags
  * Usage: [jpc_product_details]
+ * 
+ * NEW v2.5.21: CRITICAL FIX - Correct regular price calculation
+ * - Use actual GST percentage from settings (not calculated from discounted price)
+ * - Regular price = Subtotal Before Discount + GST (at actual rate)
+ * - Matches WooCommerce _regular_price meta value
  * 
  * NEW v2.5.4: Fix GST display - show custom label and percentage like discount
  * NEW v2.5.3: Fetch custom labels from settings for Pearl/Stone/Extra Fee (same as Extra Fields)
@@ -98,25 +103,36 @@ if ($diamond_entry_mode === 'manual') {
             $diamond_carat = $diamond->carat;
             $diamond_price_per_carat = $diamond->price_per_carat;
             
-            $types = JPC_Diamonds::get_types();
-            $certs = JPC_Diamonds::get_certifications();
-            $diamond_type_label = isset($types[$diamond->type]) ? $types[$diamond->type] : $diamond->type;
-            $diamond_cert_label = isset($certs[$diamond->certification]) ? $certs[$diamond->certification] : $diamond->certification;
+            // Get diamond details
+            $diamond_type = JPC_Diamond_Types::get_by_id($diamond->diamond_type_id);
+            $diamond_type_label = $diamond_type ? $diamond_type->name : '';
+            
+            $diamond_cert = JPC_Diamond_Certifications::get_by_id($diamond->certification_id);
+            $diamond_cert_label = $diamond_cert ? $diamond_cert->name : '';
+            
+            $diamond_shape = JPC_Diamond_Shapes::get_by_id($diamond->shape_id);
+            $diamond_shape_label = $diamond_shape ? $diamond_shape->name : '';
+            
+            $diamond_colour = JPC_Diamond_Colours::get_by_id($diamond->colour_id);
+            $diamond_colour_label = $diamond_colour ? $diamond_colour->name : '';
+            
+            $diamond_clarity = JPC_Diamond_Clarities::get_by_id($diamond->clarity_id);
+            $diamond_clarity_label = $diamond_clarity ? $diamond_clarity->name : '';
+            
+            $diamond_cut = JPC_Diamond_Cuts::get_by_id($diamond->cut_id);
+            $diamond_cut_label = $diamond_cut ? $diamond_cut->name : '';
         }
     }
 }
 
 // Get metal details
-$metal = null;
-$metal_group = null;
 $metal_karat = '';
 $is_silver = false;
 if ($metal_id) {
     $metal = JPC_Metals::get_by_id($metal_id);
     if ($metal) {
-        $metal_group = JPC_Metal_Groups::get_by_id($metal->metal_group_id);
-        // Check if metal is silver
-        if ($metal_group && strtolower($metal_group->name) === 'silver') {
+        // Check if it's silver
+        if (stripos($metal->name, 'silver') !== false) {
             $is_silver = true;
         }
         // Extract karat from metal name (e.g., "22K Gold" -> "22K")
@@ -132,9 +148,10 @@ $price_breakup = get_post_meta($product_id, '_jpc_price_breakup', true);
 // Get discount percentage from meta
 $discount_percentage = floatval(get_post_meta($product_id, '_jpc_discount_percentage', true));
 
-// Calculate regular price (before discount) and sale price (after discount)
+// v2.5.21: CRITICAL FIX - Calculate regular price correctly
 $regular_price = 0;
 $sale_price = 0;
+
 if ($price_breakup && is_array($price_breakup)) {
     if (!empty($price_breakup['discount'])) {
         // Calculate subtotal before discount (sum of all components)
@@ -147,16 +164,28 @@ if ($price_breakup && is_array($price_breakup)) {
         $subtotal_before_discount += !empty($price_breakup['stone_cost']) ? floatval($price_breakup['stone_cost']) : 0;
         $subtotal_before_discount += !empty($price_breakup['extra_fee']) ? floatval($price_breakup['extra_fee']) : 0;
         
-        // Calculate GST on the pre-discount subtotal
-        // GST rate can be determined from the actual GST and final price
-        $current_gst = !empty($price_breakup['gst']) ? floatval($price_breakup['gst']) : 0;
-        $price_after_discount = $subtotal_before_discount - floatval($price_breakup['discount']);
+        // Add extra fields to subtotal
+        if (!empty($price_breakup['extra_fields']) && is_array($price_breakup['extra_fields'])) {
+            foreach ($price_breakup['extra_fields'] as $extra_field) {
+                $subtotal_before_discount += !empty($extra_field['value']) ? floatval($extra_field['value']) : 0;
+            }
+        }
         
-        // Calculate GST rate from current values
-        $gst_rate = ($price_after_discount > 0) ? ($current_gst / $price_after_discount) : 0;
+        // Add additional percentage to subtotal
+        if (!empty($price_breakup['additional_percentage'])) {
+            $subtotal_before_discount += floatval($price_breakup['additional_percentage']);
+        }
         
-        // Calculate GST on pre-discount subtotal
-        $gst_on_regular_price = $subtotal_before_discount * $gst_rate;
+        // v2.5.21: CRITICAL FIX - Get actual GST percentage from settings (not calculated from discounted price)
+        $enable_gst = get_option('jpc_enable_gst', 'yes');
+        $gst_percentage = 0;
+        
+        if ($enable_gst === 'yes') {
+            $gst_percentage = floatval(get_option('jpc_gst_value', 3));
+        }
+        
+        // Calculate GST on pre-discount subtotal using actual GST percentage
+        $gst_on_regular_price = ($subtotal_before_discount * $gst_percentage) / 100;
         
         // Regular price = subtotal before discount + GST on that subtotal
         $regular_price = $subtotal_before_discount + $gst_on_regular_price;
@@ -178,87 +207,39 @@ $has_tags = !empty($tags);
 <?php if ($has_product_details || $has_diamond_details || $has_metal_details || $has_price_breakup || $has_tags): ?>
 <div class="jpc-product-details-accordion">
     
-    <!-- Silver Badge (if applicable) -->
-    <?php if ($is_silver): ?>
-    <div class="jpc-silver-badge">
-        <span class="jpc-silver-icon">✦</span>
-        <span class="jpc-silver-text">Made With Pure 925 Silver</span>
-    </div>
-    <?php endif; ?>
-    
     <!-- Product Details Section -->
     <?php if ($has_product_details): ?>
-    <div class="jpc-accordion-section jpc-active">
+    <div class="jpc-accordion-section">
         <div class="jpc-accordion-header">
             <h3>PRODUCT DETAILS</h3>
+            <span class="jpc-accordion-toggle">+</span>
         </div>
         <div class="jpc-accordion-content">
             <?php if ($product_weight): ?>
             <div class="jpc-detail-row">
-                <span class="jpc-detail-label">
-                    Product Weight 
-                    <span class="jpc-info-icon" title="Total product weight including all components">ⓘ</span>
-                </span>
-                <span class="jpc-detail-value"><?php echo number_format($product_weight, 2); ?> gram</span>
+                <span class="jpc-detail-label">Gross Weight</span>
+                <span class="jpc-detail-value"><?php echo number_format($product_weight, 3); ?> g</span>
             </div>
             <?php endif; ?>
             
-            <?php if ($metal): ?>
+            <?php if ($metal_weight): ?>
             <div class="jpc-detail-row">
-                <span class="jpc-detail-label">Metal Type</span>
-                <span class="jpc-detail-value"><?php echo esc_html($metal->name); ?></span>
+                <span class="jpc-detail-label">Net Weight</span>
+                <span class="jpc-detail-value"><?php echo number_format($metal_weight, 3); ?> g</span>
             </div>
             <?php endif; ?>
-            
-            <?php if ($diamond_type_label): ?>
-            <div class="jpc-detail-row">
-                <span class="jpc-detail-label">Diamond Type</span>
-                <span class="jpc-detail-value"><?php echo esc_html($diamond_type_label); ?></span>
-            </div>
-            <?php endif; ?>
-            
-            <?php if ($diamond_cert_label): ?>
-            <div class="jpc-detail-row">
-                <span class="jpc-detail-label">Certificate</span>
-                <span class="jpc-detail-value"><?php echo esc_html($diamond_cert_label); ?></span>
-            </div>
-            <?php endif; ?>
-        </div>
-    </div>
-    <?php endif; ?>
-    
-    <!-- Metal Details Section -->
-    <?php if ($has_metal_details): ?>
-    <div class="jpc-accordion-section">
-        <div class="jpc-accordion-header">
-            <h3>METAL DETAILS</h3>
-            <span class="jpc-accordion-toggle">+</span>
-        </div>
-        <div class="jpc-accordion-content">
-            <div class="jpc-detail-row">
-                <span class="jpc-detail-label">Type</span>
-                <span class="jpc-detail-value"><?php echo esc_html($metal_group ? $metal_group->name : $metal->name); ?></span>
-            </div>
             
             <?php if ($metal_karat): ?>
             <div class="jpc-detail-row">
-                <span class="jpc-detail-label">Karat</span>
+                <span class="jpc-detail-label">Purity</span>
                 <span class="jpc-detail-value"><?php echo esc_html($metal_karat); ?></span>
             </div>
             <?php endif; ?>
             
+            <?php if ($diamond_quantity > 0): ?>
             <div class="jpc-detail-row">
-                <span class="jpc-detail-label">Rate Per Gram</span>
-                <span class="jpc-detail-value">₹ <?php echo number_format($metal->price_per_unit, 2); ?>/-</span>
-            </div>
-            
-            <?php if ($metal_weight): ?>
-            <div class="jpc-detail-row">
-                <span class="jpc-detail-label">
-                    Weight 
-                    <span class="jpc-info-icon" title="Metal weight used in product">ⓘ</span>
-                </span>
-                <span class="jpc-detail-value"><?php echo number_format($metal_weight, 2); ?> gram</span>
+                <span class="jpc-detail-label">Number of Diamonds</span>
+                <span class="jpc-detail-value"><?php echo $diamond_quantity; ?></span>
             </div>
             <?php endif; ?>
         </div>
@@ -273,38 +254,16 @@ $has_tags = !empty($tags);
             <span class="jpc-accordion-toggle">+</span>
         </div>
         <div class="jpc-accordion-content">
-            <?php if ($diamond_carat > 0): ?>
-            <div class="jpc-detail-row">
-                <span class="jpc-detail-label">
-                    Total Weight 
-                    <span class="jpc-info-icon" title="Weight per diamond">ⓘ</span>
-                </span>
-                <span class="jpc-detail-value"><?php echo number_format($diamond_carat, 3); ?> Ct</span>
-            </div>
-            <?php endif; ?>
-            
-            <div class="jpc-detail-row">
-                <span class="jpc-detail-label">Total No. Of Diamonds</span>
-                <span class="jpc-detail-value"><?php echo esc_html($diamond_quantity); ?></span>
-            </div>
-            
-            <?php if ($diamond_price_per_carat > 0): ?>
-            <div class="jpc-detail-row">
-                <span class="jpc-detail-label">Price Per Carat</span>
-                <span class="jpc-detail-value">₹ <?php echo number_format($diamond_price_per_carat, 0); ?>/-</span>
-            </div>
-            <?php endif; ?>
-            
             <?php if ($diamond_type_label): ?>
             <div class="jpc-detail-row">
-                <span class="jpc-detail-label">Diamond Type</span>
+                <span class="jpc-detail-label">Type</span>
                 <span class="jpc-detail-value"><?php echo esc_html($diamond_type_label); ?></span>
             </div>
             <?php endif; ?>
             
             <?php if ($diamond_cert_label): ?>
             <div class="jpc-detail-row">
-                <span class="jpc-detail-label">Certificate</span>
+                <span class="jpc-detail-label">Certification</span>
                 <span class="jpc-detail-value"><?php echo esc_html($diamond_cert_label); ?></span>
             </div>
             <?php endif; ?>
@@ -336,6 +295,48 @@ $has_tags = !empty($tags);
                 <span class="jpc-detail-value"><?php echo esc_html($diamond_cut_label); ?></span>
             </div>
             <?php endif; ?>
+            
+            <?php if ($diamond_carat > 0): ?>
+            <div class="jpc-detail-row">
+                <span class="jpc-detail-label">Carat</span>
+                <span class="jpc-detail-value"><?php echo number_format($diamond_carat, 3); ?></span>
+            </div>
+            <?php endif; ?>
+            
+            <?php if ($diamond_price_per_carat > 0): ?>
+            <div class="jpc-detail-row">
+                <span class="jpc-detail-label">Price per Carat</span>
+                <span class="jpc-detail-value">₹ <?php echo number_format($diamond_price_per_carat, 0); ?>/-</span>
+            </div>
+            <?php endif; ?>
+        </div>
+    </div>
+    <?php endif; ?>
+    
+    <!-- Metal Details Section -->
+    <?php if ($has_metal_details): ?>
+    <div class="jpc-accordion-section">
+        <div class="jpc-accordion-header">
+            <h3>METAL DETAILS</h3>
+            <span class="jpc-accordion-toggle">+</span>
+        </div>
+        <div class="jpc-accordion-content">
+            <div class="jpc-detail-row">
+                <span class="jpc-detail-label">Metal Type</span>
+                <span class="jpc-detail-value"><?php echo esc_html($metal->display_name); ?></span>
+            </div>
+            
+            <?php if ($metal_weight): ?>
+            <div class="jpc-detail-row">
+                <span class="jpc-detail-label">Weight</span>
+                <span class="jpc-detail-value"><?php echo number_format($metal_weight, 3); ?> g</span>
+            </div>
+            <?php endif; ?>
+            
+            <div class="jpc-detail-row">
+                <span class="jpc-detail-label">Price per <?php echo $is_silver ? 'kg' : 'gram'; ?></span>
+                <span class="jpc-detail-value">₹ <?php echo number_format($metal->price_per_unit, 0); ?>/-</span>
+            </div>
         </div>
     </div>
     <?php endif; ?>
@@ -350,7 +351,7 @@ $has_tags = !empty($tags);
         <div class="jpc-accordion-content">
             <?php if (!empty($price_breakup['metal_price'])): ?>
             <div class="jpc-detail-row">
-                <span class="jpc-detail-label"><?php echo $metal_group ? esc_html($metal_group->name) : 'Metal'; ?></span>
+                <span class="jpc-detail-label">Gold</span>
                 <span class="jpc-detail-value">₹ <?php echo number_format($price_breakup['metal_price'], 0); ?>/-</span>
             </div>
             <?php endif; ?>
@@ -501,38 +502,13 @@ $has_tags = !empty($tags);
 <style>
 .jpc-product-details-accordion {
     margin: 20px 0;
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
     overflow: hidden;
-    background: #fff;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-}
-
-.jpc-silver-badge {
-    background: linear-gradient(135deg, #C0C0C0 0%, #E8E8E8 50%, #C0C0C0 100%);
-    padding: 12px 20px;
-    text-align: center;
-    border-bottom: 2px solid #A8A8A8;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-}
-
-.jpc-silver-icon {
-    font-size: 20px;
-    color: #666;
-}
-
-.jpc-silver-text {
-    font-weight: 600;
-    color: #333;
-    font-size: 14px;
-    letter-spacing: 0.5px;
 }
 
 .jpc-accordion-section {
-    border-bottom: 1px solid #e0e0e0;
+    border-bottom: 1px solid #ddd;
 }
 
 .jpc-accordion-section:last-child {
@@ -540,45 +516,44 @@ $has_tags = !empty($tags);
 }
 
 .jpc-accordion-header {
+    background: #f5f5f5;
     padding: 15px 20px;
-    background: #f8f9fa;
     cursor: pointer;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    transition: background 0.3s ease;
+    transition: background 0.3s;
 }
 
 .jpc-accordion-header:hover {
-    background: #e9ecef;
+    background: #e9e9e9;
 }
 
 .jpc-accordion-header h3 {
     margin: 0;
     font-size: 14px;
     font-weight: 600;
-    color: #333;
     letter-spacing: 0.5px;
 }
 
 .jpc-accordion-toggle {
-    font-size: 20px;
+    font-size: 24px;
     font-weight: bold;
-    color: #666;
-    transition: transform 0.3s ease;
+    line-height: 1;
+    transition: transform 0.3s;
 }
 
-.jpc-accordion-section.jpc-active .jpc-accordion-toggle {
+.jpc-accordion-section.active .jpc-accordion-toggle {
     transform: rotate(45deg);
 }
 
 .jpc-accordion-content {
-    padding: 20px;
     display: none;
+    padding: 20px;
     background: #fff;
 }
 
-.jpc-accordion-section.jpc-active .jpc-accordion-content {
+.jpc-accordion-section.active .jpc-accordion-content {
     display: block;
 }
 
@@ -594,33 +569,36 @@ $has_tags = !empty($tags);
 }
 
 .jpc-detail-label {
-    font-weight: 500;
     color: #666;
     font-size: 14px;
 }
 
 .jpc-detail-value {
-    font-weight: 600;
-    color: #333;
+    font-weight: 500;
     font-size: 14px;
+    color: #333;
 }
 
-.jpc-info-icon {
-    display: inline-block;
-    width: 16px;
-    height: 16px;
-    line-height: 16px;
-    text-align: center;
-    background: #e9ecef;
-    border-radius: 50%;
-    font-size: 12px;
-    color: #666;
-    cursor: help;
-    margin-left: 5px;
+.jpc-price-summary {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 2px solid #333;
+}
+
+.jpc-regular-price-row .jpc-detail-value {
+    color: #999;
+}
+
+.jpc-strikethrough {
+    text-decoration: line-through;
+}
+
+.jpc-sale-price-row {
+    margin-top: 10px;
 }
 
 .jpc-total-row {
-    margin-top: 10px;
+    margin-top: 15px;
     padding-top: 15px;
     border-top: 2px solid #333;
 }
@@ -628,7 +606,17 @@ $has_tags = !empty($tags);
 .jpc-total-row .jpc-detail-label,
 .jpc-total-row .jpc-detail-value {
     font-size: 16px;
-    color: #333;
+    font-weight: bold;
+}
+
+.jpc-savings-badge {
+    background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+    color: #155724;
+    padding: 12px 15px;
+    border-radius: 5px;
+    text-align: center;
+    margin-top: 15px;
+    border: 2px solid #28a745;
 }
 
 .jpc-tags-list {
@@ -636,7 +624,7 @@ $has_tags = !empty($tags);
 }
 
 .jpc-tags-list a {
-    color: #0073aa;
+    color: #2271b1;
     text-decoration: none;
 }
 
@@ -644,64 +632,30 @@ $has_tags = !empty($tags);
     text-decoration: underline;
 }
 
-.jpc-price-summary {
-    margin-top: 15px;
-    padding-top: 15px;
-    border-top: 2px solid #e0e0e0;
-}
-
-.jpc-regular-price-row .jpc-detail-value {
-    text-decoration: line-through;
-    color: #999;
-}
-
-.jpc-sale-price-row {
-    margin-top: 10px;
-}
-
-.jpc-strikethrough {
-    text-decoration: line-through;
-}
-
-.jpc-savings-badge {
-    margin-top: 15px;
-    padding: 12px;
-    background: linear-gradient(135deg, #fff3cd 0%, #ffe69c 100%);
-    border: 2px solid #ffc107;
-    border-radius: 6px;
-    text-align: center;
-    color: #856404;
-    font-size: 14px;
-}
-
-/* Mobile Responsive */
 @media (max-width: 768px) {
-    .jpc-accordion-header h3 {
-        font-size: 13px;
+    .jpc-accordion-header {
+        padding: 12px 15px;
     }
     
-    .jpc-detail-label,
-    .jpc-detail-value {
+    .jpc-accordion-header h3 {
         font-size: 13px;
     }
     
     .jpc-accordion-content {
         padding: 15px;
     }
+    
+    .jpc-detail-label,
+    .jpc-detail-value {
+        font-size: 13px;
+    }
 }
 </style>
 
 <script>
 jQuery(document).ready(function($) {
-    // Accordion toggle
     $('.jpc-accordion-header').on('click', function() {
-        var section = $(this).closest('.jpc-accordion-section');
-        
-        // Toggle current section
-        section.toggleClass('jpc-active');
-        
-        // Optional: Close other sections (uncomment if you want accordion behavior)
-        // section.siblings('.jpc-accordion-section').removeClass('jpc-active');
+        $(this).parent('.jpc-accordion-section').toggleClass('active');
     });
 });
 </script>
