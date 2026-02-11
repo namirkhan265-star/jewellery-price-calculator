@@ -3,6 +3,7 @@
  * Other Costs Section Template
  * Stones, Pearls, Extra Fees, Discount, Extra Fields
  * v2.5.0: Now uses custom labels from settings
+ * v2.5.3: Extra fields now show custom labels and only enabled fields
  */
 
 if (!defined('ABSPATH')) {
@@ -18,6 +19,15 @@ $stone_cost_type = get_option('jpc_stone_cost_type', 'fixed');
 
 $extra_fee_label = get_option('jpc_extra_fee_label', 'Extra Fee');
 $extra_fee_type = get_option('jpc_extra_fee_type', 'fixed');
+
+// Get extra field settings - v2.5.3
+$extra_field_settings = array();
+for ($i = 1; $i <= 5; $i++) {
+    $extra_field_settings[$i] = array(
+        'enabled' => get_option('jpc_enable_extra_field_' . $i, 'no'),
+        'label' => get_option('jpc_extra_field_label_' . $i, 'Extra Field ' . $i)
+    );
+}
 ?>
 
 <!-- Other Costs Section -->
@@ -99,7 +109,19 @@ $extra_fee_type = get_option('jpc_extra_fee_type', 'fixed');
     </div>
 </div>
 
-<!-- Extra Fields Section -->
+<?php
+// Check if any extra fields are enabled - v2.5.3
+$has_enabled_fields = false;
+foreach ($extra_field_settings as $settings) {
+    if ($settings['enabled'] === 'yes') {
+        $has_enabled_fields = true;
+        break;
+    }
+}
+?>
+
+<?php if ($has_enabled_fields): ?>
+<!-- Extra Fields Section - v2.5.3 ENHANCED -->
 <div class="jpc-section">
     <h3><?php _e('Extra Fields (Optional)', 'jewellery-price-calc'); ?></h3>
     <p style="margin-top: 0; color: #666; font-size: 13px;">
@@ -107,17 +129,20 @@ $extra_fee_type = get_option('jpc_extra_fee_type', 'fixed');
     </p>
     
     <?php for ($i = 1; $i <= 5; $i++): ?>
-        <div class="jpc-form-field">
-            <label for="jpc_extra_field_<?php echo $i; ?>">
-                <?php printf(__('Extra Field %d', 'jewellery-price-calc'), $i); ?>
-            </label>
-            <input type="text" id="jpc_extra_field_<?php echo $i; ?>" 
-                   name="jpc_extra_field_<?php echo $i; ?>" 
-                   value="<?php echo esc_attr($extra_fields[$i]); ?>" 
-                   class="regular-text">
-        </div>
+        <?php if ($extra_field_settings[$i]['enabled'] === 'yes'): ?>
+            <div class="jpc-form-field">
+                <label for="jpc_extra_field_<?php echo $i; ?>">
+                    <?php echo esc_html($extra_field_settings[$i]['label']); ?>
+                </label>
+                <input type="text" id="jpc_extra_field_<?php echo $i; ?>" 
+                       name="jpc_extra_field_<?php echo $i; ?>" 
+                       value="<?php echo esc_attr($extra_fields[$i]); ?>" 
+                       class="regular-text">
+            </div>
+        <?php endif; ?>
     <?php endfor; ?>
 </div>
+<?php endif; ?>
 
 <!-- Price Calculation Info -->
 <div class="jpc-section" style="background: #e8f5e9; border-left-color: #4caf50;">
