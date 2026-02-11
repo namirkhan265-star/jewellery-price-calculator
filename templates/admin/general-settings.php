@@ -397,7 +397,7 @@ for ($i = 1; $i <= 5; $i++) {
                                     <option value="after_discount" <?php selected($gst_calculation_base, 'after_discount'); ?>>
                                         After Discount (Recommended)
                                     </option>
-                                    <option value="original_price" <?php selected($gst_calculation_base, 'original_price'); ?>>
+                                    <option value="before_discount" <?php selected($gst_calculation_base, 'before_discount'); ?>>
                                         Original Price (Before Discount)
                                     </option>
                                 </select>
