@@ -1,0 +1,35 @@
+=== PATCH FOR includes/class-jpc-admin.php ===
+
+1. In handle_settings_save() method, around line 158-164:
+
+CHANGE FROM:
+        // Handle checkbox fields - set to 'no' if not checked
+        $checkbox_fields = array(
+            'jpc_enable_pearl_cost',
+            'jpc_enable_stone_cost',
+            'jpc_enable_extra_fee',
+            'jpc_enable_gst',
+            'jpc_show_price_breakup',
+        );
+
+CHANGE TO:
+        // Handle checkbox fields - set to 'no' if not checked
+        $checkbox_fields = array(
+            'jpc_enable_pearl_cost',
+            'jpc_enable_stone_cost',
+            'jpc_enable_extra_fee',
+            'jpc_enable_additional_percentage', // NEW v2.5.5
+            'jpc_enable_gst',
+            'jpc_show_price_breakup',
+        );
+
+2. In register_settings() method, around line 390-391:
+
+CHANGE FROM:
+        register_setting('jpc_general_settings', 'jpc_additional_percentage_label');
+        register_setting('jpc_general_settings', 'jpc_additional_percentage_value');
+
+CHANGE TO:
+        register_setting('jpc_general_settings', 'jpc_enable_additional_percentage'); // NEW v2.5.5
+        register_setting('jpc_general_settings', 'jpc_additional_percentage_label');
+        register_setting('jpc_general_settings', 'jpc_additional_percentage_value');
