@@ -1,10 +1,10 @@
 <?php
 /**
- * Frontend Price Breakup Template - USES ONLY STORED BREAKUP DATA
- * NO CALCULATIONS - DISPLAYS STORED DATA ONLY
- * v2.5.9: FORCE fetch GST settings if missing in breakup (CRITICAL FIX)
- * v2.5.8: Show "Metal Cost" label instead of metal name
- * v2.5.6: CRITICAL FIX - Always show Metal Price + Fix GST percentage display
+ * Frontend Price Breakup Template v2.5.13 - FINAL FIX
+ * FIXES:
+ * - GST label and percentage fetched dynamically from settings
+ * - Diamond price always shows if exists (using isset instead of !empty)
+ * - GST percentage shows as integer (3% not 3.00%)
  */
 
 if (!defined('ABSPATH')) {
@@ -14,14 +14,14 @@ if (!defined('ABSPATH')) {
 // Get product ID
 $product_id = get_the_ID();
 
-// CRITICAL: Fetch ONLY stored breakup data - NO CALCULATIONS!
+// Fetch ONLY stored breakup data
 $breakup = get_post_meta($product_id, '_jpc_price_breakup', true);
 
 // Validate breakup data exists
 if (!$breakup || !is_array($breakup)) {
     echo '<div style="padding: 20px; background: #fff3cd; border: 2px solid #ffc107; border-radius: 5px;">';
     echo '<p style="color: #856404; font-weight: bold;">⚠️ Price breakup data not found!</p>';
-    echo '<p>Please go to the product editor and click \"Regenerate Price Breakup\" button.</p>';
+    echo '<p>Please go to the product editor and click "Update" to regenerate price breakup.</p>';
     echo '</div>';
     return;
 }
@@ -31,7 +31,7 @@ $regular_price = floatval(get_post_meta($product_id, '_regular_price', true));
 $sale_price = floatval(get_post_meta($product_id, '_sale_price', true));
 $discount_percentage = floatval(get_post_meta($product_id, '_jpc_discount_percentage', true));
 
-// CRITICAL: Use stored discount from breakup, NOT calculated
+// Use stored discount from breakup
 $discount_amount = isset($breakup['discount']) ? floatval($breakup['discount']) : 0;
 
 // Fallback if no sale price
@@ -39,27 +39,18 @@ if (empty($sale_price) || $sale_price <= 0) {
     $sale_price = $regular_price;
 }
 
-// Fetch labels directly from settings
+// CRITICAL: Fetch labels DYNAMICALLY from settings (not from breakup)
 $pearl_cost_label = get_option('jpc_pearl_cost_label', 'Pearl Cost');
 $stone_cost_label = get_option('jpc_stone_cost_label', 'Stone Cost');
 $extra_fee_label = get_option('jpc_extra_fee_label', 'Extra Fee');
 
-// CRITICAL FIX v2.5.9: ALWAYS fetch GST settings from options
-// This ensures label and percentage are always current even if breakup is old
+// CRITICAL FIX: ALWAYS fetch GST settings DYNAMICALLY from options
 $gst_label = get_option('jpc_gst_label', 'GST');
 $enable_gst = get_option('jpc_enable_gst', 'yes');
 $gst_percentage = 0;
 
 if ($enable_gst === 'yes') {
     $gst_percentage = floatval(get_option('jpc_gst_value', 3));
-}
-
-// Override with breakup data if it exists (for backwards compatibility)
-if (isset($breakup['gst_label']) && !empty($breakup['gst_label'])) {
-    $gst_label = $breakup['gst_label'];
-}
-if (isset($breakup['gst_percentage']) && $breakup['gst_percentage'] > 0) {
-    $gst_percentage = floatval($breakup['gst_percentage']);
 }
 ?>
 
@@ -68,16 +59,16 @@ if (isset($breakup['gst_percentage']) && $breakup['gst_percentage'] > 0) {
     
     <table class="jpc-price-breakup-table">
         <tbody>
-            <!-- Metal Price - ALWAYS SHOW (CRITICAL) -->
-            <?php if (isset($breakup['metal_price'])): ?>
+            <!-- Metal Price - ALWAYS SHOW -->
+            <?php if (isset($breakup['metal_price']) && $breakup['metal_price'] > 0): ?>
             <tr>
-                <td><?php _e('Metal Cost', 'jewellery-price-calc'); ?></td>
+                <td><?php _e('Gold', 'jewellery-price-calc'); ?></td>
                 <td><?php echo wc_price($breakup['metal_price']); ?></td>
             </tr>
             <?php endif; ?>
             
-            <!-- Diamond Price -->
-            <?php if (!empty($breakup['diamond_price']) && $breakup['diamond_price'] > 0): ?>
+            <!-- Diamond Price - CRITICAL FIX: Use isset instead of !empty -->
+            <?php if (isset($breakup['diamond_price']) && $breakup['diamond_price'] > 0): ?>
             <tr>
                 <td><?php _e('Diamond', 'jewellery-price-calc'); ?></td>
                 <td><?php echo wc_price($breakup['diamond_price']); ?></td>
@@ -126,29 +117,14 @@ if (isset($breakup['gst_percentage']) && $breakup['gst_percentage'] > 0) {
             
             <!-- Extra Fields (1-5) - Fetch labels from settings -->
             <?php 
-            // Check if extra_fields is stored as nested array (old format)
-            if (isset($breakup['extra_fields']) && is_array($breakup['extra_fields'])) {
-                // Old format: nested array
-                foreach ($breakup['extra_fields'] as $field) {
-                    if (!empty($field['value']) && $field['value'] > 0) {
-                        echo '<tr>';
-                        echo '<td>' . esc_html($field['label']) . '</td>';
-                        echo '<td>' . wc_price($field['value']) . '</td>';
-                        echo '</tr>';
-                    }
-                }
-            } else {
-                // New format: flat keys - fetch labels from settings
-                for ($i = 1; $i <= 5; $i++) {
-                    $field_key = 'extra_field_' . $i;
-                    if (!empty($breakup[$field_key]) && $breakup[$field_key] > 0) {
-                        // Fetch label from settings
-                        $field_label = get_option('jpc_extra_field_label_' . $i, 'Extra Field #' . $i);
-                        echo '<tr>';
-                        echo '<td>' . esc_html($field_label) . '</td>';
-                        echo '<td>' . wc_price($breakup[$field_key]) . '</td>';
-                        echo '</tr>';
-                    }
+            for ($i = 1; $i <= 5; $i++) {
+                $field_key = 'extra_field_' . $i;
+                if (!empty($breakup[$field_key]) && $breakup[$field_key] > 0) {
+                    $field_label = get_option('jpc_extra_field_label_' . $i, 'Extra Field #' . $i);
+                    echo '<tr>';
+                    echo '<td>' . esc_html($field_label) . '</td>';
+                    echo '<td>' . wc_price($breakup[$field_key]) . '</td>';
+                    echo '</tr>';
                 }
             }
             ?>
@@ -161,11 +137,40 @@ if (isset($breakup['gst_percentage']) && $breakup['gst_percentage'] > 0) {
             </tr>
             <?php endif; ?>
             
+            <!-- Processing Fee -->
+            <?php if (!empty($breakup['processing_fee']) && $breakup['processing_fee'] > 0): ?>
+            <tr>
+                <td><?php _e('Processing Fee', 'jewellery-price-calc'); ?></td>
+                <td><?php echo wc_price($breakup['processing_fee']); ?></td>
+            </tr>
+            <?php endif; ?>
+            
             <!-- Discount -->
             <?php if ($discount_amount > 0): ?>
             <tr class="jpc-discount">
                 <td><?php printf(__('Discount (%s%% OFF)', 'jewellery-price-calc'), number_format($discount_percentage, 0)); ?></td>
                 <td>- <?php echo wc_price($discount_amount); ?></td>
+            </tr>
+            <?php endif; ?>
+            
+            <!-- GST - CRITICAL FIX: Fetch label and percentage DYNAMICALLY -->
+            <?php if (!empty($breakup['gst']) && $breakup['gst'] > 0): ?>
+            <tr>
+                <td>
+                    <?php 
+                    // Show GST with percentage as integer (3% not 3.00%)
+                    if ($gst_percentage > 0) {
+                        // Remove decimals if it's a whole number
+                        $gst_display = (floor($gst_percentage) == $gst_percentage) 
+                            ? number_format($gst_percentage, 0) 
+                            : number_format($gst_percentage, 2);
+                        printf('%s (%s%%)', esc_html($gst_label), $gst_display);
+                    } else {
+                        echo esc_html($gst_label);
+                    }
+                    ?>
+                </td>
+                <td><?php echo wc_price($breakup['gst']); ?></td>
             </tr>
             <?php endif; ?>
             
@@ -179,23 +184,6 @@ if (isset($breakup['gst_percentage']) && $breakup['gst_percentage'] > 0) {
             <tr class="jpc-regular-price">
                 <td><?php _e('Regular Price', 'jewellery-price-calc'); ?></td>
                 <td><del><?php echo wc_price($regular_price); ?></del></td>
-            </tr>
-            <?php endif; ?>
-            
-            <!-- GST - ALWAYS show with percentage from settings (v2.5.9 FIX) -->
-            <?php if (!empty($breakup['gst']) && $breakup['gst'] > 0): ?>
-            <tr>
-                <td>
-                    <?php 
-                    // ALWAYS show GST with percentage if enabled
-                    if ($gst_percentage > 0) {
-                        printf('%s (%s%%)', esc_html($gst_label), number_format($gst_percentage, 2));
-                    } else {
-                        echo esc_html($gst_label);
-                    }
-                    ?>
-                </td>
-                <td><?php echo wc_price($breakup['gst']); ?></td>
             </tr>
             <?php endif; ?>
             
@@ -248,54 +236,57 @@ if (isset($breakup['gst_percentage']) && $breakup['gst_percentage'] > 0) {
 }
 
 .jpc-price-breakup-table td {
-    padding: 10px 5px;
+    padding: 12px 8px;
+    font-size: 16px;
 }
 
 .jpc-price-breakup-table td:first-child {
-    text-align: left;
-    font-weight: 500;
+    color: #666;
 }
 
 .jpc-price-breakup-table td:last-child {
     text-align: right;
+    font-weight: 500;
+}
+
+.jpc-price-breakup-table tr.jpc-discount td {
+    color: #28a745;
     font-weight: 600;
 }
 
-.jpc-separator td {
-    padding: 5px !important;
-    border-bottom: 2px solid #333 !important;
+.jpc-price-breakup-table tr.jpc-separator td {
+    padding: 5px;
+    border-bottom: 2px solid #333;
 }
 
-.jpc-discount td {
-    color: #d9534f;
-}
-
-.jpc-regular-price td {
+.jpc-price-breakup-table tr.jpc-regular-price td {
     color: #999;
 }
 
-.jpc-final-price {
+.jpc-price-breakup-table tr.jpc-final-price {
     background: #f0f0f0;
-    font-size: 1.1em;
+    border-top: 2px solid #333;
 }
 
-.jpc-final-price td {
-    padding: 15px 5px !important;
+.jpc-price-breakup-table tr.jpc-final-price td {
+    padding: 15px 8px;
+    font-size: 18px;
+    color: #d63384;
 }
 
-.jpc-savings td {
-    padding: 0 !important;
-    border: none !important;
+.jpc-price-breakup-table tr.jpc-savings {
+    border-bottom: none;
 }
 
 .jpc-savings-badge {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 12px;
-    text-align: center;
+    background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+    color: #155724;
+    padding: 12px 20px;
     border-radius: 5px;
+    text-align: center;
     font-weight: bold;
-    margin-top: 10px;
+    font-size: 16px;
+    border: 2px solid #28a745;
 }
 
 @media (max-width: 768px) {
@@ -303,13 +294,13 @@ if (isset($breakup['gst_percentage']) && $breakup['gst_percentage'] > 0) {
         padding: 15px;
     }
     
-    .jpc-price-breakup h3 {
-        font-size: 16px;
+    .jpc-price-breakup-table td {
+        padding: 10px 5px;
+        font-size: 14px;
     }
     
-    .jpc-price-breakup-table td {
-        padding: 8px 3px;
-        font-size: 14px;
+    .jpc-price-breakup-table tr.jpc-final-price td {
+        font-size: 16px;
     }
 }
 </style>
