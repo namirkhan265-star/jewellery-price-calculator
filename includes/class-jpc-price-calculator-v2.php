@@ -1,6 +1,6 @@
 <?php
 /**
- * Price Calculator Class v2.5.19
+ * Price Calculator Class v2.5.20
  * Enhanced with:
  * - Auto/Manual Making Charges
  * - Manual Diamond Entry with 4Cs
@@ -11,6 +11,7 @@
  * - CRITICAL FIX: Use _jpc_diamond_entry_mode instead of _jpc_diamond_mode (v2.5.15)
  * - CRITICAL FIX: Correct GST calculation for "Before Discount" option (v2.5.18)
  * - CRITICAL FIX: Restore missing methods that broke metals page (v2.5.19)
+ * - CRITICAL FIX: Support both numeric and text discount method values (v2.5.20)
  */
 
 if (!defined('ABSPATH')) {
@@ -106,7 +107,29 @@ class JPC_Price_Calculator {
     }
     
     /**
-     * Calculate product prices (v2.5.18 - Fixed GST calculation for "Before Discount")
+     * Normalize discount calculation method value (v2.5.20)
+     * Converts text values to numeric for backward compatibility
+     */
+    private static function normalize_discount_method($method) {
+        // Map text values to numeric
+        $method_map = array(
+            'simple' => '1',
+            'advanced' => '2',
+            'total_before_gst' => '3',
+            'total_after_additional' => '4',
+        );
+        
+        // If it's a text value, convert to numeric
+        if (isset($method_map[$method])) {
+            return $method_map[$method];
+        }
+        
+        // If it's already numeric or unknown, return as-is
+        return $method;
+    }
+    
+    /**
+     * Calculate product prices (v2.5.20 - Fixed discount method normalization)
      */
     public static function calculate_product_prices($product_id) {
         // Get metal info
@@ -175,6 +198,9 @@ class JPC_Price_Calculator {
         // Get discount settings
         $discount_percentage = floatval(get_post_meta($product_id, '_jpc_discount_percentage', true));
         $discount_calculation_method = get_option('jpc_discount_calculation_method', '1');
+        
+        // v2.5.20: Normalize discount method (convert text to numeric)
+        $discount_calculation_method = self::normalize_discount_method($discount_calculation_method);
         
         // Calculate discount based on method
         $discount_amount = 0;
