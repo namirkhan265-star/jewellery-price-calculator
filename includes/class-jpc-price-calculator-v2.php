@@ -1,12 +1,13 @@
 <?php
 /**
- * Price Calculator Class v2.5.5
+ * Price Calculator Class v2.5.7
  * Enhanced with:
  * - Auto/Manual Making Charges
  * - Manual Diamond Entry with 4Cs
  * - Pearl/Stone/Extra Fee percentage vs fixed calculation (v2.5.4)
  * - Additional Percentage enable/disable respect (v2.5.5)
  * - GST enable/disable respect with generic rate (v2.5.5)
+ * - CRITICAL FIX: Use price_per_unit instead of price_per_gram (v2.5.7)
  */
 
 if (!defined('ABSPATH')) {
@@ -49,33 +50,29 @@ class JPC_Price_Calculator {
      * Calculate additional cost field (v2.5.4 - Percentage or Fixed)
      * Used for Pearl Cost, Stone Cost, Extra Fee
      */
-    private static function calculate_additional_cost($product_id, $field_name, $subtotal_for_percentage) {
-        $value = floatval(get_post_meta($product_id, '_jpc_' . $field_name, true));
+    private static function calculate_additional_cost($product_id, $field_name, $subtotal) {
+        $value = floatval(get_post_meta($product_id, '_jpc_' . $field_name . '_value', true));
+        $type = get_post_meta($product_id, '_jpc_' . $field_name . '_type', true) ?: 'percentage';
         
         if ($value <= 0) {
             return 0;
         }
         
-        // Get calculation type from settings
-        $type = get_option('jpc_' . $field_name . '_type', 'fixed');
-        
         if ($type === 'percentage') {
-            // Calculate percentage of subtotal
-            return ($subtotal_for_percentage * $value) / 100;
+            return ($subtotal * $value) / 100;
         } else {
-            // Fixed value
             return $value;
         }
     }
     
     /**
-     * Calculate diamond cost (v2.0.0 - Dropdown/Manual modes)
+     * Calculate diamond cost (v2.0.0 - Auto/Manual modes)
      */
     private static function calculate_diamond_cost($product_id) {
-        $mode = get_post_meta($product_id, '_jpc_diamond_entry_mode', true) ?: 'dropdown';
+        $mode = get_post_meta($product_id, '_jpc_diamond_mode', true) ?: 'auto';
         
-        if ($mode === 'dropdown') {
-            // Dropdown mode: Existing logic
+        if ($mode === 'auto') {
+            // Auto mode: Use diamond from database
             $diamond_id = get_post_meta($product_id, '_jpc_diamond_id', true);
             $diamond_quantity = intval(get_post_meta($product_id, '_jpc_diamond_quantity', true));
             
@@ -115,7 +112,7 @@ class JPC_Price_Calculator {
     }
     
     /**
-     * Calculate product prices (v2.0.0 - Enhanced with all features)
+     * Calculate product prices (v2.5.7 - Fixed price_per_unit bug)
      */
     public static function calculate_product_prices($product_id) {
         // Get metal info
@@ -137,8 +134,8 @@ class JPC_Price_Calculator {
             $metal_group = JPC_Metal_Groups::get_by_id($metal->metal_group_id);
         }
         
-        // Calculate metal price
-        $metal_price = $metal->price_per_gram * $metal_weight;
+        // Calculate metal price - CRITICAL FIX: Use price_per_unit (database column name)
+        $metal_price = floatval($metal->price_per_unit) * $metal_weight;
         
         // Calculate diamond cost
         $diamond_price = self::calculate_diamond_cost($product_id);
