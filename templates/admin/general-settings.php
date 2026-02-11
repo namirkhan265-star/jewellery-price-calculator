@@ -107,7 +107,7 @@ for ($i = 1; $i <= 5; $i++) {
                                         </option>
                                     </select>
                                     <p class="description">
-                                        <em><?php _e('Fixed: Enter exact amount. Percentage: Calculate based on metal price.', 'jewellery-price-calc'); ?></em>
+                                        <em><?php _e('Fixed: Enter exact amount. Percentage: Calculate based on (Metal + Diamond + Making + Wastage).', 'jewellery-price-calc'); ?></em>
                                     </p>
                                 </td>
                             </tr>
@@ -160,7 +160,7 @@ for ($i = 1; $i <= 5; $i++) {
                                         </option>
                                     </select>
                                     <p class="description">
-                                        <em><?php _e('Fixed: Enter exact amount. Percentage: Calculate based on metal price.', 'jewellery-price-calc'); ?></em>
+                                        <em><?php _e('Fixed: Enter exact amount. Percentage: Calculate based on (Metal + Diamond + Making + Wastage).', 'jewellery-price-calc'); ?></em>
                                     </p>
                                 </td>
                             </tr>
@@ -205,14 +205,15 @@ for ($i = 1; $i <= 5; $i++) {
                                 </th>
                                 <td>
                                     <select id="jpc_extra_fee_type" name="jpc_extra_fee_type" class="regular-text">
-                                        <option value="fixed" <?php selected($extra_fee_type, 'fixed'); ?>>\n                                            <?php _e('Fixed Price (₹)', 'jewellery-price-calc'); ?>
+                                        <option value="fixed" <?php selected($extra_fee_type, 'fixed'); ?>>
+                                            <?php _e('Fixed Price (₹)', 'jewellery-price-calc'); ?>
                                         </option>
                                         <option value="percentage" <?php selected($extra_fee_type, 'percentage'); ?>>
                                             <?php _e('Percentage (%)', 'jewellery-price-calc'); ?>
                                         </option>
                                     </select>
                                     <p class="description">
-                                        <em><?php _e('Fixed: Enter exact amount. Percentage: Calculate based on metal price.', 'jewellery-price-calc'); ?></em>
+                                        <em><?php _e('Fixed: Enter exact amount. Percentage: Calculate based on (Metal + Diamond + Making + Wastage).', 'jewellery-price-calc'); ?></em>
                                     </p>
                                 </td>
                             </tr>
@@ -271,7 +272,7 @@ for ($i = 1; $i <= 5; $i++) {
                             <label for="jpc_gst_gold"><?php _e('Gold Tax (%)', 'jewellery-price-calc'); ?></label>
                         </th>
                         <td>
-                            <input type="number" id="jpc_gst_gold" name="jpc_gst_gold" value="<?php echo esc_attr($gst_gold); ?>" step="0.01" min="0" class="small-text">
+                            <input type="number" id="jpc_gst_gold" name="jpc_gst_gold" value="<?php echo esc_attr($gst_gold); ?>\" step="0.01" min="0" class="small-text">
                             <span class="description">%</span>
                         </td>
                     </tr>
