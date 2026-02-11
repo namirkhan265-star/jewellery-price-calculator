@@ -1,0 +1,32 @@
+/**
+ * SQL FIX FOR GST CALCULATION BASE
+ * v2.5.17 - Run this SQL command in your WordPress database
+ * 
+ * INSTRUCTIONS:
+ * 1. Go to phpMyAdmin or your database management tool
+ * 2. Select your WordPress database
+ * 3. Run the SQL command below
+ * 4. This will convert 'original_price' to 'before_discount'
+ */
+
+UPDATE wp_options 
+SET option_value = 'before_discount' 
+WHERE option_name = 'jpc_gst_calculation_base' 
+AND option_value = 'original_price';
+
+/**
+ * VERIFICATION QUERY (Run this after the UPDATE to verify):
+ */
+
+SELECT option_name, option_value 
+FROM wp_options 
+WHERE option_name = 'jpc_gst_calculation_base';
+
+/**
+ * Expected result after fix:
+ * option_name: jpc_gst_calculation_base
+ * option_value: before_discount (or after_discount if you had that selected)
+ * 
+ * NOTE: If your WordPress uses a different table prefix (not 'wp_'), 
+ * replace 'wp_options' with 'your_prefix_options' in the queries above.
+ */
