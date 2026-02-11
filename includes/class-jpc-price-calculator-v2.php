@@ -6,6 +6,7 @@
  * - Manual Diamond Entry with 4Cs
  * - Pearl/Stone/Extra Fee percentage vs fixed calculation (v2.5.4)
  * - Additional Percentage enable/disable respect (v2.5.5)
+ * - GST enable/disable respect (v2.5.5)
  */
 
 if (!defined('ABSPATH')) {
@@ -256,12 +257,13 @@ class JPC_Price_Calculator {
         // Subtotal after discount
         $subtotal_after_discount = $subtotal_after_additional - $discount_amount;
         
-        // Get GST settings
+        // Get GST settings (v2.5.5 - Respect enable/disable)
+        $enable_gst = get_option('jpc_enable_gst', 'yes');
         $gst_calculation_base = get_option('jpc_gst_calculation_base', 'after_discount');
         
-        // Determine GST percentage based on metal group
+        // Determine GST percentage based on metal group (only if GST is enabled)
         $gst_percentage = 0;
-        if ($metal_group) {
+        if ($enable_gst === 'yes' && $metal_group) {
             $metal_group_name = strtolower($metal_group->name);
             
             if ($metal_group_name === 'gold') {
@@ -275,18 +277,20 @@ class JPC_Price_Calculator {
             }
         }
         
-        // Calculate GST
+        // Calculate GST (only if enabled)
         $gst_on_full = 0;
         $gst_on_discounted = 0;
         
-        if ($gst_calculation_base === 'original_price') {
-            // GST on original price (before discount)
-            $gst_on_full = ($subtotal_after_additional * $gst_percentage) / 100;
-            $gst_on_discounted = $gst_on_full;
-        } else {
-            // GST on discounted price (default)
-            $gst_on_full = ($subtotal_after_additional * $gst_percentage) / 100;
-            $gst_on_discounted = ($subtotal_after_discount * $gst_percentage) / 100;
+        if ($enable_gst === 'yes' && $gst_percentage > 0) {
+            if ($gst_calculation_base === 'original_price') {
+                // GST on original price (before discount)
+                $gst_on_full = ($subtotal_after_additional * $gst_percentage) / 100;
+                $gst_on_discounted = $gst_on_full;
+            } else {
+                // GST on discounted price (default)
+                $gst_on_full = ($subtotal_after_additional * $gst_percentage) / 100;
+                $gst_on_discounted = ($subtotal_after_discount * $gst_percentage) / 100;
+            }
         }
         
         // Calculate final prices
