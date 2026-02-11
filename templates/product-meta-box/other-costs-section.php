@@ -29,7 +29,7 @@ $extra_fee_type = get_option('jpc_extra_fee_type', 'fixed');
         <label for="jpc_stone_cost">
             <?php echo esc_html($stone_cost_label); ?>
             <?php if ($stone_cost_type === 'percentage'): ?>
-                <span style="color: #2271b1; font-weight: 600;">(% of metal price)</span>
+                <span style="color: #2271b1; font-weight: 600;">(% of Metal + Diamond + Making + Wastage)</span>
             <?php else: ?>
                 <span style="color: #666;">(₹)</span>
             <?php endif; ?>
@@ -39,7 +39,7 @@ $extra_fee_type = get_option('jpc_extra_fee_type', 'fixed');
                step="0.01" min="0">
         <p class="jpc-help-text">
             <?php if ($stone_cost_type === 'percentage'): ?>
-                <?php _e('Enter percentage value (e.g., 10 for 10% of metal price)', 'jewellery-price-calc'); ?>
+                <?php _e('Enter percentage value (e.g., 10 for 10% of Metal + Diamond + Making + Wastage)', 'jewellery-price-calc'); ?>
             <?php else: ?>
                 <?php _e('Enter fixed amount in rupees', 'jewellery-price-calc'); ?>
             <?php endif; ?>
@@ -51,7 +51,7 @@ $extra_fee_type = get_option('jpc_extra_fee_type', 'fixed');
         <label for="jpc_pearl_cost">
             <?php echo esc_html($pearl_cost_label); ?>
             <?php if ($pearl_cost_type === 'percentage'): ?>
-                <span style="color: #2271b1; font-weight: 600;">(% of metal price)</span>
+                <span style="color: #2271b1; font-weight: 600;">(% of Metal + Diamond + Making + Wastage)</span>
             <?php else: ?>
                 <span style="color: #666;">(₹)</span>
             <?php endif; ?>
@@ -61,7 +61,7 @@ $extra_fee_type = get_option('jpc_extra_fee_type', 'fixed');
                step="0.01" min="0">
         <p class="jpc-help-text">
             <?php if ($pearl_cost_type === 'percentage'): ?>
-                <?php _e('Enter percentage value (e.g., 5 for 5% of metal price)', 'jewellery-price-calc'); ?>
+                <?php _e('Enter percentage value (e.g., 5 for 5% of Metal + Diamond + Making + Wastage)', 'jewellery-price-calc'); ?>
             <?php else: ?>
                 <?php _e('Enter fixed amount in rupees', 'jewellery-price-calc'); ?>
             <?php endif; ?>
@@ -73,7 +73,7 @@ $extra_fee_type = get_option('jpc_extra_fee_type', 'fixed');
         <label for="jpc_extra_fee">
             <?php echo esc_html($extra_fee_label); ?>
             <?php if ($extra_fee_type === 'percentage'): ?>
-                <span style="color: #2271b1; font-weight: 600;">(% of metal price)</span>
+                <span style="color: #2271b1; font-weight: 600;">(% of Metal + Diamond + Making + Wastage)</span>
             <?php else: ?>
                 <span style="color: #666;">(₹)</span>
             <?php endif; ?>
@@ -83,7 +83,7 @@ $extra_fee_type = get_option('jpc_extra_fee_type', 'fixed');
                step="0.01" min="0">
         <p class="jpc-help-text">
             <?php if ($extra_fee_type === 'percentage'): ?>
-                <?php _e('Enter percentage value (e.g., 2 for 2% of metal price)', 'jewellery-price-calc'); ?>
+                <?php _e('Enter percentage value (e.g., 2 for 2% of Metal + Diamond + Making + Wastage)', 'jewellery-price-calc'); ?>
             <?php else: ?>
                 <?php _e('Enter fixed amount in rupees', 'jewellery-price-calc'); ?>
             <?php endif; ?>
