@@ -1,6 +1,7 @@
 <?php
 /**
  * Admin Interface Handler
+ * v2.5.5: Added enable/disable checkbox for Additional Percentage
  * v2.5.0: Added custom label and type settings for additional cost fields
  */
 
@@ -144,6 +145,7 @@ class JPC_Admin {
     
     /**
      * Handle settings save to properly handle checkboxes
+     * v2.5.5: Added jpc_enable_additional_percentage
      */
     public function handle_settings_save() {
         if (!isset($_POST['option_page']) || $_POST['option_page'] !== 'jpc_general_settings') {
@@ -159,6 +161,7 @@ class JPC_Admin {
             'jpc_enable_pearl_cost',
             'jpc_enable_stone_cost',
             'jpc_enable_extra_fee',
+            'jpc_enable_additional_percentage', // NEW v2.5.5
             'jpc_enable_gst',
             'jpc_show_price_breakup',
         );
@@ -371,6 +374,7 @@ class JPC_Admin {
     
     /**
      * Register settings
+     * v2.5.5: Added jpc_enable_additional_percentage
      * v2.5.0: Added custom label and type settings for additional cost fields
      */
     public function register_settings() {
@@ -387,6 +391,7 @@ class JPC_Admin {
         register_setting('jpc_general_settings', 'jpc_extra_fee_label'); // NEW v2.5.0
         register_setting('jpc_general_settings', 'jpc_extra_fee_type'); // NEW v2.5.0
         
+        register_setting('jpc_general_settings', 'jpc_enable_additional_percentage'); // NEW v2.5.5
         register_setting('jpc_general_settings', 'jpc_additional_percentage_label');
         register_setting('jpc_general_settings', 'jpc_additional_percentage_value');
         register_setting('jpc_general_settings', 'jpc_enable_gst');
@@ -514,10 +519,9 @@ class JPC_Admin {
     }
     
     /**
-     * Render enhanced debug page
+     * Render debug page
      */
     public function render_debug() {
-        // Use enhanced debug page with price calculation details
-        include JPC_PLUGIN_DIR . 'templates/admin/debug-enhanced.php';
+        include JPC_PLUGIN_DIR . 'templates/admin/debug.php';
     }
 }
