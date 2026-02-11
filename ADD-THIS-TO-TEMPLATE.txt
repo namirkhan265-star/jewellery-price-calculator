@@ -1,0 +1,72 @@
+═══════════════════════════════════════════════════════════════
+  TEMPORARY DEBUG - Add This to Template
+═══════════════════════════════════════════════════════════════
+
+The template file is correct, but GST percentage might not be loading.
+Let's add temporary debug code to see what's happening.
+
+═══════════════════════════════════════════════════════════════
+  STEP 1: Edit the Template File
+═══════════════════════════════════════════════════════════════
+
+File: /wp-content/plugins/jewellery-price-calculator-main/templates/frontend/price-breakup.php
+
+Find line 55 (right after the closing ?>)
+
+Add this code AFTER line 55:
+
+<?php
+// TEMPORARY DEBUG - Remove after testing
+echo '<div style="background: #fff3cd; border: 2px solid #ffc107; padding: 15px; margin: 20px 0; font-family: monospace; font-size: 12px;">';
+echo '<strong>DEBUG INFO:</strong><br>';
+echo 'GST Label: ' . esc_html($gst_label) . '<br>';
+echo 'Enable GST: ' . esc_html($enable_gst) . '<br>';
+echo 'GST Percentage: ' . $gst_percentage . '<br>';
+echo 'GST Amount: ' . (isset($breakup['gst']) ? $breakup['gst'] : 'NOT SET') . '<br>';
+echo 'Diamond Price: ' . (isset($breakup['diamond_price']) ? $breakup['diamond_price'] : 'NOT SET') . '<br>';
+if ($gst_percentage > 0) {
+    $gst_display = (floor($gst_percentage) == $gst_percentage) ? number_format($gst_percentage, 0) : number_format($gst_percentage, 2);
+    echo '<strong>Should show:</strong> ' . esc_html($gst_label) . ' (' . $gst_display . '%)<br>';
+} else {
+    echo '<strong style="color: red;">⚠️ GST Percentage is 0 - This is the problem!</strong><br>';
+}
+echo '</div>';
+?>
+
+═══════════════════════════════════════════════════════════════
+  STEP 2: Save and Test
+═══════════════════════════════════════════════════════════════
+
+1. Save the template file
+2. Go to any product page
+3. You should see a yellow debug box at the top of price breakup
+4. Take a screenshot and send it to me
+5. Remove the debug code after
+
+═══════════════════════════════════════════════════════════════
+  WHAT THIS WILL SHOW
+═══════════════════════════════════════════════════════════════
+
+This will tell us:
+- What value $gst_label has
+- What value $gst_percentage has
+- If GST is enabled
+- What's in the breakup data
+- Why the percentage isn't showing
+
+Once we see this, I'll know exactly what's wrong.
+
+═══════════════════════════════════════════════════════════════
+  ALTERNATIVE: Quick Check
+═══════════════════════════════════════════════════════════════
+
+Go to: WordPress Admin → Jewellery Price Calculator → General Settings
+
+Check:
+1. Is "Enable GST" checked? (should be YES)
+2. What is "GST Label"? (should be "GST")
+3. What is "GST Value"? (should be "3")
+
+Send me a screenshot of the GST section in settings.
+
+═══════════════════════════════════════════════════════════════
