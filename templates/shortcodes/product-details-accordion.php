@@ -1,9 +1,10 @@
 <?php
 /**
- * Product Details Accordion Template v2.5.3
+ * Product Details Accordion Template v2.5.4
  * Displays product details, diamond details, metal details, price breakup, and tags
  * Usage: [jpc_product_details]
  * 
+ * NEW v2.5.4: Fix GST display - show custom label and percentage like discount
  * NEW v2.5.3: Fetch custom labels from settings for Pearl/Stone/Extra Fee (same as Extra Fields)
  * NEW v2.4.0: Full support for manual diamond entry
  * - Fetches manual diamond data from _jpc_manual_diamond_* meta fields
@@ -437,7 +438,12 @@ $has_tags = !empty($tags);
             
             <?php if (!empty($price_breakup['gst'])): ?>
             <div class="jpc-detail-row">
-                <span class="jpc-detail-label">GST</span>
+                <span class="jpc-detail-label">
+                    <?php echo esc_html(!empty($price_breakup['gst_label']) ? $price_breakup['gst_label'] : 'GST'); ?>
+                    <?php if (!empty($price_breakup['gst_percentage']) && $price_breakup['gst_percentage'] > 0): ?>
+                        <span style="font-weight: bold;">(<?php echo number_format($price_breakup['gst_percentage'], 0); ?>%)</span>
+                    <?php endif; ?>
+                </span>
                 <span class="jpc-detail-value">₹ <?php echo number_format($price_breakup['gst'], 0); ?>/-</span>
             </div>
             <?php endif; ?>
