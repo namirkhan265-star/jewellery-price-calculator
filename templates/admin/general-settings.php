@@ -1,9 +1,9 @@
 <?php
 /**
- * General Settings Template v2.5.5 COMPLETE
+ * General Settings Template v2.5.5 SIMPLIFIED
  * - Additional Cost Fields (Pearl, Stone, Extra Fee) with custom labels and types
  * - Additional Percentage with enable/disable and documentation
- * - GST with enable/disable and calculation transparency
+ * - GST with enable/disable (simplified - generic rate only)
  * - Extra Fields 1-5
  * - Display Settings
  */
@@ -31,10 +31,7 @@ $additional_percentage_value = get_option('jpc_additional_percentage_value', '0'
 
 $enable_gst = get_option('jpc_enable_gst', 'yes');
 $gst_label = get_option('jpc_gst_label', 'GST');
-$gst_gold = get_option('jpc_gst_gold', '3');
-$gst_silver = get_option('jpc_gst_silver', '3');
-$gst_platinum = get_option('jpc_gst_platinum', '3');
-$gst_default = get_option('jpc_gst_default', '3');
+$gst_value = get_option('jpc_gst_value', '3');
 $gst_calculation_base = get_option('jpc_gst_calculation_base', 'after_discount');
 
 $price_rounding = get_option('jpc_price_rounding', 'none');
@@ -336,7 +333,7 @@ for ($i = 1; $i <= 5; $i++) {
                 </div>
             </div>
             
-            <!-- Tax/GST Settings -->
+            <!-- Tax/GST Settings - SIMPLIFIED -->
             <div class="jpc-settings-section" style="background: #fff; padding: 20px; margin: 20px 0; border: 1px solid #ccd0d4; box-shadow: 0 1px 1px rgba(0,0,0,.04);">
                 <h2 style="margin-top: 0; padding-bottom: 10px; border-bottom: 2px solid #2271b1;">
                     Tax/GST Settings
@@ -377,65 +374,17 @@ for ($i = 1; $i <= 5; $i++) {
                         
                         <tr>
                             <th scope="row">
-                                <label for="jpc_gst_gold">Gold Tax (%)</label>
+                                <label for="jpc_gst_value">GST Percentage (%)</label>
                             </th>
                             <td>
                                 <input type="number" 
-                                       id="jpc_gst_gold" 
-                                       name="jpc_gst_gold" 
-                                       value="<?php echo esc_attr($gst_gold); ?>" 
+                                       id="jpc_gst_value" 
+                                       name="jpc_gst_value" 
+                                       value="<?php echo esc_attr($gst_value); ?>" 
                                        step="0.01" 
                                        min="0" 
                                        class="small-text"> %
-                                <p class="description">Tax percentage for gold products.</p>
-                            </td>
-                        </tr>
-                        
-                        <tr>
-                            <th scope="row">
-                                <label for="jpc_gst_silver">Silver Tax (%)</label>
-                            </th>
-                            <td>
-                                <input type="number" 
-                                       id="jpc_gst_silver" 
-                                       name="jpc_gst_silver" 
-                                       value="<?php echo esc_attr($gst_silver); ?>" 
-                                       step="0.01" 
-                                       min="0" 
-                                       class="small-text"> %
-                                <p class="description">Tax percentage for silver products.</p>
-                            </td>
-                        </tr>
-                        
-                        <tr>
-                            <th scope="row">
-                                <label for="jpc_gst_platinum">Platinum Tax (%)</label>
-                            </th>
-                            <td>
-                                <input type="number" 
-                                       id="jpc_gst_platinum" 
-                                       name="jpc_gst_platinum" 
-                                       value="<?php echo esc_attr($gst_platinum); ?>" 
-                                       step="0.01" 
-                                       min="0" 
-                                       class="small-text"> %
-                                <p class="description">Tax percentage for platinum products.</p>
-                            </td>
-                        </tr>
-                        
-                        <tr>
-                            <th scope="row">
-                                <label for="jpc_gst_default">Default Tax (%)</label>
-                            </th>
-                            <td>
-                                <input type="number" 
-                                       id="jpc_gst_default" 
-                                       name="jpc_gst_default" 
-                                       value="<?php echo esc_attr($gst_default); ?>" 
-                                       step="0.01" 
-                                       min="0" 
-                                       class="small-text"> %
-                                <p class="description">Default tax percentage for other metal types.</p>
+                                <p class="description">Tax percentage to apply on all products.</p>
                             </td>
                         </tr>
                         
@@ -488,7 +437,7 @@ for ($i = 1; $i <= 5; $i++) {
                             <h4 style="margin-top: 0; color: #856404;">💡 Example Calculation:</h4>
                             
                             <div style="margin: 10px 0;">
-                                <strong>Scenario: Gold Product with 3% GST and 10% Discount</strong>
+                                <strong>Scenario: Product with 3% GST and 10% Discount</strong>
                                 <p style="margin: 5px 0; font-family: monospace; font-size: 13px;">
                                     Metal Price: ₹10,000<br>
                                     Making Charges: ₹2,000<br>
@@ -519,17 +468,6 @@ for ($i = 1; $i <= 5; $i++) {
                                     </p>
                                 </div>
                             </div>
-                        </div>
-                        
-                        <div style="background: white; padding: 15px; border-radius: 4px; margin: 10px 0;">
-                            <h4 style="margin-top: 0;">🎯 Metal-Specific GST Rates:</h4>
-                            <p style="margin: 5px 0;">The plugin automatically applies the correct GST rate based on the metal group:</p>
-                            <ul style="margin: 10px 0; padding-left: 20px; line-height: 1.8;">
-                                <li><strong>Gold Products:</strong> Uses "Gold Tax (%)" setting</li>
-                                <li><strong>Silver Products:</strong> Uses "Silver Tax (%)" setting</li>
-                                <li><strong>Platinum Products:</strong> Uses "Platinum Tax (%)" setting</li>
-                                <li><strong>Other Metals:</strong> Uses "Default Tax (%)" setting</li>
-                            </ul>
                         </div>
                         
                         <div style="background: white; padding: 15px; border-radius: 4px; margin: 10px 0;">
