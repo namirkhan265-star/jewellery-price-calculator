@@ -1,0 +1,75 @@
+═══════════════════════════════════════════════════════════════
+  FIX GST LABEL & PERCENTAGE - SUPER SIMPLE!
+═══════════════════════════════════════════════════════════════
+
+PROBLEM: 
+- GST shows as "GST" instead of your custom label
+- GST percentage (3%) not displaying
+
+SOLUTION: Run the automatic fix (takes 30 seconds!)
+
+═══════════════════════════════════════════════════════════════
+  SIMPLE 5-STEP PROCESS
+═══════════════════════════════════════════════════════════════
+
+1. DOWNLOAD
+   ↓
+   Download file: fix-gst-label-SIMPLE.php
+   (From your GitHub repository)
+
+2. UPLOAD
+   ↓
+   Upload to: /wp-content/plugins/jewellery-price-calculator-main/
+   (Same place as the previous fix)
+
+3. RUN
+   ↓
+   Visit: https://detailx.co.in/wp-content/plugins/jewellery-price-calculator-main/fix-gst-label-SIMPLE.php
+   Click the blue button
+   Wait for "SUCCESS!" message
+
+4. DELETE
+   ↓
+   Delete the fix-gst-label-SIMPLE.php file
+   (For security)
+
+5. TEST
+   ↓
+   Check any product → Price Breakup tab
+   GST should now show with your label and percentage!
+
+═══════════════════════════════════════════════════════════════
+  WHAT THIS FIXES
+═══════════════════════════════════════════════════════════════
+
+BEFORE:
+GST                           ₹ 2,431/-
+
+AFTER:
+GST (3%)                      ₹ 2,431/-
+(or whatever your custom label is)
+
+═══════════════════════════════════════════════════════════════
+  IMPORTANT NOTES
+═══════════════════════════════════════════════════════════════
+
+✓ Safe to run multiple times
+✓ Updates ALL products automatically
+✓ Takes about 5 seconds
+✓ No data loss
+
+If you change your GST label or percentage in settings later:
+→ Just run this fix again to update all products!
+
+═══════════════════════════════════════════════════════════════
+  NEED HELP?
+═══════════════════════════════════════════════════════════════
+
+Same process as before:
+1. Download the file
+2. Upload to same folder
+3. Visit the URL
+4. Click button
+5. Delete file
+
+You got this! 💪
