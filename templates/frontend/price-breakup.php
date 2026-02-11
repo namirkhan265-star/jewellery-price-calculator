@@ -2,7 +2,7 @@
 /**
  * Frontend Price Breakup Template - USES ONLY STORED BREAKUP DATA
  * NO CALCULATIONS - DISPLAYS STORED DATA ONLY
- * v2.5.5: Show GST with percentage dynamically
+ * v2.5.6: CRITICAL FIX - Always show Metal Price + Fix GST percentage display
  */
 
 if (!defined('ABSPATH')) {
@@ -61,11 +61,13 @@ $gst_percentage = isset($breakup['gst_percentage']) ? floatval($breakup['gst_per
     
     <table class="jpc-price-breakup-table">
         <tbody>
-            <!-- Metal Price -->
+            <!-- Metal Price - ALWAYS SHOW (CRITICAL) -->
+            <?php if (isset($breakup['metal_price'])): ?>
             <tr>
                 <td><?php echo esc_html($metal->display_name); ?></td>
                 <td><?php echo wc_price($breakup['metal_price']); ?></td>
             </tr>
+            <?php endif; ?>
             
             <!-- Diamond Price -->
             <?php if (!empty($breakup['diamond_price']) && $breakup['diamond_price'] > 0): ?>
@@ -173,10 +175,19 @@ $gst_percentage = isset($breakup['gst_percentage']) ? floatval($breakup['gst_per
             </tr>
             <?php endif; ?>
             
-            <!-- GST - Show with percentage dynamically -->
-            <?php if (!empty($breakup['gst']) && $breakup['gst'] > 0 && $gst_percentage > 0): ?>
+            <!-- GST - Show with percentage dynamically (FIXED) -->
+            <?php if (!empty($breakup['gst']) && $breakup['gst'] > 0): ?>
             <tr>
-                <td><?php echo esc_html($gst_label); ?> (<?php echo number_format($gst_percentage, 2); ?>%)</td>
+                <td>
+                    <?php 
+                    // Show GST label with percentage
+                    if ($gst_percentage > 0) {
+                        printf('%s (%s%%)', esc_html($gst_label), number_format($gst_percentage, 2));
+                    } else {
+                        echo esc_html($gst_label);
+                    }
+                    ?>
+                </td>
                 <td><?php echo wc_price($breakup['gst']); ?></td>
             </tr>
             <?php endif; ?>
