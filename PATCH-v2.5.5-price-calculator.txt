@@ -1,0 +1,25 @@
+=== PATCH FOR includes/class-jpc-price-calculator-v2.php ===
+
+In the calculate_price() method, around line 210-216:
+
+CHANGE FROM:
+        // Apply Additional Percentage (if enabled)
+        $additional_percentage_amount = 0;
+        $additional_percentage = floatval(get_option('jpc_additional_percentage_value', 0));
+        if ($additional_percentage > 0) {
+            $additional_percentage_amount = ($subtotal_before_additional * $additional_percentage) / 100;
+        }
+
+CHANGE TO:
+        // Apply Additional Percentage (if enabled) - v2.5.5
+        $additional_percentage_amount = 0;
+        $enable_additional_percentage = get_option('jpc_enable_additional_percentage', 'no');
+        $additional_percentage = floatval(get_option('jpc_additional_percentage_value', 0));
+        
+        if ($enable_additional_percentage === 'yes' && $additional_percentage > 0) {
+            $additional_percentage_amount = ($subtotal_before_additional * $additional_percentage) / 100;
+        }
+
+This ensures the additional percentage is only applied when:
+1. The feature is enabled (checkbox is checked)
+2. The percentage value is greater than 0
