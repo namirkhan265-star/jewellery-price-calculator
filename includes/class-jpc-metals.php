@@ -30,7 +30,7 @@ class JPC_Metals {
     }
     
     /**
-     * Get all metals
+     * Get all metals with metal group enable flags
      */
     public static function get_all() {
         global $wpdb;
@@ -38,7 +38,11 @@ class JPC_Metals {
         $groups_table = $wpdb->prefix . 'jpc_metal_groups';
         
         return $wpdb->get_results("
-            SELECT m.*, g.name as group_name, g.unit 
+            SELECT m.*, 
+                   g.name as group_name, 
+                   g.unit,
+                   g.enable_making_charge,
+                   g.enable_wastage_charge
             FROM $table m 
             LEFT JOIN $groups_table g ON m.metal_group_id = g.id 
             ORDER BY m.id ASC
@@ -250,7 +254,7 @@ class JPC_Metals {
     }
     
     /**
-     * Get price history count
+     * Get total count of price history
      */
     public static function get_price_history_count($args = array()) {
         global $wpdb;
@@ -284,81 +288,17 @@ class JPC_Metals {
     }
     
     /**
-     * Delete price history entries
+     * Delete price history entry
      */
-    public static function delete_price_history($ids) {
+    public static function delete_price_history($id) {
         global $wpdb;
         $table = $wpdb->prefix . 'jpc_price_history';
         
-        if (!is_array($ids)) {
-            $ids = array($ids);
-        }
-        
-        $ids = array_map('intval', $ids);
-        $placeholders = implode(',', array_fill(0, count($ids), '%d'));
-        
-        return $wpdb->query($wpdb->prepare(
-            "DELETE FROM $table WHERE id IN ($placeholders)",
-            $ids
-        ));
+        return $wpdb->delete($table, array('id' => $id));
     }
     
     /**
-     * AJAX: Get price history
-     */
-    public function ajax_get_price_history() {
-        check_ajax_referer('jpc_admin_nonce', 'nonce');
-        
-        if (!current_user_can('manage_woocommerce')) {
-            wp_send_json_error(array('message' => __('Permission denied', 'jewellery-price-calc')));
-        }
-        
-        $args = array(
-            'limit' => isset($_POST['limit']) ? intval($_POST['limit']) : 50,
-            'offset' => isset($_POST['offset']) ? intval($_POST['offset']) : 0,
-            'item_type' => isset($_POST['item_type']) ? sanitize_text_field($_POST['item_type']) : 'all',
-            'date_from' => isset($_POST['date_from']) ? sanitize_text_field($_POST['date_from']) : null,
-            'date_to' => isset($_POST['date_to']) ? sanitize_text_field($_POST['date_to']) : null,
-        );
-        
-        $history = self::get_price_history($args);
-        $total = self::get_price_history_count($args);
-        
-        wp_send_json_success(array(
-            'history' => $history,
-            'total' => $total,
-        ));
-    }
-    
-    /**
-     * AJAX: Delete price history
-     */
-    public function ajax_delete_price_history() {
-        check_ajax_referer('jpc_admin_nonce', 'nonce');
-        
-        if (!current_user_can('manage_woocommerce')) {
-            wp_send_json_error(array('message' => __('Permission denied', 'jewellery-price-calc')));
-        }
-        
-        $ids = isset($_POST['ids']) ? $_POST['ids'] : array();
-        
-        if (empty($ids)) {
-            wp_send_json_error(array('message' => __('No entries selected', 'jewellery-price-calc')));
-        }
-        
-        $result = self::delete_price_history($ids);
-        
-        if ($result) {
-            wp_send_json_success(array(
-                'message' => sprintf(__('%d history entries deleted successfully', 'jewellery-price-calc'), $result)
-            ));
-        } else {
-            wp_send_json_error(array('message' => __('Failed to delete history entries', 'jewellery-price-calc')));
-        }
-    }
-    
-    /**
-     * AJAX: Add metal (v2.0.0 - Added making_charges_per_gram)
+     * AJAX: Add metal
      */
     public function ajax_add_metal() {
         check_ajax_referer('jpc_admin_nonce', 'nonce');
@@ -367,18 +307,12 @@ class JPC_Metals {
             wp_send_json_error(array('message' => __('Permission denied', 'jewellery-price-calc')));
         }
         
-        // CRITICAL FIX: Properly handle making_charges_per_gram
-        $making_charges = 0;
-        if (isset($_POST['making_charges_per_gram']) && $_POST['making_charges_per_gram'] !== '') {
-            $making_charges = floatval($_POST['making_charges_per_gram']);
-        }
-        
         $data = array(
             'name' => $_POST['name'],
             'display_name' => $_POST['display_name'],
             'metal_group_id' => $_POST['metal_group_id'],
             'price_per_unit' => $_POST['price_per_unit'],
-            'making_charges_per_gram' => $making_charges, // v2.0.0
+            'making_charges_per_gram' => isset($_POST['making_charges_per_gram']) ? $_POST['making_charges_per_gram'] : 0, // v2.0.0
         );
         
         $result = self::add($data);
@@ -389,13 +323,13 @@ class JPC_Metals {
                 'id' => $result
             ));
         } else {
-            wp_send_json_error(array('message' => __('Failed to add metal', 'jewellery-price-calc')));
+            wp_send_json_error(array('message' => __('Failed to add metal. Metal with this name may already exist.', 'jewellery-price-calc')));
         }
     }
     
     /**
-     * AJAX: Update metal (v2.0.0 - Added making_charges_per_gram)
-     * CRITICAL FIX: Properly handle making_charges_per_gram to prevent overwriting
+     * AJAX: Update metal
+     * v2.0.0: CRITICAL FIX - Properly handle making_charges_per_gram
      */
     public function ajax_update_metal() {
         check_ajax_referer('jpc_admin_nonce', 'nonce');
@@ -406,31 +340,23 @@ class JPC_Metals {
         
         $id = intval($_POST['id']);
         
-        // CRITICAL FIX: Properly handle making_charges_per_gram
-        // If not sent or empty, preserve existing value
-        $making_charges = 0;
-        if (isset($_POST['making_charges_per_gram']) && $_POST['making_charges_per_gram'] !== '') {
-            $making_charges = floatval($_POST['making_charges_per_gram']);
-        } else {
-            // Preserve existing value if not sent
-            $existing_metal = self::get_by_id($id);
-            if ($existing_metal && isset($existing_metal->making_charges_per_gram)) {
-                $making_charges = floatval($existing_metal->making_charges_per_gram);
-            }
-        }
-        
+        // CRITICAL FIX: Only include making_charges_per_gram if it's actually sent
         $data = array(
             'name' => $_POST['name'],
             'display_name' => $_POST['display_name'],
             'metal_group_id' => $_POST['metal_group_id'],
             'price_per_unit' => $_POST['price_per_unit'],
-            'making_charges_per_gram' => $making_charges, // v2.0.0
         );
+        
+        // Only add making_charges_per_gram if it exists in POST
+        if (isset($_POST['making_charges_per_gram'])) {
+            $data['making_charges_per_gram'] = floatval($_POST['making_charges_per_gram']);
+        }
         
         $result = self::update($id, $data);
         
         if ($result !== false) {
-            wp_send_json_success(array('message' => __('Metal updated successfully. Product prices have been recalculated.', 'jewellery-price-calc')));
+            wp_send_json_success(array('message' => __('Metal updated successfully', 'jewellery-price-calc')));
         } else {
             wp_send_json_error(array('message' => __('Failed to update metal', 'jewellery-price-calc')));
         }
@@ -459,7 +385,7 @@ class JPC_Metals {
     }
     
     /**
-     * AJAX: Bulk update all product prices
+     * AJAX: Bulk update prices
      */
     public function ajax_bulk_update_prices() {
         check_ajax_referer('jpc_admin_nonce', 'nonce');
@@ -468,40 +394,93 @@ class JPC_Metals {
             wp_send_json_error(array('message' => __('Permission denied', 'jewellery-price-calc')));
         }
         
-        $updated = 0;
-        $errors = 0;
+        $updates = json_decode(stripslashes($_POST['updates']), true);
         
-        // Get all products with JPC data
-        $args = array(
-            'post_type' => 'product',
-            'posts_per_page' => -1,
-            'post_status' => 'publish',
-            'meta_query' => array(
-                array(
-                    'key' => '_jpc_metal_id',
-                    'compare' => 'EXISTS'
-                )
-            )
-        );
+        if (!is_array($updates)) {
+            wp_send_json_error(array('message' => __('Invalid data format', 'jewellery-price-calc')));
+        }
         
-        $products = get_posts($args);
+        $success_count = 0;
+        $error_count = 0;
         
-        foreach ($products as $product) {
-            $result = JPC_Price_Calculator::calculate_and_update_price($product->ID);
+        foreach ($updates as $update) {
+            $id = intval($update['id']);
+            $new_price = floatval($update['price']);
+            
+            $metal = self::get_by_id($id);
+            if (!$metal) {
+                $error_count++;
+                continue;
+            }
+            
+            $data = array(
+                'name' => $metal->name,
+                'display_name' => $metal->display_name,
+                'metal_group_id' => $metal->metal_group_id,
+                'price_per_unit' => $new_price,
+                'making_charges_per_gram' => $metal->making_charges_per_gram ?? 0, // v2.0.0
+            );
+            
+            $result = self::update($id, $data);
+            
             if ($result !== false) {
-                $updated++;
+                $success_count++;
             } else {
-                $errors++;
+                $error_count++;
             }
         }
         
         wp_send_json_success(array(
-            'message' => sprintf(__('Updated %d products. Errors: %d', 'jewellery-price-calc'), $updated, $errors),
-            'updated' => $updated,
-            'errors' => $errors
+            'message' => sprintf(__('%d prices updated successfully, %d failed', 'jewellery-price-calc'), $success_count, $error_count),
+            'success_count' => $success_count,
+            'error_count' => $error_count
         ));
     }
+    
+    /**
+     * AJAX: Get price history
+     */
+    public function ajax_get_price_history() {
+        check_ajax_referer('jpc_admin_nonce', 'nonce');
+        
+        if (!current_user_can('manage_woocommerce')) {
+            wp_send_json_error(array('message' => __('Permission denied', 'jewellery-price-calc')));
+        }
+        
+        $args = array(
+            'limit' => isset($_POST['limit']) ? intval($_POST['limit']) : 50,
+            'offset' => isset($_POST['offset']) ? intval($_POST['offset']) : 0,
+            'item_type' => isset($_POST['item_type']) ? sanitize_text_field($_POST['item_type']) : 'all',
+            'date_from' => isset($_POST['date_from']) ? sanitize_text_field($_POST['date_from']) : null,
+            'date_to' => isset($_POST['date_to']) ? sanitize_text_field($_POST['date_to']) : null,
+        );
+        
+        $history = self::get_price_history($args);
+        $total = self::get_price_history_count($args);
+        
+        wp_send_json_success(array(
+            'history' => $history,
+            'total' => $total
+        ));
+    }
+    
+    /**
+     * AJAX: Delete price history entry
+     */
+    public function ajax_delete_price_history() {
+        check_ajax_referer('jpc_admin_nonce', 'nonce');
+        
+        if (!current_user_can('manage_woocommerce')) {
+            wp_send_json_error(array('message' => __('Permission denied', 'jewellery-price-calc')));
+        }
+        
+        $id = intval($_POST['id']);
+        $result = self::delete_price_history($id);
+        
+        if ($result) {
+            wp_send_json_success(array('message' => __('History entry deleted successfully', 'jewellery-price-calc')));
+        } else {
+            wp_send_json_error(array('message' => __('Failed to delete history entry', 'jewellery-price-calc')));
+        }
+    }
 }
-
-// Initialize
-JPC_Metals::get_instance();
