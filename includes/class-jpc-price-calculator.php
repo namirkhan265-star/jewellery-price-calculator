@@ -2,6 +2,7 @@
 /**
  * Price Calculator Class
  * Handles all price calculations for jewellery products
+ * v2.5.14: Added manual diamond calculation support
  * v2.5.1: Fixed label storage and extra fields format for frontend compatibility
  */
 
@@ -51,6 +52,17 @@ class JPC_Price_Calculator {
             if ($diamond) {
                 $diamond_unit_price = $diamond->price_per_carat * $diamond->carat;
                 $diamond_price = $diamond_unit_price * $diamond_quantity;
+            }
+        }
+        
+        // v2.5.14: Check for manual diamond entry if no dropdown diamond
+        if ($diamond_price == 0) {
+            $manual_carat = floatval(get_post_meta($product_id, '_jpc_manual_diamond_carat', true));
+            $manual_quantity = intval(get_post_meta($product_id, '_jpc_manual_diamond_quantity', true));
+            $manual_price_per_carat = floatval(get_post_meta($product_id, '_jpc_manual_diamond_price_per_carat', true));
+            
+            if ($manual_carat > 0 && $manual_quantity > 0 && $manual_price_per_carat > 0) {
+                $diamond_price = $manual_carat * $manual_quantity * $manual_price_per_carat;
             }
         }
         
@@ -144,7 +156,7 @@ class JPC_Price_Calculator {
         $subtotal_after_discount = $subtotal_after_additional - $discount_amount;
         
         // Get GST percentage
-        $gst_percentage = floatval(get_option('jpc_gst_percentage', 0));
+        $gst_percentage = floatval(get_option('jpc_gst_value', 0));
         
         // Calculate GST on full amount (before discount)
         $gst_on_full = 0;
@@ -187,6 +199,7 @@ class JPC_Price_Calculator {
     
     /**
      * Calculate and store price breakup (for display purposes)
+     * v2.5.14: Added manual diamond calculation support
      * v2.5.1: CRITICAL FIX - Store labels and extra fields in correct format for frontend
      */
     public static function calculate_and_store_breakup($product_id) {
@@ -225,6 +238,17 @@ class JPC_Price_Calculator {
             if ($diamond) {
                 $diamond_unit_price = $diamond->price_per_carat * $diamond->carat;
                 $diamond_price = $diamond_unit_price * $diamond_quantity;
+            }
+        }
+        
+        // v2.5.14: Check for manual diamond entry if no dropdown diamond
+        if ($diamond_price == 0) {
+            $manual_carat = floatval(get_post_meta($product_id, '_jpc_manual_diamond_carat', true));
+            $manual_quantity = intval(get_post_meta($product_id, '_jpc_manual_diamond_quantity', true));
+            $manual_price_per_carat = floatval(get_post_meta($product_id, '_jpc_manual_diamond_price_per_carat', true));
+            
+            if ($manual_carat > 0 && $manual_quantity > 0 && $manual_price_per_carat > 0) {
+                $diamond_price = $manual_carat * $manual_quantity * $manual_price_per_carat;
             }
         }
         
