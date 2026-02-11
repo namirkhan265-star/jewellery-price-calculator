@@ -1,7 +1,7 @@
 <?php
 /**
  * Metal Groups Management Page Template v2.5.29
- * Added: Edit functionality with enable/disable making/wastage charges
+ * FIXED: Checkbox save bug and accurate charge type display
  */
 
 if (!defined('ABSPATH')) {
@@ -102,9 +102,17 @@ $metal_groups = JPC_Metal_Groups::get_all();
                             <td>
                                 <?php if ($group->enable_making_charge): ?>
                                     <span class="dashicons dashicons-yes" style="color: green;"></span>
-                                    <?php echo esc_html(ucfirst($group->making_charge_type ?? 'percentage')); ?>
+                                    <?php 
+                                    // Show accurate charge type
+                                    $making_type = $group->making_charge_type ?? 'percentage';
+                                    if ($making_type === 'percentage') {
+                                        echo 'Per Gram';
+                                    } else {
+                                        echo esc_html(ucfirst($making_type));
+                                    }
+                                    ?>
                                 <?php else: ?>
-                                    <span class="dashicons dashicons-no" style="color: red;"></span>
+                                    <span class="dashicons dashicons-no" style="color: #dc3232;"></span>
                                     <span style="color: #999;"><?php _e('Disabled', 'jewellery-price-calc'); ?></span>
                                 <?php endif; ?>
                             </td>
@@ -113,7 +121,7 @@ $metal_groups = JPC_Metal_Groups::get_all();
                                     <span class="dashicons dashicons-yes" style="color: green;"></span>
                                     <?php echo esc_html(ucfirst($group->wastage_charge_type ?? 'percentage')); ?>
                                 <?php else: ?>
-                                    <span class="dashicons dashicons-no" style="color: red;"></span>
+                                    <span class="dashicons dashicons-no" style="color: #dc3232;"></span>
                                     <span style="color: #999;"><?php _e('Disabled', 'jewellery-price-calc'); ?></span>
                                 <?php endif; ?>
                             </td>
@@ -295,24 +303,30 @@ jQuery(document).ready(function($) {
         }
     });
     
-    // Save Edit
+    // Save Edit - FIXED: Send checkbox as actual checkbox, not 1/0
     $('#jpc-save-edit-group').on('click', function() {
         var formData = {
             action: 'jpc_update_metal_group',
             nonce: jpcAdmin.nonce,
             id: $('#edit_group_id').val(),
             name: $('#edit_group_name').val(),
-            unit: $('#edit_unit').val(),
-            enable_making_charge: $('#edit_enable_making_charge').is(':checked') ? 1 : 0,
-            enable_wastage_charge: $('#edit_enable_wastage_charge').is(':checked') ? 1 : 0
+            unit: $('#edit_unit').val()
         };
+        
+        // CRITICAL FIX: Only add checkbox if checked (PHP expects isset())
+        if ($('#edit_enable_making_charge').is(':checked')) {
+            formData.enable_making_charge = 1;
+        }
+        if ($('#edit_enable_wastage_charge').is(':checked')) {
+            formData.enable_wastage_charge = 1;
+        }
         
         $.post(ajaxurl, formData, function(response) {
             if (response.success) {
                 alert('Metal group updated successfully!');
                 location.reload();
             } else {
-                alert('Error: ' + (response.data || 'Unknown error'));
+                alert('Error: ' + (response.data.message || 'Unknown error'));
             }
         });
     });
@@ -325,17 +339,23 @@ jQuery(document).ready(function($) {
             action: 'jpc_add_metal_group',
             nonce: jpcAdmin.nonce,
             name: $('#group_name').val(),
-            unit: $('#unit').val(),
-            enable_making_charge: $('input[name="enable_making_charge"]').is(':checked') ? 1 : 0,
-            enable_wastage_charge: $('input[name="enable_wastage_charge"]').is(':checked') ? 1 : 0
+            unit: $('#unit').val()
         };
+        
+        // Only add checkbox if checked
+        if ($('input[name="enable_making_charge"]').is(':checked')) {
+            formData.enable_making_charge = 1;
+        }
+        if ($('input[name="enable_wastage_charge"]').is(':checked')) {
+            formData.enable_wastage_charge = 1;
+        }
         
         $.post(ajaxurl, formData, function(response) {
             if (response.success) {
                 alert('Metal group added successfully!');
                 location.reload();
             } else {
-                alert('Error: ' + (response.data || 'Unknown error'));
+                alert('Error: ' + (response.data.message || 'Unknown error'));
             }
         });
     });
@@ -357,7 +377,7 @@ jQuery(document).ready(function($) {
                 alert('Metal group deleted successfully!');
                 location.reload();
             } else {
-                alert('Error: ' + (response.data || 'Unknown error'));
+                alert('Error: ' + (response.data.message || 'Unknown error'));
             }
         });
     });
