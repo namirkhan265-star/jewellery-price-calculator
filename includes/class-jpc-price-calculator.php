@@ -2,6 +2,7 @@
 /**
  * Price Calculator Class
  * Handles all price calculations for jewellery products
+ * v2.5.15: CRITICAL FIX - Implement GST Calculation Base setting (before/after discount)
  * v2.5.14: Added manual diamond calculation support
  * v2.5.1: Fixed label storage and extra fields format for frontend compatibility
  */
@@ -15,6 +16,7 @@ class JPC_Price_Calculator {
     /**
      * Calculate product prices with all components
      * Returns array with all price components for WooCommerce
+     * v2.5.15: FIXED - Now respects jpc_gst_calculation_base setting
      */
     public static function calculate_product_prices($product_id) {
         // Get metal data
@@ -158,21 +160,40 @@ class JPC_Price_Calculator {
         // Get GST percentage
         $gst_percentage = floatval(get_option('jpc_gst_value', 0));
         
-        // Calculate GST on full amount (before discount)
+        // v2.5.15: CRITICAL FIX - Get GST calculation base setting
+        $gst_calculation_base = get_option('jpc_gst_calculation_base', 'after_discount');
+        
+        // Calculate GST on full amount (before discount) - for regular price
         $gst_on_full = 0;
         if ($gst_percentage > 0) {
             $gst_on_full = ($subtotal_after_additional * $gst_percentage) / 100;
         }
         
-        // Calculate GST on discounted amount
+        // Calculate GST on discounted amount - for reference
         $gst_on_discounted = 0;
         if ($gst_percentage > 0) {
             $gst_on_discounted = ($subtotal_after_discount * $gst_percentage) / 100;
         }
         
-        // Calculate final prices
+        // v2.5.15: CRITICAL FIX - Calculate final prices based on GST calculation base setting
         $regular_price = $subtotal_after_additional + $gst_on_full;
-        $sale_price = $subtotal_after_discount + $gst_on_discounted;
+        
+        if ($discount_percentage > 0) {
+            // There is a discount
+            if ($gst_calculation_base === 'before_discount') {
+                // GST calculated on original price, then discount applied
+                // Sale Price = (Subtotal + GST) - Discount
+                // Note: Discount is still calculated on subtotal (before GST)
+                $sale_price = ($subtotal_after_additional + $gst_on_full) - $discount_amount;
+            } else {
+                // GST calculated on discounted price (default/recommended)
+                // Sale Price = (Subtotal - Discount) + GST on discounted amount
+                $sale_price = $subtotal_after_discount + $gst_on_discounted;
+            }
+        } else {
+            // No discount, sale price = regular price
+            $sale_price = $regular_price;
+        }
         
         return array(
             'metal_price' => $metal_price,
@@ -190,6 +211,7 @@ class JPC_Price_Calculator {
             'discount_amount' => $discount_amount,
             'subtotal_after_discount' => $subtotal_after_discount,
             'gst_percentage' => $gst_percentage,
+            'gst_calculation_base' => $gst_calculation_base, // v2.5.15: Added for reference
             'gst_on_full' => $gst_on_full,
             'gst_on_discounted' => $gst_on_discounted,
             'regular_price' => $regular_price,
@@ -199,6 +221,7 @@ class JPC_Price_Calculator {
     
     /**
      * Calculate and store price breakup (for display purposes)
+     * v2.5.15: Updated to respect GST calculation base setting
      * v2.5.14: Added manual diamond calculation support
      * v2.5.1: CRITICAL FIX - Store labels and extra fields in correct format for frontend
      */
@@ -309,11 +332,19 @@ class JPC_Price_Calculator {
         // Get prices with GST
         $prices = self::calculate_product_prices($product_id);
         
-        // Determine which GST to show in breakup
+        // v2.5.15: Determine which GST to show in breakup based on setting
+        $gst_calculation_base = get_option('jpc_gst_calculation_base', 'after_discount');
         $gst_to_display = 0;
+        
         if ($prices['discount_percentage'] > 0) {
-            // If there's a discount, show GST on discounted amount
-            $gst_to_display = $prices['gst_on_discounted'];
+            // There is a discount
+            if ($gst_calculation_base === 'before_discount') {
+                // Show GST on full amount (before discount)
+                $gst_to_display = $prices['gst_on_full'];
+            } else {
+                // Show GST on discounted amount (default)
+                $gst_to_display = $prices['gst_on_discounted'];
+            }
         } else {
             // No discount, show GST on full amount
             $gst_to_display = $prices['gst_on_full'];
@@ -351,6 +382,7 @@ class JPC_Price_Calculator {
             'gst' => $gst_to_display,
             'gst_percentage' => $gst_percentage,
             'gst_label' => $gst_label,
+            'gst_calculation_base' => $gst_calculation_base, // v2.5.15: Store for reference
             'gst_on_full' => $prices['gst_on_full'],
             'gst_on_discounted' => $prices['gst_on_discounted'],
             'subtotal_before_gst' => $prices['subtotal_after_additional'],  // v2.5.1: Add missing field
