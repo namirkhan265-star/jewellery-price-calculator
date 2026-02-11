@@ -1,9 +1,10 @@
 <?php
 /**
- * Price Calculator Class v2.0.0
+ * Price Calculator Class v2.5.4
  * Enhanced with:
  * - Auto/Manual Making Charges
  * - Manual Diamond Entry with 4Cs
+ * - Pearl/Stone/Extra Fee percentage vs fixed calculation (v2.5.4)
  */
 
 if (!defined('ABSPATH')) {
@@ -39,6 +40,29 @@ class JPC_Price_Calculator {
             } else {
                 return $value;
             }
+        }
+    }
+    
+    /**
+     * Calculate additional cost field (v2.5.4 - Percentage or Fixed)
+     * Used for Pearl Cost, Stone Cost, Extra Fee
+     */
+    private static function calculate_additional_cost($product_id, $field_name, $subtotal_for_percentage) {
+        $value = floatval(get_post_meta($product_id, '_jpc_' . $field_name, true));
+        
+        if ($value <= 0) {
+            return 0;
+        }
+        
+        // Get calculation type from settings
+        $type = get_option('jpc_' . $field_name . '_type', 'fixed');
+        
+        if ($type === 'percentage') {
+            // Calculate percentage of subtotal
+            return ($subtotal_for_percentage * $value) / 100;
+        } else {
+            // Fixed value
+            return $value;
         }
     }
     
@@ -126,7 +150,7 @@ class JPC_Price_Calculator {
     }
     
     /**
-     * Calculate product prices with GST (v2.0.0)
+     * Calculate product prices with GST (v2.5.4)
      */
     public static function calculate_product_prices($product_id) {
         // Get metal data
@@ -163,10 +187,14 @@ class JPC_Price_Calculator {
         // Calculate diamond cost (v2.0.0 - Dropdown/Manual)
         $diamond_price = self::calculate_diamond_cost($product_id);
         
-        // Get additional costs
-        $pearl_cost = floatval(get_post_meta($product_id, '_jpc_pearl_cost', true));
-        $stone_cost = floatval(get_post_meta($product_id, '_jpc_stone_cost', true));
-        $extra_fee = floatval(get_post_meta($product_id, '_jpc_extra_fee', true));
+        // Calculate subtotal for percentage-based additional costs
+        // This is the base for percentage calculations: Metal + Diamond + Making + Wastage
+        $subtotal_for_percentage = $metal_price + $diamond_price + $making_charge_amount + $wastage_charge_amount;
+        
+        // Get additional costs (v2.5.4 - Respect percentage vs fixed type)
+        $pearl_cost = self::calculate_additional_cost($product_id, 'pearl_cost', $subtotal_for_percentage);
+        $stone_cost = self::calculate_additional_cost($product_id, 'stone_cost', $subtotal_for_percentage);
+        $extra_fee = self::calculate_additional_cost($product_id, 'extra_fee', $subtotal_for_percentage);
         
         // Get extra field costs
         $extra_field_costs = 0;
