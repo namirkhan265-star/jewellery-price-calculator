@@ -87,7 +87,7 @@ $has_additional_costs = ($enable_field_1 === 'yes' || $enable_field_2 === 'yes' 
             <?php endif; ?>
         </label>
         <input type="number" id="jpc_pearl_cost_value" name="jpc_pearl_cost_value" 
-               value="<?php echo esc_attr($pearl_cost_value); ?>\" 
+               value="<?php echo esc_attr($pearl_cost_value); ?>" 
                step="0.01" min="0">
         <p class="jpc-help-text">
             <?php if ($pearl_cost_type === 'percentage'): ?>
@@ -111,7 +111,7 @@ $has_additional_costs = ($enable_field_1 === 'yes' || $enable_field_2 === 'yes' 
             <?php endif; ?>
         </label>
         <input type="number" id="jpc_extra_fee_value" name="jpc_extra_fee_value" 
-               value="<?php echo esc_attr($extra_fee_value); ?>\" 
+               value="<?php echo esc_attr($extra_fee_value); ?>" 
                step="0.01" min="0">
         <p class="jpc-help-text">
             <?php if ($extra_fee_type === 'percentage'): ?>
@@ -163,9 +163,9 @@ foreach ($extra_field_settings as $settings) {
                 <label for="jpc_extra_field_<?php echo $i; ?>">
                     <?php echo esc_html($extra_field_settings[$i]['label']); ?>
                 </label>
-                <input type="text" id="jpc_extra_field_<?php echo $i; ?>\" 
-                       name="jpc_extra_field_<?php echo $i; ?>\" 
-                       value="<?php echo esc_attr($extra_fields[$i]); ?>\" 
+                <input type="text" id="jpc_extra_field_<?php echo $i; ?>" 
+                       name="jpc_extra_field_<?php echo $i; ?>" 
+                       value="<?php echo esc_attr($extra_fields[$i]); ?>" 
                        class="regular-text">
             </div>
         <?php endif; ?>
