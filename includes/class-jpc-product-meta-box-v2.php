@@ -1,9 +1,10 @@
 <?php
 /**
- * Product Meta Box Handler v2.0.0
+ * Product Meta Box Handler v2.5.26
  * Enhanced with:
  * - Making Charges Toggle (Auto/Manual)
  * - Manual Diamond Entry with 4Cs
+ * v2.5.26: CRITICAL FIX - Save Additional Cost Fields with correct _value suffix
  */
 
 if (!defined('ABSPATH')) {
@@ -107,10 +108,7 @@ class JPC_Product_Meta_Box {
         $manual_diamond_quantity = get_post_meta($post->ID, '_jpc_manual_diamond_quantity', true);
         $manual_diamond_price_per_carat = get_post_meta($post->ID, '_jpc_manual_diamond_price_per_carat', true);
         
-        // Other fields
-        $stone_cost = get_post_meta($post->ID, '_jpc_stone_cost', true);
-        $pearl_cost = get_post_meta($post->ID, '_jpc_pearl_cost', true);
-        $extra_fee = get_post_meta($post->ID, '_jpc_extra_fee', true);
+        // Other fields - v2.5.26: These are now loaded in the template file
         $discount_percentage = get_post_meta($post->ID, '_jpc_discount_percentage', true);
         
         // Extra fields
@@ -248,7 +246,7 @@ class JPC_Product_Meta_Box {
                                          $manual_diamond_cut_id, $manual_diamond_quantity,
                                          $manual_diamond_price_per_carat);
             
-            $this->render_other_costs_section($stone_cost, $pearl_cost, $extra_fee, $discount_percentage, $extra_fields);
+            $this->render_other_costs_section($discount_percentage, $extra_fields);
             ?>
             
         </div>
@@ -273,13 +271,13 @@ class JPC_Product_Meta_Box {
     /**
      * Render other costs section
      */
-    private function render_other_costs_section($stone_cost, $pearl_cost, $extra_fee, $discount_percentage, $extra_fields) {
+    private function render_other_costs_section($discount_percentage, $extra_fields) {
         // Will implement in next file
         include JPC_PLUGIN_DIR . 'templates/product-meta-box/other-costs-section.php';
     }
     
     /**
-     * Save meta box (Part 3 - will create separately)
+     * Save meta box (v2.5.26 - Fixed Additional Cost Fields to use _value suffix)
      */
     public function save_meta_box($post_id, $post) {
         // Verify nonce
@@ -335,10 +333,12 @@ class JPC_Product_Meta_Box {
             delete_post_meta($post_id, '_jpc_diamond_id');
         }
         
-        // Save other costs
-        update_post_meta($post_id, '_jpc_stone_cost', floatval($_POST['jpc_stone_cost'] ?? 0));
-        update_post_meta($post_id, '_jpc_pearl_cost', floatval($_POST['jpc_pearl_cost'] ?? 0));
-        update_post_meta($post_id, '_jpc_extra_fee', floatval($_POST['jpc_extra_fee'] ?? 0));
+        // v2.5.26: CRITICAL FIX - Save Additional Cost Fields with correct _value suffix
+        update_post_meta($post_id, '_jpc_stone_cost_value', floatval($_POST['jpc_stone_cost_value'] ?? 0));
+        update_post_meta($post_id, '_jpc_pearl_cost_value', floatval($_POST['jpc_pearl_cost_value'] ?? 0));
+        update_post_meta($post_id, '_jpc_extra_fee_value', floatval($_POST['jpc_extra_fee_value'] ?? 0));
+        
+        // Save discount
         update_post_meta($post_id, '_jpc_discount_percentage', floatval($_POST['jpc_discount_percentage'] ?? 0));
         
         // Save extra fields
