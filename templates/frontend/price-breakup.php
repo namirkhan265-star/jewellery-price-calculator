@@ -2,6 +2,7 @@
 /**
  * Frontend Price Breakup Template - USES ONLY STORED BREAKUP DATA
  * NO CALCULATIONS - DISPLAYS STORED DATA ONLY
+ * v2.5.9: FORCE fetch GST settings if missing in breakup (CRITICAL FIX)
  * v2.5.8: Show "Metal Cost" label instead of metal name
  * v2.5.6: CRITICAL FIX - Always show Metal Price + Fix GST percentage display
  */
@@ -43,9 +44,23 @@ $pearl_cost_label = get_option('jpc_pearl_cost_label', 'Pearl Cost');
 $stone_cost_label = get_option('jpc_stone_cost_label', 'Stone Cost');
 $extra_fee_label = get_option('jpc_extra_fee_label', 'Extra Fee');
 
-// Get GST label and percentage
-$gst_label = isset($breakup['gst_label']) ? $breakup['gst_label'] : get_option('jpc_gst_label', 'GST');
-$gst_percentage = isset($breakup['gst_percentage']) ? floatval($breakup['gst_percentage']) : 0;
+// CRITICAL FIX v2.5.9: ALWAYS fetch GST settings from options
+// This ensures label and percentage are always current even if breakup is old
+$gst_label = get_option('jpc_gst_label', 'GST');
+$enable_gst = get_option('jpc_enable_gst', 'yes');
+$gst_percentage = 0;
+
+if ($enable_gst === 'yes') {
+    $gst_percentage = floatval(get_option('jpc_gst_value', 3));
+}
+
+// Override with breakup data if it exists (for backwards compatibility)
+if (isset($breakup['gst_label']) && !empty($breakup['gst_label'])) {
+    $gst_label = $breakup['gst_label'];
+}
+if (isset($breakup['gst_percentage']) && $breakup['gst_percentage'] > 0) {
+    $gst_percentage = floatval($breakup['gst_percentage']);
+}
 ?>
 
 <div class="jpc-price-breakup">
@@ -167,12 +182,12 @@ $gst_percentage = isset($breakup['gst_percentage']) ? floatval($breakup['gst_per
             </tr>
             <?php endif; ?>
             
-            <!-- GST - Show with percentage dynamically (FIXED) -->
+            <!-- GST - ALWAYS show with percentage from settings (v2.5.9 FIX) -->
             <?php if (!empty($breakup['gst']) && $breakup['gst'] > 0): ?>
             <tr>
                 <td>
                     <?php 
-                    // Show GST label with percentage
+                    // ALWAYS show GST with percentage if enabled
                     if ($gst_percentage > 0) {
                         printf('%s (%s%%)', esc_html($gst_label), number_format($gst_percentage, 2));
                     } else {
