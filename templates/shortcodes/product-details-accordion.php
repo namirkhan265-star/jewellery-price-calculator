@@ -1,8 +1,12 @@
 <?php
 /**
- * Product Details Accordion Template v2.5.22
+ * Product Details Accordion Template v2.5.24
  * Displays product details, diamond details, metal details, price breakup, and tags
  * Usage: [jpc_product_details]
+ * 
+ * NEW v2.5.24: CRITICAL FIX - Hide Pearl/Stone/Extra Fee when value is ₹1 or less
+ * - Changed display logic from !empty() to value > 1
+ * - Prevents showing meaningless ₹1/- values in price breakup
  * 
  * NEW v2.5.22: FIX - Respect enable/disable setting for Additional Cost Fields
  * - Check get_option('jpc_enable_extra_field_X') before displaying each field
@@ -83,7 +87,7 @@ if ($diamond_entry_mode === 'manual') {
     
     if ($manual_diamond_colour_id) {
         $colour = JPC_Diamond_Colours::get_by_id($manual_diamond_colour_id);
-        $diamond_colour_label = $colour ? $colour->name : '';
+        $diamond_colour_label = $colour ? $diamond_colour->name : '';
     }
     
     if ($manual_diamond_clarity_id) {
@@ -381,21 +385,30 @@ $has_tags = !empty($tags);
             </div>
             <?php endif; ?>
             
-            <?php if (!empty($price_breakup['pearl_cost'])): ?>
+            <?php 
+            // v2.5.24: CRITICAL FIX - Only show if value > 1 (not just !empty)
+            if (!empty($price_breakup['pearl_cost']) && floatval($price_breakup['pearl_cost']) > 1): 
+            ?>
             <div class="jpc-detail-row">
                 <span class="jpc-detail-label"><?php echo esc_html(get_option('jpc_pearl_cost_label', 'Pearl Cost')); ?></span>
                 <span class="jpc-detail-value">₹ <?php echo number_format($price_breakup['pearl_cost'], 0); ?>/-</span>
             </div>
             <?php endif; ?>
             
-            <?php if (!empty($price_breakup['stone_cost'])): ?>
+            <?php 
+            // v2.5.24: CRITICAL FIX - Only show if value > 1 (not just !empty)
+            if (!empty($price_breakup['stone_cost']) && floatval($price_breakup['stone_cost']) > 1): 
+            ?>
             <div class="jpc-detail-row">
                 <span class="jpc-detail-label"><?php echo esc_html(get_option('jpc_stone_cost_label', 'Stone Cost')); ?></span>
                 <span class="jpc-detail-value">₹ <?php echo number_format($price_breakup['stone_cost'], 0); ?>/-</span>
             </div>
             <?php endif; ?>
             
-            <?php if (!empty($price_breakup['extra_fee'])): ?>
+            <?php 
+            // v2.5.24: CRITICAL FIX - Only show if value > 1 (not just !empty)
+            if (!empty($price_breakup['extra_fee']) && floatval($price_breakup['extra_fee']) > 1): 
+            ?>
             <div class="jpc-detail-row">
                 <span class="jpc-detail-label"><?php echo esc_html(get_option('jpc_extra_fee_label', 'Extra Fee')); ?></span>
                 <span class="jpc-detail-value">₹ <?php echo number_format($price_breakup['extra_fee'], 0); ?>/-</span>
@@ -498,9 +511,12 @@ $has_tags = !empty($tags);
                 <?php 
                 $tag_links = array();
                 foreach ($tags as $tag) {
-                    $tag_links[] = '<a href="' . get_term_link($tag) . '">' . esc_html($tag->name) . '</a>';
+                    $tag_link = get_term_link($tag);
+                    if (!is_wp_error($tag_link)) {
+                        $tag_links[] = '<a href="' . esc_url($tag_link) . '" class="jpc-tag">' . esc_html($tag->name) . '</a>';
+                    }
                 }
-                echo implode(', ', $tag_links);
+                echo implode(' ', $tag_links);
                 ?>
             </div>
         </div>
@@ -512,13 +528,13 @@ $has_tags = !empty($tags);
 <style>
 .jpc-product-details-accordion {
     margin: 20px 0;
-    border: 1px solid #ddd;
-    border-radius: 5px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
     overflow: hidden;
 }
 
 .jpc-accordion-section {
-    border-bottom: 1px solid #ddd;
+    border-bottom: 1px solid #e0e0e0;
 }
 
 .jpc-accordion-section:last-child {
@@ -526,17 +542,17 @@ $has_tags = !empty($tags);
 }
 
 .jpc-accordion-header {
-    background: #f5f5f5;
-    padding: 15px 20px;
-    cursor: pointer;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    padding: 15px 20px;
+    background: #f8f8f8;
+    cursor: pointer;
     transition: background 0.3s;
 }
 
 .jpc-accordion-header:hover {
-    background: #e9e9e9;
+    background: #f0f0f0;
 }
 
 .jpc-accordion-header h3 {
@@ -547,9 +563,8 @@ $has_tags = !empty($tags);
 }
 
 .jpc-accordion-toggle {
-    font-size: 24px;
+    font-size: 20px;
     font-weight: bold;
-    line-height: 1;
     transition: transform 0.3s;
 }
 
@@ -570,7 +585,7 @@ $has_tags = !empty($tags);
 .jpc-detail-row {
     display: flex;
     justify-content: space-between;
-    padding: 10px 0;
+    padding: 8px 0;
     border-bottom: 1px solid #f0f0f0;
 }
 
@@ -579,86 +594,55 @@ $has_tags = !empty($tags);
 }
 
 .jpc-detail-label {
+    font-weight: 500;
     color: #666;
-    font-size: 14px;
 }
 
 .jpc-detail-value {
-    font-weight: 500;
-    font-size: 14px;
+    font-weight: 600;
     color: #333;
 }
 
 .jpc-price-summary {
     margin-top: 15px;
     padding-top: 15px;
-    border-top: 2px solid #333;
-}
-
-.jpc-regular-price-row .jpc-detail-value {
-    color: #999;
+    border-top: 2px solid #e0e0e0;
 }
 
 .jpc-strikethrough {
     text-decoration: line-through;
-}
-
-.jpc-sale-price-row {
-    margin-top: 10px;
-}
-
-.jpc-total-row {
-    margin-top: 15px;
-    padding-top: 15px;
-    border-top: 2px solid #333;
-}
-
-.jpc-total-row .jpc-detail-label,
-.jpc-total-row .jpc-detail-value {
-    font-size: 16px;
-    font-weight: bold;
+    color: #999 !important;
 }
 
 .jpc-savings-badge {
-    background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
-    color: #155724;
-    padding: 12px 15px;
-    border-radius: 5px;
-    text-align: center;
     margin-top: 15px;
-    border: 2px solid #28a745;
+    padding: 12px;
+    background: #fff3cd;
+    border: 1px solid #ffc107;
+    border-radius: 4px;
+    text-align: center;
+    color: #856404;
 }
 
 .jpc-tags-list {
-    font-size: 14px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
 }
 
-.jpc-tags-list a {
-    color: #2271b1;
+.jpc-tag {
+    display: inline-block;
+    padding: 6px 12px;
+    background: #f0f0f0;
+    border-radius: 4px;
     text-decoration: none;
+    color: #333;
+    font-size: 13px;
+    transition: background 0.3s;
 }
 
-.jpc-tags-list a:hover {
-    text-decoration: underline;
-}
-
-@media (max-width: 768px) {
-    .jpc-accordion-header {
-        padding: 12px 15px;
-    }
-    
-    .jpc-accordion-header h3 {
-        font-size: 13px;
-    }
-    
-    .jpc-accordion-content {
-        padding: 15px;
-    }
-    
-    .jpc-detail-label,
-    .jpc-detail-value {
-        font-size: 13px;
-    }
+.jpc-tag:hover {
+    background: #e0e0e0;
 }
 </style>
 
