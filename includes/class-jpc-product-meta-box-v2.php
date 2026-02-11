@@ -85,6 +85,18 @@ class JPC_Product_Meta_Box {
         // Get saved values
         $metal_id = get_post_meta($post->ID, '_jpc_metal_id', true);
         $metal_weight = get_post_meta($post->ID, '_jpc_metal_weight', true);
+        // Get selected metal's group settings for conditional display
+$selected_metal = null;
+if ($metal_id) {
+    foreach ($metals as $m) {
+        if ($m->id == $metal_id) {
+            $selected_metal = $m;
+            break;
+        }
+    }
+}
+$enable_making = $selected_metal ? ($selected_metal->enable_making_charge ?? 1) : 1;
+$enable_wastage = $selected_metal ? ($selected_metal->enable_wastage_charge ?? 1) : 1;
         $wastage = get_post_meta($post->ID, '_jpc_wastage', true);
         
         // Making charges v2.0.0
@@ -147,10 +159,12 @@ class JPC_Product_Meta_Box {
                     <select id="jpc_metal_id" name="jpc_metal_id">
                         <option value=""><?php _e('Select Metal', 'jewellery-price-calc'); ?></option>
                         <?php foreach ($metals as $metal): ?>
-                            <option value="<?php echo esc_attr($metal->id); ?>" 
-                                    data-price="<?php echo esc_attr($metal->price_per_unit); ?>"
-                                    data-making-charges="<?php echo esc_attr($metal->making_charges_per_gram ?? 0); ?>"
-                                    <?php selected($metal_id, $metal->id); ?>>
+                           <option value="<?php echo esc_attr($metal->id); ?>" 
+        data-price="<?php echo esc_attr($metal->price_per_unit); ?>"
+        data-making-charges="<?php echo esc_attr($metal->making_charges_per_gram ?? 0); ?>"
+        data-enable-making="<?php echo esc_attr($metal->enable_making_charge ?? 1); ?>"
+        data-enable-wastage="<?php echo esc_attr($metal->enable_wastage_charge ?? 1); ?>"
+        <?php selected($metal_id, $metal->id); ?>>
                                 <?php echo esc_html($metal->display_name); ?> 
                                 (₹<?php echo number_format($metal->price_per_unit, 2); ?>/gram)
                             </option>
@@ -165,20 +179,20 @@ class JPC_Product_Meta_Box {
                            step="0.001" min="0">
                 </div>
                 
-                <div class="jpc-form-field">
-                    <label for="jpc_wastage"><?php _e('Wastage (%)', 'jewellery-price-calc'); ?></label>
-                    <input type="number" id="jpc_wastage" name="jpc_wastage" 
-                           value="<?php echo esc_attr($wastage); ?>" 
-                           step="0.01" min="0">
-                </div>
+                <div class="jpc-form-field" id="jpc_wastage_field" style="display: <?php echo $enable_wastage ? 'block' : 'none'; ?>;">
+    <label for="jpc_wastage"><?php _e('Wastage (%)', 'jewellery-price-calc'); ?></label>
+    <input type="number" id="jpc_wastage" name="jpc_wastage" 
+           value="<?php echo esc_attr($wastage); ?>" 
+           step="0.01" min="0">
+</div>
             </div>
             
             <!-- Making Charges Section v2.0.0 -->
-            <div class="jpc-section highlight">
-                <h3>
-                    <?php _e('Making Charges', 'jewellery-price-calc'); ?>
-                    <span class="jpc-new-badge">v2.0 NEW</span>
-                </h3>
+<div class="jpc-section highlight" id="jpc_making_charges_section" style="display: <?php echo $enable_making ? 'block' : 'none'; ?>;">
+    <h3>
+        <?php _e('Making Charges', 'jewellery-price-calc'); ?>
+        <span class="jpc-new-badge">v2.0 NEW</span>
+    </h3>
                 
                 <div class="jpc-radio-group">
                     <label>
