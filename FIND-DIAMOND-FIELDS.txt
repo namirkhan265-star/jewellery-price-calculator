@@ -1,0 +1,66 @@
+═══════════════════════════════════════════════════════════════
+  FIND CORRECT DIAMOND FIELD NAMES
+═══════════════════════════════════════════════════════════════
+
+PROBLEM:
+I guessed the meta field names for manual diamonds, but they're wrong.
+We need to find the ACTUAL field names used by your plugin.
+
+═══════════════════════════════════════════════════════════════
+  SIMPLE 3-STEP PROCESS
+═══════════════════════════════════════════════════════════════
+
+STEP 1: Upload Script
+↓
+Download: check-meta-fields.php
+Upload to: /wp-content/plugins/jewellery-price-calculator-main/
+
+STEP 2: Run Script
+↓
+Visit: https://detailx.co.in/wp-content/plugins/jewellery-price-calculator-main/check-meta-fields.php
+
+Enter Product ID for "Test Product 2" (the one with manual diamonds)
+Click "Check"
+
+STEP 3: Find Diamond Fields
+↓
+Look at the YELLOW highlighted rows (they contain "diamond")
+Find the fields that have these values:
+- 0.50 or 0.5 (carat size)
+- 5 (quantity)
+- 3000 (price per carat)
+
+SEND ME A SCREENSHOT of the yellow rows!
+
+═══════════════════════════════════════════════════════════════
+  WHAT I'M LOOKING FOR
+═══════════════════════════════════════════════════════════════
+
+I guessed these field names:
+❌ _jpc_manual_diamond_carat
+❌ _jpc_manual_diamond_quantity  
+❌ _jpc_manual_diamond_price_per_carat
+
+But the ACTUAL names might be different, like:
+✅ _jpc_diamond_carat_manual
+✅ _jpc_diamond_qty
+✅ _jpc_diamond_base_price
+✅ Or something completely different!
+
+Once I see the screenshot, I'll know the exact field names and can
+fix the calculator to use the correct ones.
+
+═══════════════════════════════════════════════════════════════
+  HOW TO FIND PRODUCT ID
+═══════════════════════════════════════════════════════════════
+
+1. Go to WordPress Admin → Products
+2. Click "Edit" on "Test Product 2"
+3. Look at the URL in browser:
+   https://detailx.co.in/wp-admin/post.php?post=12345&action=edit
+                                                 ^^^^^
+                                            This is the ID
+
+═══════════════════════════════════════════════════════════════
+
+Once you send me the screenshot, I can fix it in 2 minutes! 🚀
