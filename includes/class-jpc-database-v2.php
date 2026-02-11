@@ -99,6 +99,7 @@ class JPC_Database {
     
     /**
      * Create diamond-related tables
+     * v1.9.0: Added shape, colour, clarity, cut tables
      */
     private static function create_diamond_tables() {
         global $wpdb;
@@ -117,31 +118,30 @@ class JPC_Database {
             UNIQUE KEY `slug` (`slug`)
         ) $charset_collate;";
         
-        $result = $wpdb->query($sql);
-        error_log("JPC: Created/verified table: $table_diamond_groups (result: $result)");
+        $wpdb->query($sql);
+        error_log("JPC: Created/verified table: $table_diamond_groups");
         
         // Diamond Types Table
         $table_diamond_types = $wpdb->prefix . 'jpc_diamond_types';
         $sql = "CREATE TABLE IF NOT EXISTS `$table_diamond_types` (
             `id` bigint(20) NOT NULL AUTO_INCREMENT,
+            `name` varchar(100) NOT NULL,
+            `slug` varchar(100) NOT NULL,
             `diamond_group_id` bigint(20) NOT NULL,
-            `carat_from` decimal(10,3) NOT NULL,
-            `carat_to` decimal(10,3) NOT NULL,
-            `price_per_carat` decimal(10,2) NOT NULL DEFAULT 0,
-            `display_name` varchar(200) NOT NULL,
+            `description` text,
             `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
             `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             PRIMARY KEY (`id`),
-            KEY `diamond_group_id` (`diamond_group_id`),
-            KEY `carat_range` (`carat_from`, `carat_to`)
+            UNIQUE KEY `slug` (`slug`),
+            KEY `diamond_group_id` (`diamond_group_id`)
         ) $charset_collate;";
         
         $wpdb->query($sql);
         error_log("JPC: Created/verified table: $table_diamond_types");
         
         // Diamond Certifications Table
-        $table_diamond_certs = $wpdb->prefix . 'jpc_diamond_certifications';
-        $sql = "CREATE TABLE IF NOT EXISTS `$table_diamond_certs` (
+        $table_diamond_certifications = $wpdb->prefix . 'jpc_diamond_certifications';
+        $sql = "CREATE TABLE IF NOT EXISTS `$table_diamond_certifications` (
             `id` bigint(20) NOT NULL AUTO_INCREMENT,
             `name` varchar(100) NOT NULL,
             `slug` varchar(100) NOT NULL,
@@ -155,7 +155,7 @@ class JPC_Database {
         ) $charset_collate;";
         
         $wpdb->query($sql);
-        error_log("JPC: Created/verified table: $table_diamond_certs");
+        error_log("JPC: Created/verified table: $table_diamond_certifications");
         
         // Diamond Shapes Table (v1.9.0)
         $table_diamond_shapes = $wpdb->prefix . 'jpc_diamond_shapes';
@@ -350,6 +350,7 @@ class JPC_Database {
     
     /**
      * Insert default metal groups
+     * FIXED: Now includes enable_making_charge and enable_wastage_charge set to 1
      */
     private static function insert_default_metal_groups() {
         global $wpdb;
@@ -362,16 +363,37 @@ class JPC_Database {
         }
         
         $default_groups = array(
-            array('name' => 'Gold', 'unit' => 'gram'),
-            array('name' => 'Silver', 'unit' => 'gram'),
-            array('name' => 'Platinum', 'unit' => 'gram'),
+            array(
+                'name' => 'Gold', 
+                'unit' => 'gram',
+                'enable_making_charge' => 1,
+                'making_charge_type' => 'percentage',
+                'enable_wastage_charge' => 1,
+                'wastage_charge_type' => 'percentage'
+            ),
+            array(
+                'name' => 'Silver', 
+                'unit' => 'gram',
+                'enable_making_charge' => 1,
+                'making_charge_type' => 'percentage',
+                'enable_wastage_charge' => 1,
+                'wastage_charge_type' => 'percentage'
+            ),
+            array(
+                'name' => 'Platinum', 
+                'unit' => 'gram',
+                'enable_making_charge' => 1,
+                'making_charge_type' => 'percentage',
+                'enable_wastage_charge' => 1,
+                'wastage_charge_type' => 'percentage'
+            ),
         );
         
         foreach ($default_groups as $group) {
             $wpdb->insert($table, $group);
         }
         
-        error_log("JPC: Inserted default metal groups");
+        error_log("JPC: Inserted default metal groups with making/wastage charges enabled");
     }
     
     /**
@@ -498,13 +520,13 @@ class JPC_Database {
         $default_clarities = array(
             array('name' => 'FL - Flawless', 'slug' => 'fl-flawless', 'adjustment_type' => 'percentage', 'adjustment_value' => 30, 'description' => 'No inclusions or blemishes'),
             array('name' => 'IF - Internally Flawless', 'slug' => 'if-internally-flawless', 'adjustment_type' => 'percentage', 'adjustment_value' => 25, 'description' => 'No inclusions, only surface blemishes'),
-            array('name' => 'VVS1 - Very Very Slightly Included', 'slug' => 'vvs1', 'adjustment_type' => 'percentage', 'adjustment_value' => 20, 'description' => 'Minute inclusions, difficult to see'),
-            array('name' => 'VVS2 - Very Very Slightly Included', 'slug' => 'vvs2', 'adjustment_type' => 'percentage', 'adjustment_value' => 15, 'description' => 'Minute inclusions, very difficult to see'),
+            array('name' => 'VVS1 - Very Very Slightly Included', 'slug' => 'vvs1', 'adjustment_type' => 'percentage', 'adjustment_value' => 20, 'description' => 'Minute inclusions, very difficult to see'),
+            array('name' => 'VVS2 - Very Very Slightly Included', 'slug' => 'vvs2', 'adjustment_type' => 'percentage', 'adjustment_value' => 15, 'description' => 'Minute inclusions, difficult to see'),
             array('name' => 'VS1 - Very Slightly Included', 'slug' => 'vs1', 'adjustment_type' => 'percentage', 'adjustment_value' => 10, 'description' => 'Minor inclusions, difficult to see'),
             array('name' => 'VS2 - Very Slightly Included', 'slug' => 'vs2', 'adjustment_type' => 'percentage', 'adjustment_value' => 5, 'description' => 'Minor inclusions, somewhat easy to see'),
             array('name' => 'SI1 - Slightly Included', 'slug' => 'si1', 'adjustment_type' => 'percentage', 'adjustment_value' => 0, 'description' => 'Noticeable inclusions, easy to see'),
             array('name' => 'SI2 - Slightly Included', 'slug' => 'si2', 'adjustment_type' => 'percentage', 'adjustment_value' => -10, 'description' => 'Noticeable inclusions, very easy to see'),
-            array('name' => 'I1-I3 - Included', 'slug' => 'i1-i3-included', 'adjustment_type' => 'percentage', 'adjustment_value' => -25, 'description' => 'Obvious inclusions, may affect brilliance'),
+            array('name' => 'I1-I3 - Included', 'slug' => 'i1-i3-included', 'adjustment_type' => 'percentage', 'adjustment_value' => -25, 'description' => 'Obvious inclusions, may affect transparency'),
         );
         
         foreach ($default_clarities as $clarity) {
@@ -529,9 +551,9 @@ class JPC_Database {
         $default_cuts = array(
             array('name' => 'Excellent', 'slug' => 'excellent', 'adjustment_type' => 'percentage', 'adjustment_value' => 15, 'description' => 'Maximum brilliance and fire'),
             array('name' => 'Very Good', 'slug' => 'very-good', 'adjustment_type' => 'percentage', 'adjustment_value' => 10, 'description' => 'Superior brilliance'),
-            array('name' => 'Good', 'slug' => 'good', 'adjustment_type' => 'percentage', 'adjustment_value' => 0, 'description' => 'Good brilliance'),
-            array('name' => 'Fair', 'slug' => 'fair', 'adjustment_type' => 'percentage', 'adjustment_value' => -10, 'description' => 'Reduced brilliance'),
-            array('name' => 'Poor', 'slug' => 'poor', 'adjustment_type' => 'percentage', 'adjustment_value' => -20, 'description' => 'Little brilliance'),
+            array('name' => 'Good', 'slug' => 'good', 'adjustment_type' => 'percentage', 'adjustment_value' => 5, 'description' => 'Good brilliance'),
+            array('name' => 'Fair', 'slug' => 'fair', 'adjustment_type' => 'percentage', 'adjustment_value' => 0, 'description' => 'Moderate brilliance'),
+            array('name' => 'Poor', 'slug' => 'poor', 'adjustment_type' => 'percentage', 'adjustment_value' => -10, 'description' => 'Little brilliance'),
         );
         
         foreach ($default_cuts as $cut) {
@@ -539,34 +561,5 @@ class JPC_Database {
         }
         
         error_log("JPC: Inserted default diamond cuts");
-    }
-    
-    /**
-     * Drop all plugin tables
-     */
-    public static function drop_tables() {
-        global $wpdb;
-        
-        $tables = array(
-            'jpc_metal_groups',
-            'jpc_metals',
-            'jpc_diamond_groups',
-            'jpc_diamond_types',
-            'jpc_diamond_certifications',
-            'jpc_diamond_shapes',
-            'jpc_diamond_colours',
-            'jpc_diamond_clarities',
-            'jpc_diamond_cuts',
-            'jpc_diamonds',
-            'jpc_metal_price_history',
-            'jpc_diamond_price_history'
-        );
-        
-        foreach ($tables as $table) {
-            $full_table_name = $wpdb->prefix . $table;
-            $wpdb->query("DROP TABLE IF EXISTS `$full_table_name`");
-        }
-        
-        error_log("JPC: Dropped all plugin tables");
     }
 }
