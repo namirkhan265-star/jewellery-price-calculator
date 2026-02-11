@@ -1,6 +1,6 @@
 <?php
 /**
- * Price Calculator Class v2.5.15
+ * Price Calculator Class v2.5.18
  * Enhanced with:
  * - Auto/Manual Making Charges
  * - Manual Diamond Entry with 4Cs
@@ -9,6 +9,7 @@
  * - GST enable/disable respect with generic rate (v2.5.5)
  * - CRITICAL FIX: Use price_per_unit instead of price_per_gram (v2.5.7)
  * - CRITICAL FIX: Use _jpc_diamond_entry_mode instead of _jpc_diamond_mode (v2.5.15)
+ * - CRITICAL FIX: Correct GST calculation for "Before Discount" option (v2.5.18)
  */
 
 if (!defined('ABSPATH')) {
@@ -104,7 +105,7 @@ class JPC_Price_Calculator {
     }
     
     /**
-     * Calculate product prices (v2.5.7 - Fixed price_per_unit bug)
+     * Calculate product prices (v2.5.18 - Fixed GST calculation for "Before Discount")
      */
     public static function calculate_product_prices($product_id) {
         // Get metal info
@@ -214,6 +215,7 @@ class JPC_Price_Calculator {
             $gst_percentage = floatval(get_option('jpc_gst_value', 3));
         }
         
+        // v2.5.18: CRITICAL FIX - Check for 'before_discount' (not 'original_price')
         $gst_calculation_base = get_option('jpc_gst_calculation_base', 'after_discount');
         
         // Calculate GST (only if enabled)
@@ -221,20 +223,33 @@ class JPC_Price_Calculator {
         $gst_on_discounted = 0;
         
         if ($enable_gst === 'yes' && $gst_percentage > 0) {
-            if ($gst_calculation_base === 'original_price') {
-                // GST on original price (before discount)
-                $gst_on_full = ($subtotal_after_additional * $gst_percentage) / 100;
-                $gst_on_discounted = $gst_on_full;
-            } else {
-                // GST on discounted price (default)
-                $gst_on_full = ($subtotal_after_additional * $gst_percentage) / 100;
-                $gst_on_discounted = ($subtotal_after_discount * $gst_percentage) / 100;
-            }
+            // Always calculate GST on full amount (for regular price)
+            $gst_on_full = ($subtotal_after_additional * $gst_percentage) / 100;
+            
+            // Calculate GST on discounted amount (for sale price when after_discount is selected)
+            $gst_on_discounted = ($subtotal_after_discount * $gst_percentage) / 100;
         }
         
-        // Calculate final prices
+        // v2.5.18: CRITICAL FIX - Calculate final prices based on GST calculation base
         $regular_price = $subtotal_after_additional + $gst_on_full;
-        $sale_price = $subtotal_after_discount + $gst_on_discounted;
+        
+        if ($discount_percentage > 0) {
+            // There is a discount
+            if ($gst_calculation_base === 'before_discount') {
+                // GST calculated on original price (before discount)
+                // Sale Price = (Subtotal + GST) - Discount
+                // This ensures GST amount stays the same regardless of discount
+                $sale_price = ($subtotal_after_additional + $gst_on_full) - $discount_amount;
+            } else {
+                // GST calculated on discounted price (default/recommended)
+                // Sale Price = (Subtotal - Discount) + GST on discounted amount
+                // This reduces GST when discount is applied
+                $sale_price = $subtotal_after_discount + $gst_on_discounted;
+            }
+        } else {
+            // No discount, sale price = regular price
+            $sale_price = $regular_price;
+        }
         
         return array(
             'metal_price' => $metal_price,
@@ -252,6 +267,7 @@ class JPC_Price_Calculator {
             'discount_amount' => $discount_amount,
             'subtotal_after_discount' => $subtotal_after_discount,
             'gst_percentage' => $gst_percentage,
+            'gst_calculation_base' => $gst_calculation_base,
             'gst_on_full' => $gst_on_full,
             'gst_on_discounted' => $gst_on_discounted,
             'regular_price' => $regular_price,
@@ -260,146 +276,129 @@ class JPC_Price_Calculator {
     }
     
     /**
-     * Calculate and store price breakup (for display purposes) v2.0.0
+     * Calculate and store price breakup (v2.5.18 - Fixed GST display for "Before Discount")
      */
     public static function calculate_and_store_breakup($product_id) {
-        // Get prices
         $prices = self::calculate_product_prices($product_id);
         
         if (!$prices) {
             return false;
         }
         
-        // Get extra field costs with labels
-        $extra_fields = array();
-        for ($i = 1; $i <= 5; $i++) {
-            $enabled = get_option('jpc_enable_extra_field_' . $i);
-            if ($enabled === 'yes' || $enabled === '1' || $enabled === 1 || $enabled === true) {
-                $label = get_option('jpc_extra_field_label_' . $i, 'Extra Field #' . $i);
-                $value = floatval(get_post_meta($product_id, '_jpc_extra_field_' . $i, true));
-                $extra_fields[] = array(
-                    'field_number' => $i,
-                    'label' => $label,
-                    'value' => $value
-                );
-            }
-        }
+        // Get labels
+        $gst_label = get_option('jpc_gst_label', 'GST');
+        $additional_percentage_label = get_option('jpc_additional_percentage_label', 'Processing Fee');
+        $pearl_cost_label = get_option('jpc_pearl_cost_label', 'Pearl Cost');
+        $stone_cost_label = get_option('jpc_stone_cost_label', 'Stone Cost');
+        $extra_fee_label = get_option('jpc_extra_fee_label', 'Extra Fee');
         
-        // Determine which GST to show in breakup
+        // v2.5.18: CRITICAL FIX - Show correct GST amount based on calculation base
         $gst_to_display = 0;
         if ($prices['discount_percentage'] > 0) {
-            $gst_to_display = $prices['gst_on_discounted'];
+            // There is a discount
+            if ($prices['gst_calculation_base'] === 'before_discount') {
+                // Show GST on full amount (before discount)
+                $gst_to_display = $prices['gst_on_full'];
+            } else {
+                // Show GST on discounted amount (default)
+                $gst_to_display = $prices['gst_on_discounted'];
+            }
         } else {
+            // No discount, show GST on full amount
             $gst_to_display = $prices['gst_on_full'];
         }
         
-        // Get labels
-        $additional_percentage_label = get_option('jpc_additional_percentage_label', 'Additional Percentage');
-        $additional_percentage_value = floatval(get_option('jpc_additional_percentage_value', 0));
-        $gst_label = get_option('jpc_gst_label', 'GST');
-        
-        // Store price breakup for display
+        // Build breakup array
         $breakup = array(
             'metal_price' => $prices['metal_price'],
             'diamond_price' => $prices['diamond_price'],
             'making_charge' => $prices['making_charge'],
             'wastage_charge' => $prices['wastage_charge'],
             'pearl_cost' => $prices['pearl_cost'],
+            'pearl_cost_label' => $pearl_cost_label,
             'stone_cost' => $prices['stone_cost'],
+            'stone_cost_label' => $stone_cost_label,
             'extra_fee' => $prices['extra_fee'],
-            'extra_fields' => $extra_fields,
+            'extra_fee_label' => $extra_fee_label,
             'additional_percentage' => $prices['additional_percentage_amount'],
             'additional_percentage_label' => $additional_percentage_label,
-            'additional_percentage_value' => $additional_percentage_value,
             'discount' => $prices['discount_amount'],
             'gst' => $gst_to_display,
             'gst_percentage' => $prices['gst_percentage'],
             'gst_label' => $gst_label,
+            'gst_calculation_base' => $prices['gst_calculation_base'],
             'gst_on_full' => $prices['gst_on_full'],
             'gst_on_discounted' => $prices['gst_on_discounted'],
+            'subtotal_before_gst' => $prices['subtotal_after_additional'],
             'subtotal' => $prices['sale_price'],
             'final_price' => $prices['sale_price'],
         );
         
+        // Add extra fields
+        for ($i = 1; $i <= 5; $i++) {
+            $enabled = get_option('jpc_enable_extra_field_' . $i);
+            if ($enabled === 'yes' || $enabled === '1' || $enabled === 1 || $enabled === true) {
+                $label = get_option('jpc_extra_field_label_' . $i, 'Extra Field #' . $i);
+                $value = floatval(get_post_meta($product_id, '_jpc_extra_field_' . $i, true));
+                
+                $breakup['extra_field_' . $i] = $value;
+                $breakup['extra_field_label_' . $i] = $label;
+            }
+        }
+        
+        // Store breakup
         update_post_meta($product_id, '_jpc_price_breakup', $breakup);
         
         return $breakup;
     }
     
     /**
-     * Calculate and update product price - RETURNS SUCCESS STATUS
+     * Update product prices in WooCommerce
      */
-    public static function calculate_and_update_price($product_id) {
+    public static function update_product_prices($product_id) {
         // Prevent infinite loops
-        if (isset(self::$calculating_products[$product_id])) {
-            return false;
+        if (in_array($product_id, self::$calculating_products)) {
+            return;
         }
         
-        self::$calculating_products[$product_id] = true;
+        self::$calculating_products[] = $product_id;
         
-        try {
-            // Calculate prices
-            $prices = self::calculate_product_prices($product_id);
-            
-            if (!$prices) {
-                unset(self::$calculating_products[$product_id]);
-                return false;
-            }
-            
-            // Clear all WooCommerce caches first
-            wp_cache_delete('product-' . $product_id, 'products');
-            wp_cache_delete($product_id, 'post_meta');
-            wc_delete_product_transients($product_id);
-            
-            // Get WooCommerce product (fresh from database)
-            $product = wc_get_product($product_id);
-            
-            if (!$product) {
-                unset(self::$calculating_products[$product_id]);
-                return false;
-            }
-            
-            // Set prices using both WooCommerce methods AND direct meta updates
-            $product->set_regular_price($prices['regular_price']);
-            $product->set_sale_price($prices['sale_price']);
-            $product->set_price($prices['sale_price']);
-            
-            // Save product (this triggers WooCommerce hooks)
-            $product->save();
-            
-            // Direct meta updates to ensure values are stored
+        $prices = self::calculate_product_prices($product_id);
+        
+        if ($prices) {
+            // Update WooCommerce prices
             update_post_meta($product_id, '_regular_price', $prices['regular_price']);
-            update_post_meta($product_id, '_sale_price', $prices['sale_price']);
             update_post_meta($product_id, '_price', $prices['sale_price']);
             
-            // Store discount percentage
-            update_post_meta($product_id, '_jpc_discount_percentage', $prices['discount_percentage']);
+            // Only set sale price if there's a discount
+            if ($prices['discount_percentage'] > 0) {
+                update_post_meta($product_id, '_sale_price', $prices['sale_price']);
+            } else {
+                delete_post_meta($product_id, '_sale_price');
+            }
             
-            // Calculate and store breakup
+            // Store price breakup
             self::calculate_and_store_breakup($product_id);
             
-            // Clear caches again after update
-            wp_cache_delete('product-' . $product_id, 'products');
-            wp_cache_delete($product_id, 'post_meta');
+            // Clear WooCommerce transients
             wc_delete_product_transients($product_id);
-            clean_post_cache($product_id);
-            
-            unset(self::$calculating_products[$product_id]);
-            return true;
-            
-        } catch (Exception $e) {
-            unset(self::$calculating_products[$product_id]);
-            return false;
+        }
+        
+        // Remove from calculating list
+        $key = array_search($product_id, self::$calculating_products);
+        if ($key !== false) {
+            unset(self::$calculating_products[$key]);
         }
     }
     
     /**
-     * Recalculate all product prices
+     * Bulk update all product prices
      */
-    public static function recalculate_all_prices() {
+    public static function bulk_update_all_products() {
         $args = array(
             'post_type' => 'product',
             'posts_per_page' => -1,
+            'fields' => 'ids',
             'meta_query' => array(
                 array(
                     'key' => '_jpc_metal_id',
@@ -408,12 +407,14 @@ class JPC_Price_Calculator {
             )
         );
         
-        $products = get_posts($args);
+        $product_ids = get_posts($args);
+        $updated_count = 0;
         
-        foreach ($products as $product) {
-            self::calculate_and_update_price($product->ID);
+        foreach ($product_ids as $product_id) {
+            self::update_product_prices($product_id);
+            $updated_count++;
         }
         
-        return count($products);
+        return $updated_count;
     }
 }
