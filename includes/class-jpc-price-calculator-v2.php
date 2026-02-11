@@ -1,10 +1,11 @@
 <?php
 /**
- * Price Calculator Class v2.5.4
+ * Price Calculator Class v2.5.5
  * Enhanced with:
  * - Auto/Manual Making Charges
  * - Manual Diamond Entry with 4Cs
  * - Pearl/Stone/Extra Fee percentage vs fixed calculation (v2.5.4)
+ * - Additional Percentage enable/disable respect (v2.5.5)
  */
 
 if (!defined('ABSPATH')) {
@@ -150,7 +151,7 @@ class JPC_Price_Calculator {
     }
     
     /**
-     * Calculate product prices with GST (v2.5.4)
+     * Calculate product prices with GST (v2.5.5)
      */
     public static function calculate_product_prices($product_id) {
         // Get metal data
@@ -207,10 +208,12 @@ class JPC_Price_Calculator {
                                       $wastage_charge_amount + $pearl_cost + $stone_cost + 
                                       $extra_fee + $extra_field_costs;
         
-        // Apply Additional Percentage (if enabled)
+        // Apply Additional Percentage (if enabled) - v2.5.5
         $additional_percentage_amount = 0;
+        $enable_additional_percentage = get_option('jpc_enable_additional_percentage', 'no');
         $additional_percentage = floatval(get_option('jpc_additional_percentage_value', 0));
-        if ($additional_percentage > 0) {
+        
+        if ($enable_additional_percentage === 'yes' && $additional_percentage > 0) {
             $additional_percentage_amount = ($subtotal_before_additional * $additional_percentage) / 100;
         }
         
