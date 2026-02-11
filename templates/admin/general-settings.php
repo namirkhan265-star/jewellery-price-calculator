@@ -107,7 +107,7 @@ for ($i = 1; $i <= 5; $i++) {
                                         </option>
                                     </select>
                                     <p class="description">
-                                        <em><?php _e('Fixed: Enter exact amount. Percentage: Calculate based on subtotal.', 'jewellery-price-calc'); ?></em>
+                                        <em><?php _e('Fixed: Enter exact amount. Percentage: Calculate based on metal price.', 'jewellery-price-calc'); ?></em>
                                     </p>
                                 </td>
                             </tr>
@@ -160,7 +160,7 @@ for ($i = 1; $i <= 5; $i++) {
                                         </option>
                                     </select>
                                     <p class="description">
-                                        <em><?php _e('Fixed: Enter exact amount. Percentage: Calculate based on subtotal.', 'jewellery-price-calc'); ?></em>
+                                        <em><?php _e('Fixed: Enter exact amount. Percentage: Calculate based on metal price.', 'jewellery-price-calc'); ?></em>
                                     </p>
                                 </td>
                             </tr>
@@ -205,15 +205,14 @@ for ($i = 1; $i <= 5; $i++) {
                                 </th>
                                 <td>
                                     <select id="jpc_extra_fee_type" name="jpc_extra_fee_type" class="regular-text">
-                                        <option value="fixed" <?php selected($extra_fee_type, 'fixed'); ?>>
-                                            <?php _e('Fixed Price (₹)', 'jewellery-price-calc'); ?>
+                                        <option value="fixed" <?php selected($extra_fee_type, 'fixed'); ?>>\n                                            <?php _e('Fixed Price (₹)', 'jewellery-price-calc'); ?>
                                         </option>
                                         <option value="percentage" <?php selected($extra_fee_type, 'percentage'); ?>>
                                             <?php _e('Percentage (%)', 'jewellery-price-calc'); ?>
                                         </option>
                                     </select>
                                     <p class="description">
-                                        <em><?php _e('Fixed: Enter exact amount. Percentage: Calculate based on subtotal.', 'jewellery-price-calc'); ?></em>
+                                        <em><?php _e('Fixed: Enter exact amount. Percentage: Calculate based on metal price.', 'jewellery-price-calc'); ?></em>
                                     </p>
                                 </td>
                             </tr>
