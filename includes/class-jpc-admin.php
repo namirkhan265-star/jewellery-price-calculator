@@ -1,6 +1,7 @@
 <?php
 /**
  * Admin Interface Handler
+ * v2.5.17: CRITICAL FIX - Move jpc_gst_calculation_base to general settings (it's displayed there)
  * v2.5.16: CRITICAL FIX - Handle discount settings save properly
  * v2.5.5: Added enable/disable checkbox for Additional Percentage
  * v2.5.0: Added custom label and type settings for additional cost fields
@@ -380,6 +381,7 @@ class JPC_Admin {
     
     /**
      * Register settings
+     * v2.5.17: CRITICAL FIX - Moved jpc_gst_calculation_base to general settings (it's displayed there)
      * v2.5.5: Added jpc_enable_additional_percentage
      * v2.5.0: Added custom label and type settings for additional cost fields
      */
@@ -403,6 +405,7 @@ class JPC_Admin {
         register_setting('jpc_general_settings', 'jpc_enable_gst');
         register_setting('jpc_general_settings', 'jpc_gst_label');
         register_setting('jpc_general_settings', 'jpc_gst_value');
+        register_setting('jpc_general_settings', 'jpc_gst_calculation_base'); // v2.5.17: MOVED HERE from discount settings
         register_setting('jpc_general_settings', 'jpc_gst_gold');
         register_setting('jpc_general_settings', 'jpc_gst_silver');
         register_setting('jpc_general_settings', 'jpc_gst_diamond');
@@ -420,7 +423,7 @@ class JPC_Admin {
         register_setting('jpc_discount_settings', 'jpc_enable_discount');
         register_setting('jpc_discount_settings', 'jpc_discount_calculation_method');
         register_setting('jpc_discount_settings', 'jpc_discount_timing');
-        register_setting('jpc_discount_settings', 'jpc_gst_calculation_base');
+        // v2.5.17: REMOVED jpc_gst_calculation_base from here (moved to general settings)
         register_setting('jpc_discount_settings', 'jpc_discount_on_metals');
         register_setting('jpc_discount_settings', 'jpc_discount_on_making');
         register_setting('jpc_discount_settings', 'jpc_discount_on_wastage');
