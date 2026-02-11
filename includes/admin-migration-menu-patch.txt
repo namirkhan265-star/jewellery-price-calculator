@@ -1,0 +1,22 @@
+ADD THIS CODE TO class-jpc-admin.php
+
+1. After line 354 (after the Debug submenu), add this:
+
+        // v2.5.10 Migration page
+        add_submenu_page(
+            'jewellery-price-calc',
+            __('Migration v2.5.10', 'jewellery-price-calc'),
+            __('⚠️ Migration', 'jewellery-price-calc'),
+            'manage_woocommerce',
+            'jpc-migration-v2510',
+            array($this, 'render_migration_v2510')
+        );
+
+2. Before the closing brace of the class (before line 528), add this:
+
+    /**
+     * Render migration v2.5.10 page
+     */
+    public function render_migration_v2510() {
+        include JPC_PLUGIN_DIR . 'templates/admin/migration-v2510.php';
+    }
