@@ -1,0 +1,75 @@
+═══════════════════════════════════════════════════════════════
+  FINAL FIX - Manual Diamond Support Added!
+═══════════════════════════════════════════════════════════════
+
+PROBLEM FOUND:
+The calculator was only calculating dropdown diamonds, not manual 
+diamond entry. I've now added manual diamond support.
+
+═══════════════════════════════════════════════════════════════
+  SIMPLE 3-STEP PROCESS
+═══════════════════════════════════════════════════════════════
+
+1. DOWNLOAD & UPLOAD
+   ↓
+   Download: regenerate-with-manual-diamonds.php
+   Upload to: /wp-content/plugins/jewellery-price-calculator-main/
+
+2. RUN THE SCRIPT
+   ↓
+   Visit: https://detailx.co.in/wp-content/plugins/jewellery-price-calculator-main/regenerate-with-manual-diamonds.php
+   Click "🚀 Regenerate Products Now"
+   Wait for completion
+
+3. TEST & DELETE
+   ↓
+   - Clear browser cache (Ctrl+F5)
+   - Check product with manual diamonds
+   - You should see diamond price in breakup
+   - Delete the script file
+
+═══════════════════════════════════════════════════════════════
+  WHAT WAS FIXED
+═══════════════════════════════════════════════════════════════
+
+BEFORE:
+- Calculator only handled dropdown diamonds
+- Manual diamond entry was ignored
+- diamond_price was always 0 for manual entry
+
+AFTER:
+- Calculator now checks for manual diamond fields
+- Calculates: Carat × Quantity × Price Per Carat
+- Example: 0.50ct × 5 × ₹3000 = ₹7,500
+
+═══════════════════════════════════════════════════════════════
+  TECHNICAL DETAILS
+═══════════════════════════════════════════════════════════════
+
+Added this code to calculator (lines 59-68):
+
+```php
+// Check for manual diamond entry if no dropdown diamond
+if ($diamond_price == 0) {
+    $manual_carat = get_post_meta($product_id, '_jpc_manual_diamond_carat', true);
+    $manual_quantity = get_post_meta($product_id, '_jpc_manual_diamond_quantity', true);
+    $manual_price_per_carat = get_post_meta($product_id, '_jpc_manual_diamond_price_per_carat', true);
+    
+    if ($manual_carat > 0 && $manual_quantity > 0 && $manual_price_per_carat > 0) {
+        $diamond_price = $manual_carat * $manual_quantity * $manual_price_per_carat;
+    }
+}
+```
+
+═══════════════════════════════════════════════════════════════
+  AFTER RUNNING
+═══════════════════════════════════════════════════════════════
+
+You should now see in price breakup:
+✅ Diamond price (for products with manual diamonds)
+✅ GST (3%) with percentage
+✅ All other fields correct
+
+═══════════════════════════════════════════════════════════════
+
+This should FINALLY fix the diamond price issue! 🎉
