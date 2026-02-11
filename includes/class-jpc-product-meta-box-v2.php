@@ -1,10 +1,11 @@
 <?php
 /**
- * Product Meta Box Handler v2.5.27
+ * Product Meta Box Handler v2.5.33
  * Enhanced with:
  * - Making Charges Toggle (Auto/Manual)
  * - Manual Diamond Entry with 4Cs
  * - Conditional Field Display based on Metal Group Settings
+ * v2.5.33: CRITICAL FIX - Fixed wastage field name mismatch
  * v2.5.27: CRITICAL FIX - Proper indentation and conditional display
  */
 
@@ -86,7 +87,7 @@ class JPC_Product_Meta_Box {
         // Get saved values
         $metal_id = get_post_meta($post->ID, '_jpc_metal_id', true);
         $metal_weight = get_post_meta($post->ID, '_jpc_metal_weight', true);
-        $wastage = get_post_meta($post->ID, '_jpc_wastage', true);
+        $wastage_percentage = get_post_meta($post->ID, '_jpc_wastage_percentage', true);
         
         // Get selected metal's group settings for conditional display
         $selected_metal = null;
@@ -98,20 +99,18 @@ class JPC_Product_Meta_Box {
                 }
             }
         }
-        $enable_making = $selected_metal ? ($selected_metal->enable_making_charge ?? 1) : 1;
-        $enable_wastage = $selected_metal ? ($selected_metal->enable_wastage_charge ?? 1) : 1;
         
-        // Making charges v2.0.0
+        // Get making charges data
         $making_charges_mode = get_post_meta($post->ID, '_jpc_making_charges_mode', true) ?: 'auto';
         $making_charges_value = get_post_meta($post->ID, '_jpc_making_charges_value', true);
         $making_charges_type = get_post_meta($post->ID, '_jpc_making_charges_type', true) ?: 'percentage';
         
-        // Diamond entry v2.0.0
+        // Get diamond data
         $diamond_entry_mode = get_post_meta($post->ID, '_jpc_diamond_entry_mode', true) ?: 'dropdown';
         $diamond_id = get_post_meta($post->ID, '_jpc_diamond_id', true);
         $diamond_quantity = get_post_meta($post->ID, '_jpc_diamond_quantity', true);
         
-        // Manual diamond fields
+        // Get manual diamond data
         $manual_diamond_group_id = get_post_meta($post->ID, '_jpc_manual_diamond_group_id', true);
         $manual_diamond_carat = get_post_meta($post->ID, '_jpc_manual_diamond_carat', true);
         $manual_diamond_certification_id = get_post_meta($post->ID, '_jpc_manual_diamond_certification_id', true);
@@ -122,10 +121,10 @@ class JPC_Product_Meta_Box {
         $manual_diamond_quantity = get_post_meta($post->ID, '_jpc_manual_diamond_quantity', true);
         $manual_diamond_price_per_carat = get_post_meta($post->ID, '_jpc_manual_diamond_price_per_carat', true);
         
-        // Other fields
+        // Get other costs
         $discount_percentage = get_post_meta($post->ID, '_jpc_discount_percentage', true);
         
-        // Extra fields
+        // Get extra fields
         $extra_fields = array();
         for ($i = 1; $i <= 5; $i++) {
             $extra_fields[$i] = get_post_meta($post->ID, '_jpc_extra_field_' . $i, true);
@@ -134,41 +133,36 @@ class JPC_Product_Meta_Box {
         ?>
         <div class="jpc-product-meta-box">
             <style>
-                .jpc-product-meta-box { padding: 15px; }
-                .jpc-section { margin-bottom: 25px; padding: 15px; background: #f9f9f9; border-left: 4px solid #2271b1; }
-                .jpc-section h3 { margin-top: 0; color: #2271b1; }
-                .jpc-section.highlight { background: #e7f3ff; border-left-color: #0073aa; }
+                .jpc-product-meta-box { padding: 20px; }
+                .jpc-section { margin-bottom: 30px; padding: 20px; background: #f9f9f9; border-radius: 5px; }
+                .jpc-section-title { margin: 0 0 15px 0; font-size: 16px; font-weight: 600; border-bottom: 2px solid #0073aa; padding-bottom: 10px; }
                 .jpc-form-field { margin-bottom: 15px; }
-                .jpc-form-field label { display: block; margin-bottom: 5px; font-weight: 600; }
+                .jpc-form-field label { display: block; margin-bottom: 5px; font-weight: 500; }
                 .jpc-form-field input[type="text"],
                 .jpc-form-field input[type="number"],
                 .jpc-form-field select { width: 100%; max-width: 400px; }
-                .jpc-radio-group { margin: 10px 0; }
-                .jpc-radio-group label { display: inline-block; margin-right: 20px; font-weight: normal; }
-                .jpc-radio-group input[type="radio"] { margin-right: 5px; }
-                .jpc-conditional { margin-top: 15px; padding: 15px; background: white; border: 1px solid #ddd; border-radius: 4px; }
-                .jpc-auto-calc-display { padding: 10px; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 4px; color: #155724; font-weight: 600; }
-                .jpc-help-text { font-size: 12px; color: #666; font-style: italic; margin-top: 5px; }
-                .jpc-new-badge { background: #2196f3; color: white; padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: bold; margin-left: 10px; }
+                .jpc-radio-group { display: flex; gap: 20px; }
+                .jpc-radio-group label { font-weight: normal; }
+                .jpc-help-text { margin: 5px 0 0 0; font-size: 12px; color: #666; font-style: italic; }
+                .jpc-auto-calc-display { padding: 10px; background: #fff; border: 1px solid #ddd; border-radius: 3px; margin-bottom: 10px; }
+                .jpc-conditional { margin-top: 15px; }
             </style>
             
             <!-- Metal Section -->
             <div class="jpc-section">
-                <h3><?php _e('Metal Details', 'jewellery-price-calc'); ?></h3>
+                <h3 class="jpc-section-title"><?php _e('Metal Details', 'jewellery-price-calc'); ?></h3>
                 
                 <div class="jpc-form-field">
                     <label for="jpc_metal_id"><?php _e('Select Metal', 'jewellery-price-calc'); ?></label>
-                    <select id="jpc_metal_id" name="jpc_metal_id">
+                    <select id="jpc_metal_id" name="jpc_metal_id" required>
                         <option value=""><?php _e('Select Metal', 'jewellery-price-calc'); ?></option>
                         <?php foreach ($metals as $metal): ?>
                             <option value="<?php echo esc_attr($metal->id); ?>" 
-                                    data-price="<?php echo esc_attr($metal->price_per_unit); ?>"
-                                    data-making-charges="<?php echo esc_attr($metal->making_charges_per_gram ?? 0); ?>"
+                                    <?php selected($metal_id, $metal->id); ?>
                                     data-enable-making="<?php echo esc_attr($metal->enable_making_charge ?? 1); ?>"
-                                    data-enable-wastage="<?php echo esc_attr($metal->enable_wastage_charge ?? 1); ?>"
-                                    <?php selected($metal_id, $metal->id); ?>>
+                                    data-enable-wastage="<?php echo esc_attr($metal->enable_wastage_charge ?? 1); ?>">
                                 <?php echo esc_html($metal->display_name); ?> 
-                                (₹<?php echo number_format($metal->price_per_unit, 2); ?>/gram)
+                                (₹<?php echo number_format($metal->price_per_unit, 2); ?>/<?php echo esc_html($metal->unit ?? 'gram'); ?>)
                             </option>
                         <?php endforeach; ?>
                     </select>
@@ -178,25 +172,26 @@ class JPC_Product_Meta_Box {
                     <label for="jpc_metal_weight"><?php _e('Metal Weight (grams)', 'jewellery-price-calc'); ?></label>
                     <input type="number" id="jpc_metal_weight" name="jpc_metal_weight" 
                            value="<?php echo esc_attr($metal_weight); ?>" 
-                           step="0.001" min="0">
+                           step="0.001" min="0" required>
                 </div>
                 
-                <div class="jpc-form-field" id="jpc_wastage_field" style="display: <?php echo $enable_wastage ? 'block' : 'none'; ?>;">
-                    <label for="jpc_wastage"><?php _e('Wastage (%)', 'jewellery-price-calc'); ?></label>
-                    <input type="number" id="jpc_wastage" name="jpc_wastage" 
-                           value="<?php echo esc_attr($wastage); ?>" 
+                <!-- Wastage Charges (Conditional) -->
+                <div id="jpc_wastage_section" class="jpc-form-field" style="display: <?php echo ($selected_metal && isset($selected_metal->enable_wastage_charge) && $selected_metal->enable_wastage_charge == 1) ? 'block' : 'none'; ?>;">
+                    <label for="jpc_wastage_percentage"><?php _e('Wastage Percentage (%)', 'jewellery-price-calc'); ?></label>
+                    <input type="number" id="jpc_wastage_percentage" name="jpc_wastage_percentage" 
+                           value="<?php echo esc_attr($wastage_percentage); ?>" 
                            step="0.01" min="0">
+                    <p class="jpc-help-text"><?php _e('Wastage charges as percentage of metal price', 'jewellery-price-calc'); ?></p>
                 </div>
             </div>
             
-            <!-- Making Charges Section v2.0.0 -->
-            <div class="jpc-section highlight" id="jpc_making_charges_section" style="display: <?php echo $enable_making ? 'block' : 'none'; ?>;">
-                <h3>
-                    <?php _e('Making Charges', 'jewellery-price-calc'); ?>
-                    <span class="jpc-new-badge">v2.0 NEW</span>
-                </h3>
+            <!-- Making Charges Section (Conditional) -->
+            <div id="jpc_making_charges_section" class="jpc-section" style="display: <?php echo ($selected_metal && isset($selected_metal->enable_making_charge) && $selected_metal->enable_making_charge == 1) ? 'block' : 'none'; ?>;">
+                <h3 class="jpc-section-title"><?php _e('Making Charges', 'jewellery-price-calc'); ?></h3>
                 
-                <div class="jpc-radio-group">
+                <div class="jpc-form-field">
+                    <label><?php _e('Making Charges Mode', 'jewellery-price-calc'); ?></label>
+                    <div class="jpc-radio-group">
                     <label>
                         <input type="radio" name="jpc_making_charges_mode" value="auto" 
                                <?php checked($making_charges_mode, 'auto'); ?>>
@@ -293,7 +288,7 @@ class JPC_Product_Meta_Box {
     }
     
     /**
-     * Save meta box (v2.5.26 - Fixed Additional Cost Fields to use _value suffix)
+     * Save meta box (v2.5.33 - Fixed wastage field name + added missing _type fields)
      */
     public function save_meta_box($post_id, $post) {
         // Verify nonce
@@ -315,7 +310,9 @@ class JPC_Product_Meta_Box {
         // Save metal data
         update_post_meta($post_id, '_jpc_metal_id', sanitize_text_field($_POST['jpc_metal_id'] ?? ''));
         update_post_meta($post_id, '_jpc_metal_weight', floatval($_POST['jpc_metal_weight'] ?? 0));
-        update_post_meta($post_id, '_jpc_wastage', floatval($_POST['jpc_wastage'] ?? 0));
+        
+        // v2.5.33: CRITICAL FIX - Save as _jpc_wastage_percentage (not _jpc_wastage)
+        update_post_meta($post_id, '_jpc_wastage_percentage', floatval($_POST['jpc_wastage_percentage'] ?? 0));
         
         // Save making charges v2.0.0
         update_post_meta($post_id, '_jpc_making_charges_mode', sanitize_text_field($_POST['jpc_making_charges_mode'] ?? 'auto'));
@@ -349,17 +346,22 @@ class JPC_Product_Meta_Box {
             delete_post_meta($post_id, '_jpc_diamond_id');
         }
         
-        // v2.5.26: CRITICAL FIX - Save Additional Cost Fields with correct _value suffix
-        update_post_meta($post_id, '_jpc_stone_cost_value', floatval($_POST['jpc_stone_cost_value'] ?? 0));
+        // v2.5.33: Save Additional Cost Fields with both _value AND _type
         update_post_meta($post_id, '_jpc_pearl_cost_value', floatval($_POST['jpc_pearl_cost_value'] ?? 0));
+        update_post_meta($post_id, '_jpc_pearl_cost_type', sanitize_text_field($_POST['jpc_pearl_cost_type'] ?? 'percentage'));
+        
+        update_post_meta($post_id, '_jpc_stone_cost_value', floatval($_POST['jpc_stone_cost_value'] ?? 0));
+        update_post_meta($post_id, '_jpc_stone_cost_type', sanitize_text_field($_POST['jpc_stone_cost_type'] ?? 'percentage'));
+        
         update_post_meta($post_id, '_jpc_extra_fee_value', floatval($_POST['jpc_extra_fee_value'] ?? 0));
+        update_post_meta($post_id, '_jpc_extra_fee_type', sanitize_text_field($_POST['jpc_extra_fee_type'] ?? 'percentage'));
         
         // Save discount
         update_post_meta($post_id, '_jpc_discount_percentage', floatval($_POST['jpc_discount_percentage'] ?? 0));
         
         // Save extra fields
         for ($i = 1; $i <= 5; $i++) {
-            update_post_meta($post_id, '_jpc_extra_field_' . $i, sanitize_text_field($_POST['jpc_extra_field_' . $i] ?? ''));
+            update_post_meta($post_id, '_jpc_extra_field_' . $i, floatval($_POST['jpc_extra_field_' . $i] ?? 0));
         }
         
         // Recalculate and update price
