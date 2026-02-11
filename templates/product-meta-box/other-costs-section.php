@@ -1,16 +1,17 @@
 <?php
 /**
- * Other Costs Section Template
+ * Other Costs Section Template v2.5.26
  * Stones, Pearls, Extra Fees, Discount, Extra Fields
- * v2.5.0: Now uses custom labels from settings
+ * v2.5.26: CRITICAL FIX - Correct field names to match calculation (_value suffix)
  * v2.5.3: Extra fields now show custom labels and only enabled fields
+ * v2.5.0: Now uses custom labels from settings
  */
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
-// Get custom labels from settings - v2.5.0
+// Get custom labels and types from settings
 $pearl_cost_label = get_option('jpc_pearl_cost_label', 'Pearl Cost');
 $pearl_cost_type = get_option('jpc_pearl_cost_type', 'fixed');
 
@@ -20,7 +21,13 @@ $stone_cost_type = get_option('jpc_stone_cost_type', 'fixed');
 $extra_fee_label = get_option('jpc_extra_fee_label', 'Extra Fee');
 $extra_fee_type = get_option('jpc_extra_fee_type', 'fixed');
 
-// Get extra field settings - v2.5.3
+// Get saved values - v2.5.26: Use correct field names with _value suffix
+global $post;
+$pearl_cost_value = get_post_meta($post->ID, '_jpc_pearl_cost_value', true);
+$stone_cost_value = get_post_meta($post->ID, '_jpc_stone_cost_value', true);
+$extra_fee_value = get_post_meta($post->ID, '_jpc_extra_fee_value', true);
+
+// Get extra field settings
 $extra_field_settings = array();
 for ($i = 1; $i <= 5; $i++) {
     $extra_field_settings[$i] = array(
@@ -34,9 +41,9 @@ for ($i = 1; $i <= 5; $i++) {
 <div class="jpc-section">
     <h3><?php _e('Other Costs', 'jewellery-price-calc'); ?></h3>
     
-    <!-- Stone Cost - v2.5.0 ENHANCED -->
+    <!-- Stone Cost - v2.5.26 FIXED field name -->
     <div class="jpc-form-field">
-        <label for="jpc_stone_cost">
+        <label for="jpc_stone_cost_value">
             <?php echo esc_html($stone_cost_label); ?>
             <?php if ($stone_cost_type === 'percentage'): ?>
                 <span style="color: #2271b1; font-weight: 600;">(% of Metal + Diamond + Making + Wastage)</span>
@@ -44,8 +51,8 @@ for ($i = 1; $i <= 5; $i++) {
                 <span style="color: #666;">(₹)</span>
             <?php endif; ?>
         </label>
-        <input type="number" id="jpc_stone_cost" name="jpc_stone_cost" 
-               value="<?php echo esc_attr($stone_cost); ?>" 
+        <input type="number" id="jpc_stone_cost_value" name="jpc_stone_cost_value" 
+               value="<?php echo esc_attr($stone_cost_value); ?>" 
                step="0.01" min="0">
         <p class="jpc-help-text">
             <?php if ($stone_cost_type === 'percentage'): ?>
@@ -56,9 +63,9 @@ for ($i = 1; $i <= 5; $i++) {
         </p>
     </div>
     
-    <!-- Pearl Cost - v2.5.0 ENHANCED -->
+    <!-- Pearl Cost - v2.5.26 FIXED field name -->
     <div class="jpc-form-field">
-        <label for="jpc_pearl_cost">
+        <label for="jpc_pearl_cost_value">
             <?php echo esc_html($pearl_cost_label); ?>
             <?php if ($pearl_cost_type === 'percentage'): ?>
                 <span style="color: #2271b1; font-weight: 600;">(% of Metal + Diamond + Making + Wastage)</span>
@@ -66,8 +73,8 @@ for ($i = 1; $i <= 5; $i++) {
                 <span style="color: #666;">(₹)</span>
             <?php endif; ?>
         </label>
-        <input type="number" id="jpc_pearl_cost" name="jpc_pearl_cost" 
-               value="<?php echo esc_attr($pearl_cost); ?>" 
+        <input type="number" id="jpc_pearl_cost_value" name="jpc_pearl_cost_value" 
+               value="<?php echo esc_attr($pearl_cost_value); ?>" 
                step="0.01" min="0">
         <p class="jpc-help-text">
             <?php if ($pearl_cost_type === 'percentage'): ?>
@@ -78,9 +85,9 @@ for ($i = 1; $i <= 5; $i++) {
         </p>
     </div>
     
-    <!-- Extra Fee - v2.5.0 ENHANCED -->
+    <!-- Extra Fee - v2.5.26 FIXED field name -->
     <div class="jpc-form-field">
-        <label for="jpc_extra_fee">
+        <label for="jpc_extra_fee_value">
             <?php echo esc_html($extra_fee_label); ?>
             <?php if ($extra_fee_type === 'percentage'): ?>
                 <span style="color: #2271b1; font-weight: 600;">(% of Metal + Diamond + Making + Wastage)</span>
@@ -88,8 +95,8 @@ for ($i = 1; $i <= 5; $i++) {
                 <span style="color: #666;">(₹)</span>
             <?php endif; ?>
         </label>
-        <input type="number" id="jpc_extra_fee" name="jpc_extra_fee" 
-               value="<?php echo esc_attr($extra_fee); ?>" 
+        <input type="number" id="jpc_extra_fee_value" name="jpc_extra_fee_value" 
+               value="<?php echo esc_attr($extra_fee_value); ?>" 
                step="0.01" min="0">
         <p class="jpc-help-text">
             <?php if ($extra_fee_type === 'percentage'): ?>
@@ -110,7 +117,7 @@ for ($i = 1; $i <= 5; $i++) {
 </div>
 
 <?php
-// Check if any extra fields are enabled - v2.5.3
+// Check if any extra fields are enabled
 $has_enabled_fields = false;
 foreach ($extra_field_settings as $settings) {
     if ($settings['enabled'] === 'yes') {
@@ -121,7 +128,7 @@ foreach ($extra_field_settings as $settings) {
 ?>
 
 <?php if ($has_enabled_fields): ?>
-<!-- Extra Fields Section - v2.5.3 ENHANCED -->
+<!-- Extra Fields Section -->
 <div class="jpc-section">
     <h3><?php _e('Extra Fields (Optional)', 'jewellery-price-calc'); ?></h3>
     <p style="margin-top: 0; color: #666; font-size: 13px;">
