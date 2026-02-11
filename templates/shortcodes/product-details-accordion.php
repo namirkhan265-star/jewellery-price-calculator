@@ -1,8 +1,12 @@
 <?php
 /**
- * Product Details Accordion Template v2.5.21
+ * Product Details Accordion Template v2.5.22
  * Displays product details, diamond details, metal details, price breakup, and tags
  * Usage: [jpc_product_details]
+ * 
+ * NEW v2.5.22: FIX - Respect enable/disable setting for Additional Cost Fields
+ * - Check get_option('jpc_enable_extra_field_X') before displaying each field
+ * - Fixes bug where disabled fields still showed values in price breakup
  * 
  * NEW v2.5.21: CRITICAL FIX - Correct regular price calculation
  * - Use actual GST percentage from settings (not calculated from discounted price)
@@ -399,20 +403,26 @@ $has_tags = !empty($tags);
             <?php endif; ?>
             
             <?php
-            // Extra Fields #1-5 with custom labels
+            // v2.5.22: FIX - Extra Fields #1-5 with custom labels AND enable/disable check
             if (!empty($price_breakup['extra_fields']) && is_array($price_breakup['extra_fields'])) {
                 $field_index = 0;
                 foreach ($price_breakup['extra_fields'] as $extra_field) {
                     $field_index++;
                     if (!empty($extra_field['value']) && $extra_field['value'] > 0) {
                         $field_num = !empty($extra_field['field_number']) ? $extra_field['field_number'] : $field_index;
-                        $live_label = get_option('jpc_extra_field_label_' . $field_num, $extra_field['label']);
-                        ?>
-                        <div class="jpc-detail-row">
-                            <span class="jpc-detail-label"><?php echo esc_html($live_label); ?></span>
-                            <span class="jpc-detail-value">₹ <?php echo number_format($extra_field['value'], 0); ?>/-</span>
-                        </div>
-                        <?php
+                        
+                        // v2.5.22: CRITICAL FIX - Check if field is enabled in settings before displaying
+                        $is_field_enabled = get_option('jpc_enable_extra_field_' . $field_num, 'yes') === 'yes';
+                        
+                        if ($is_field_enabled) {
+                            $live_label = get_option('jpc_extra_field_label_' . $field_num, $extra_field['label']);
+                            ?>
+                            <div class="jpc-detail-row">
+                                <span class="jpc-detail-label"><?php echo esc_html($live_label); ?></span>
+                                <span class="jpc-detail-value">₹ <?php echo number_format($extra_field['value'], 0); ?>/-</span>
+                            </div>
+                            <?php
+                        }
                     }
                 }
             }
