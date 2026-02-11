@@ -1,6 +1,6 @@
 <?php
 /**
- * Price Calculator Class v2.5.7
+ * Price Calculator Class v2.5.15
  * Enhanced with:
  * - Auto/Manual Making Charges
  * - Manual Diamond Entry with 4Cs
@@ -8,6 +8,7 @@
  * - Additional Percentage enable/disable respect (v2.5.5)
  * - GST enable/disable respect with generic rate (v2.5.5)
  * - CRITICAL FIX: Use price_per_unit instead of price_per_gram (v2.5.7)
+ * - CRITICAL FIX: Use _jpc_diamond_entry_mode instead of _jpc_diamond_mode (v2.5.15)
  */
 
 if (!defined('ABSPATH')) {
@@ -66,13 +67,14 @@ class JPC_Price_Calculator {
     }
     
     /**
-     * Calculate diamond cost (v2.0.0 - Auto/Manual modes)
+     * Calculate diamond cost (v2.5.15 - Fixed field name bug)
      */
     private static function calculate_diamond_cost($product_id) {
-        $mode = get_post_meta($product_id, '_jpc_diamond_mode', true) ?: 'auto';
+        // v2.5.15 CRITICAL FIX: Use _jpc_diamond_entry_mode (matches meta box)
+        $mode = get_post_meta($product_id, '_jpc_diamond_entry_mode', true) ?: 'dropdown';
         
-        if ($mode === 'auto') {
-            // Auto mode: Use diamond from database
+        if ($mode === 'dropdown') {
+            // Dropdown mode: Use diamond from database
             $diamond_id = get_post_meta($product_id, '_jpc_diamond_id', true);
             $diamond_quantity = intval(get_post_meta($product_id, '_jpc_diamond_quantity', true));
             
@@ -87,7 +89,7 @@ class JPC_Price_Calculator {
             return $diamond_unit_price * $diamond_quantity;
             
         } else {
-            // Manual mode: Calculate with 4Cs adjustments
+            // Manual mode: Calculate with base price (no 4Cs adjustments for now)
             $carat = floatval(get_post_meta($product_id, '_jpc_manual_diamond_carat', true));
             $quantity = floatval(get_post_meta($product_id, '_jpc_manual_diamond_quantity', true));
             $base_price = floatval(get_post_meta($product_id, '_jpc_manual_diamond_price_per_carat', true));
@@ -96,18 +98,8 @@ class JPC_Price_Calculator {
                 return 0;
             }
             
-            // Get 4Cs adjustments
-            $cut_adjustment = floatval(get_post_meta($product_id, '_jpc_manual_diamond_cut_adjustment', true));
-            $color_adjustment = floatval(get_post_meta($product_id, '_jpc_manual_diamond_color_adjustment', true));
-            $clarity_adjustment = floatval(get_post_meta($product_id, '_jpc_manual_diamond_clarity_adjustment', true));
-            
-            // Calculate adjusted price per carat
-            $adjusted_price = $base_price * (1 + ($cut_adjustment / 100)) * 
-                             (1 + ($color_adjustment / 100)) * 
-                             (1 + ($clarity_adjustment / 100));
-            
-            // Total diamond cost
-            return $adjusted_price * $carat * $quantity;
+            // Simple calculation: Carat × Quantity × Price Per Carat
+            return $carat * $quantity * $base_price;
         }
     }
     
