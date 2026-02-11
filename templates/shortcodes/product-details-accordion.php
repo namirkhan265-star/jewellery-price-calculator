@@ -1,8 +1,12 @@
 <?php
 /**
- * Product Details Accordion Template v2.5.24
+ * Product Details Accordion Template v2.5.28
  * Displays product details, diamond details, metal details, price breakup, and tags
  * Usage: [jpc_product_details]
+ * 
+ * NEW v2.5.28: CRITICAL FIX - Hide Discount in accordion when disabled in settings
+ * - Check jpc_enable_discount setting before displaying discount row and savings badge
+ * - Matches behavior of product meta box
  * 
  * NEW v2.5.24: CRITICAL FIX - Hide Pearl/Stone/Extra Fee when value is ₹1 or less
  * - Changed display logic from !empty() to value > 1
@@ -155,6 +159,9 @@ $price_breakup = get_post_meta($product_id, '_jpc_price_breakup', true);
 
 // Get discount percentage from meta
 $discount_percentage = floatval(get_post_meta($product_id, '_jpc_discount_percentage', true));
+
+// v2.5.28: Get enable/disable setting for Discount
+$enable_discount = get_option('jpc_enable_discount', 'no');
 
 // v2.5.21: CRITICAL FIX - Calculate regular price correctly
 $regular_price = 0;
@@ -448,7 +455,7 @@ $has_tags = !empty($tags);
             </div>
             <?php endif; ?>
             
-            <?php if (!empty($price_breakup['discount'])): ?>
+            <?php if ($enable_discount === 'yes' && !empty($price_breakup['discount'])): ?>
             <div class="jpc-detail-row" style="color: #d63638;">
                 <span class="jpc-detail-label">
                     Discount
@@ -490,7 +497,7 @@ $has_tags = !empty($tags);
             </div>
             <?php endif; ?>
             
-            <?php if (!empty($price_breakup['discount']) && $discount_percentage > 0): ?>
+            <?php if ($enable_discount === 'yes' && !empty($price_breakup['discount']) && $discount_percentage > 0): ?>
             <div class="jpc-savings-badge">
                 🎉 <strong>You Save: ₹ <?php echo number_format($price_breakup['discount'], 0); ?>/- (<?php echo number_format($discount_percentage, 0); ?>% OFF)</strong>
             </div>
