@@ -1,6 +1,6 @@
 <?php
 /**
- * Price Calculator Class v2.5.23
+ * Price Calculator Class v2.5.25
  * Enhanced with:
  * - Auto/Manual Making Charges
  * - Manual Diamond Entry with 4Cs
@@ -12,7 +12,8 @@
  * - CRITICAL FIX: Correct GST calculation for "Before Discount" option (v2.5.18)
  * - CRITICAL FIX: Restore missing methods that broke metals page (v2.5.19)
  * - CRITICAL FIX: Support both numeric and text discount method values (v2.5.20)
- * - CRITICAL FIX: Respect enable/disable for Additional Cost Fields in calculation (v2.5.23)
+ * - CRITICAL FIX: Respect enable/disable for Extra Fields 1-5 in calculation (v2.5.23)
+ * - CRITICAL FIX: Respect enable/disable for Additional Cost Fields 1-3 (Pearl/Stone/Extra Fee) (v2.5.25)
  */
 
 if (!defined('ABSPATH')) {
@@ -130,7 +131,7 @@ class JPC_Price_Calculator {
     }
     
     /**
-     * Calculate product prices (v2.5.23 - Fixed extra fields to respect enable/disable)
+     * Calculate product prices (v2.5.25 - Fixed Additional Cost Fields 1-3 to respect enable/disable)
      */
     public static function calculate_product_prices($product_id) {
         // Get metal info
@@ -168,12 +169,30 @@ class JPC_Price_Calculator {
         // Calculate subtotal for percentage-based additional costs
         $subtotal_for_percentage = $metal_price + $diamond_price + $making_charge_amount + $wastage_charge_amount;
         
-        // Calculate additional costs (v2.5.4 - Percentage or Fixed)
-        $pearl_cost = self::calculate_additional_cost($product_id, 'pearl_cost', $subtotal_for_percentage);
-        $stone_cost = self::calculate_additional_cost($product_id, 'stone_cost', $subtotal_for_percentage);
-        $extra_fee = self::calculate_additional_cost($product_id, 'extra_fee', $subtotal_for_percentage);
+        // v2.5.25: CRITICAL FIX - Calculate Additional Cost Fields 1-3 ONLY if enabled
+        $pearl_cost = 0;
+        $stone_cost = 0;
+        $extra_fee = 0;
         
-        // v2.5.23: CRITICAL FIX - Get extra field costs ONLY if enabled
+        // Check if Additional Cost Field 1 (Pearl Cost) is enabled
+        $enable_pearl_cost = get_option('jpc_enable_pearl_cost', 'yes');
+        if ($enable_pearl_cost === 'yes' || $enable_pearl_cost === '1' || $enable_pearl_cost === 1 || $enable_pearl_cost === true) {
+            $pearl_cost = self::calculate_additional_cost($product_id, 'pearl_cost', $subtotal_for_percentage);
+        }
+        
+        // Check if Additional Cost Field 2 (Stone Cost) is enabled
+        $enable_stone_cost = get_option('jpc_enable_stone_cost', 'yes');
+        if ($enable_stone_cost === 'yes' || $enable_stone_cost === '1' || $enable_stone_cost === 1 || $enable_stone_cost === true) {
+            $stone_cost = self::calculate_additional_cost($product_id, 'stone_cost', $subtotal_for_percentage);
+        }
+        
+        // Check if Additional Cost Field 3 (Extra Fee) is enabled
+        $enable_extra_fee = get_option('jpc_enable_extra_fee', 'yes');
+        if ($enable_extra_fee === 'yes' || $enable_extra_fee === '1' || $enable_extra_fee === 1 || $enable_extra_fee === true) {
+            $extra_fee = self::calculate_additional_cost($product_id, 'extra_fee', $subtotal_for_percentage);
+        }
+        
+        // v2.5.23: Get Extra Fields 1-5 costs ONLY if enabled
         $extra_field_costs = 0;
         for ($i = 1; $i <= 5; $i++) {
             // Check if field is enabled in settings
