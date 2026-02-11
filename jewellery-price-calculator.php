@@ -3,7 +3,7 @@
  * Plugin Name: Jewellery Price Calculator
  * Plugin URI: https://github.com/yourusername/jewellery-price-calculator
  * Description: Advanced price calculator for jewellery products with metal rates, making charges, and GST
- * Version: 2.0.0
+ * Version: 2.5.10
  * Author: Your Name
  * Author URI: https://yourwebsite.com
  * Text Domain: jewellery-price-calc
@@ -19,7 +19,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('JPC_VERSION', '2.0.0');
+define('JPC_VERSION', '2.5.10');
 define('JPC_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('JPC_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('JPC_PLUGIN_BASENAME', plugin_basename(__FILE__));
@@ -50,6 +50,7 @@ require_once JPC_PLUGIN_DIR . 'includes/class-jpc-frontend.php';
 require_once JPC_PLUGIN_DIR . 'includes/class-jpc-admin.php';
 require_once JPC_PLUGIN_DIR . 'includes/class-jpc-shortcodes.php';
 require_once JPC_PLUGIN_DIR . 'includes/class-jpc-bulk-import-export.php';
+require_once JPC_PLUGIN_DIR . 'includes/class-jpc-data-migration-v2510.php'; // NEW v2.5.10
 
 // Initialize plugin
 add_action('plugins_loaded', 'jpc_init');
@@ -164,6 +165,27 @@ function jpc_v2_migration_notice() {
         </div>
         <?php
         delete_transient('jpc_v2_migration_notice');
+    }
+}
+
+// v2.5.10 Migration Notice
+add_action('admin_notices', 'jpc_v2510_migration_notice');
+
+function jpc_v2510_migration_notice() {
+    // Only show if migration is needed and not completed
+    if (JPC_Data_Migration_v2510::is_migration_needed() && !get_option('jpc_migration_v2510_completed')) {
+        $migration_url = admin_url('admin.php?page=jpc-migration-v2510');
+        ?>
+        <div class="notice notice-warning">
+            <p>
+                <strong>Jewellery Price Calculator v2.5.10:</strong> 
+                Your products need to be migrated to support the new Additional Cost Fields format.
+                <a href="<?php echo esc_url($migration_url); ?>" class="button button-primary" style="margin-left: 10px;">
+                    Run Migration Now
+                </a>
+            </p>
+        </div>
+        <?php
     }
 }
 
