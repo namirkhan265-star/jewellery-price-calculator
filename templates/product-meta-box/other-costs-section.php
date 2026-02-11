@@ -1,7 +1,8 @@
 <?php
 /**
- * Other Costs Section Template v2.5.27
+ * Other Costs Section Template v2.5.28
  * Stones, Pearls, Extra Fees, Discount, Extra Fields
+ * v2.5.28: FIX - Hide Discount section when disabled in settings
  * v2.5.27: FIX - Hide disabled Additional Cost Fields & separate Discount section
  * v2.5.26: CRITICAL FIX - Correct field names to match calculation (_value suffix)
  * v2.5.3: Extra fields now show custom labels and only enabled fields
@@ -16,6 +17,9 @@ if (!defined('ABSPATH')) {
 $enable_field_1 = get_option('jpc_enable_additional_cost_field_1', 'no');
 $enable_field_2 = get_option('jpc_enable_additional_cost_field_2', 'no');
 $enable_field_3 = get_option('jpc_enable_additional_cost_field_3', 'no');
+
+// v2.5.28: Get enable/disable setting for Discount
+$enable_discount = get_option('jpc_enable_discount', 'no');
 
 // Get custom labels and types from settings
 $pearl_cost_label = get_option('jpc_pearl_cost_label', 'Pearl Cost');
@@ -125,7 +129,8 @@ $has_additional_costs = ($enable_field_1 === 'yes' || $enable_field_2 === 'yes' 
 </div>
 <?php endif; ?>
 
-<!-- Discount Section - v2.5.27: Moved to separate section -->
+<?php if ($enable_discount === 'yes'): ?>
+<!-- Discount Section - v2.5.28: Only show if enabled in settings -->
 <div class="jpc-section">
     <h3><?php _e('Discount', 'jewellery-price-calc'); ?></h3>
     
@@ -137,6 +142,7 @@ $has_additional_costs = ($enable_field_1 === 'yes' || $enable_field_2 === 'yes' 
         <p class="jpc-help-text"><?php _e('Discount percentage to apply on final price', 'jewellery-price-calc'); ?></p>
     </div>
 </div>
+<?php endif; ?>
 
 <?php
 // Check if any extra fields (4-5) are enabled
