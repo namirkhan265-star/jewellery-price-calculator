@@ -1,9 +1,39 @@
 /**
  * Product Meta Box JavaScript v2.0.0
  * Handles toggles, live calculations, and AJAX updates
+ * ENHANCED: Conditional field display based on metal group settings
  */
 
 jQuery(document).ready(function($) {
+    
+    // ========================================
+    // CONDITIONAL FIELD DISPLAY
+    // ========================================
+    
+    // Toggle wastage and making charges fields based on metal group settings
+    $('#jpc_metal_id').on('change', function() {
+        var selectedOption = $(this).find('option:selected');
+        var enableMaking = selectedOption.data('enable-making');
+        var enableWastage = selectedOption.data('enable-wastage');
+        
+        // Show/hide wastage field
+        if (enableWastage == 1) {
+            $('#jpc_wastage_field').slideDown(200);
+        } else {
+            $('#jpc_wastage_field').slideUp(200);
+            $('#jpc_wastage').val('0'); // Reset value when hidden
+        }
+        
+        // Show/hide making charges section
+        if (enableMaking == 1) {
+            $('#jpc_making_charges_section').slideDown(200);
+        } else {
+            $('#jpc_making_charges_section').slideUp(200);
+            // Reset making charges when hidden
+            $('input[name="jpc_making_charges_mode"][value="auto"]').prop('checked', true);
+            $('#jpc_making_charges_value').val('');
+        }
+    });
     
     // ========================================
     // MAKING CHARGES TOGGLE
