@@ -1,6 +1,7 @@
 <?php
 /**
  * Admin Interface Handler
+ * v2.5.16: CRITICAL FIX - Handle discount settings save properly
  * v2.5.5: Added enable/disable checkbox for Additional Percentage
  * v2.5.0: Added custom label and type settings for additional cost fields
  */
@@ -145,42 +146,47 @@ class JPC_Admin {
     
     /**
      * Handle settings save to properly handle checkboxes
+     * v2.5.16: CRITICAL FIX - Added proper handling for discount settings page
      * v2.5.5: Added jpc_enable_additional_percentage
      */
     public function handle_settings_save() {
-        if (!isset($_POST['option_page']) || $_POST['option_page'] !== 'jpc_general_settings') {
-            return;
-        }
-        
-        if (!isset($_POST['_wpnonce']) || !wp_verify_nonce($_POST['_wpnonce'], 'jpc_general_settings-options')) {
-            return;
-        }
-        
-        // Handle checkbox fields - set to 'no' if not checked
-        $checkbox_fields = array(
-            'jpc_enable_pearl_cost',
-            'jpc_enable_stone_cost',
-            'jpc_enable_extra_fee',
-            'jpc_enable_additional_percentage', // NEW v2.5.5
-            'jpc_enable_gst',
-            'jpc_show_price_breakup',
-        );
-        
-        foreach ($checkbox_fields as $field) {
-            if (!isset($_POST[$field])) {
-                update_option($field, 'no');
+        // Handle General Settings
+        if (isset($_POST['option_page']) && $_POST['option_page'] === 'jpc_general_settings') {
+            if (!isset($_POST['_wpnonce']) || !wp_verify_nonce($_POST['_wpnonce'], 'jpc_general_settings-options')) {
+                return;
+            }
+            
+            // Handle checkbox fields - set to 'no' if not checked
+            $checkbox_fields = array(
+                'jpc_enable_pearl_cost',
+                'jpc_enable_stone_cost',
+                'jpc_enable_extra_fee',
+                'jpc_enable_additional_percentage', // NEW v2.5.5
+                'jpc_enable_gst',
+                'jpc_show_price_breakup',
+            );
+            
+            foreach ($checkbox_fields as $field) {
+                if (!isset($_POST[$field])) {
+                    update_option($field, 'no');
+                }
+            }
+            
+            // Handle extra field checkboxes
+            for ($i = 1; $i <= 5; $i++) {
+                if (!isset($_POST['jpc_enable_extra_field_' . $i])) {
+                    update_option('jpc_enable_extra_field_' . $i, 'no');
+                }
             }
         }
         
-        // Handle extra field checkboxes
-        for ($i = 1; $i <= 5; $i++) {
-            if (!isset($_POST['jpc_enable_extra_field_' . $i])) {
-                update_option('jpc_enable_extra_field_' . $i, 'no');
-            }
-        }
-        
-        // Handle discount settings checkboxes
+        // v2.5.16: CRITICAL FIX - Handle Discount Settings separately
         if (isset($_POST['option_page']) && $_POST['option_page'] === 'jpc_discount_settings') {
+            if (!isset($_POST['_wpnonce']) || !wp_verify_nonce($_POST['_wpnonce'], 'jpc_discount_settings-options')) {
+                return;
+            }
+            
+            // Handle discount checkboxes
             $discount_checkboxes = array(
                 'jpc_enable_discount',
                 'jpc_discount_on_metals',
