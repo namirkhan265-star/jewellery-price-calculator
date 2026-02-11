@@ -75,27 +75,72 @@ if (!defined('ABSPATH')) {
         <p class="description"><?php _e('Enter wastage charge as percentage or fixed amount', 'jewellery-price-calc'); ?></p>
     </div>
     
-    <?php if (get_option('jpc_enable_pearl_cost') === 'yes'): ?>
+    <?php 
+    // Additional Cost Field 1 (Pearl Cost)
+    if (get_option('jpc_enable_pearl_cost') === 'yes'): 
+        $pearl_cost_label = get_option('jpc_pearl_cost_label', 'Pearl Cost');
+        $pearl_cost_type = get_option('jpc_pearl_cost_type', 'fixed');
+        $pearl_cost_value = get_post_meta($post->ID, '_jpc_pearl_cost_value', true);
+    ?>
     <div class="form-field">
-        <label for="_jpc_pearl_cost"><?php _e('Pearl Cost', 'jewellery-price-calc'); ?></label>
-        <input type="number" id="_jpc_pearl_cost" name="_jpc_pearl_cost" value="<?php echo esc_attr($pearl_cost); ?>" step="0.01" min="0" class="widefat">
-        <p class="description"><?php _e('Enter pearl cost if applicable', 'jewellery-price-calc'); ?></p>
+        <label for="_jpc_pearl_cost_value"><?php echo esc_html($pearl_cost_label); ?> (<?php echo $pearl_cost_type === 'percentage' ? '%' : '₹'; ?>)</label>
+        <input type="number" id="_jpc_pearl_cost_value" name="_jpc_pearl_cost_value" value="<?php echo esc_attr($pearl_cost_value); ?>" step="0.01" min="0" class="widefat">
+        <input type="hidden" name="_jpc_pearl_cost_type" value="<?php echo esc_attr($pearl_cost_type); ?>">
+        <p class="description">
+            <?php 
+            if ($pearl_cost_type === 'percentage') {
+                _e('Enter fixed amount in rupees', 'jewellery-price-calc');
+            } else {
+                _e('Enter fixed amount in rupees', 'jewellery-price-calc');
+            }
+            ?>
+        </p>
     </div>
     <?php endif; ?>
     
-    <?php if (get_option('jpc_enable_stone_cost') === 'yes'): ?>
+    <?php 
+    // Additional Cost Field 2 (Stone Cost)
+    if (get_option('jpc_enable_stone_cost') === 'yes'): 
+        $stone_cost_label = get_option('jpc_stone_cost_label', 'Stone Cost');
+        $stone_cost_type = get_option('jpc_stone_cost_type', 'fixed');
+        $stone_cost_value = get_post_meta($post->ID, '_jpc_stone_cost_value', true);
+    ?>
     <div class="form-field">
-        <label for="_jpc_stone_cost"><?php _e('Stone Cost', 'jewellery-price-calc'); ?></label>
-        <input type="number" id="_jpc_stone_cost" name="_jpc_stone_cost" value="<?php echo esc_attr($stone_cost); ?>" step="0.01" min="0" class="widefat">
-        <p class="description"><?php _e('Enter stone cost if applicable', 'jewellery-price-calc'); ?></p>
+        <label for="_jpc_stone_cost_value"><?php echo esc_html($stone_cost_label); ?> (<?php echo $stone_cost_type === 'percentage' ? '%' : '₹'; ?>)</label>
+        <input type="number" id="_jpc_stone_cost_value" name="_jpc_stone_cost_value" value="<?php echo esc_attr($stone_cost_value); ?>" step="0.01" min="0" class="widefat">
+        <input type="hidden" name="_jpc_stone_cost_type" value="<?php echo esc_attr($stone_cost_type); ?>">
+        <p class="description">
+            <?php 
+            if ($stone_cost_type === 'percentage') {
+                _e('Enter percentage value', 'jewellery-price-calc');
+            } else {
+                _e('Enter fixed amount in rupees', 'jewellery-price-calc');
+            }
+            ?>
+        </p>
     </div>
     <?php endif; ?>
     
-    <?php if (get_option('jpc_enable_extra_fee') === 'yes'): ?>
+    <?php 
+    // Additional Cost Field 3 (Extra Fee)
+    if (get_option('jpc_enable_extra_fee') === 'yes'): 
+        $extra_fee_label = get_option('jpc_extra_fee_label', 'Extra Fee');
+        $extra_fee_type = get_option('jpc_extra_fee_type', 'fixed');
+        $extra_fee_value = get_post_meta($post->ID, '_jpc_extra_fee_value', true);
+    ?>
     <div class="form-field">
-        <label for="_jpc_extra_fee"><?php _e('Extra Fee', 'jewellery-price-calc'); ?></label>
-        <input type="number" id="_jpc_extra_fee" name="_jpc_extra_fee" value="<?php echo esc_attr($extra_fee); ?>" step="0.01" min="0" class="widefat">
-        <p class="description"><?php _e('Enter any additional fees', 'jewellery-price-calc'); ?></p>
+        <label for="_jpc_extra_fee_value"><?php echo esc_html($extra_fee_label); ?> (<?php echo $extra_fee_type === 'percentage' ? '%' : '₹'; ?>)</label>
+        <input type="number" id="_jpc_extra_fee_value" name="_jpc_extra_fee_value" value="<?php echo esc_attr($extra_fee_value); ?>" step="0.01" min="0" class="widefat">
+        <input type="hidden" name="_jpc_extra_fee_type" value="<?php echo esc_attr($extra_fee_type); ?>">
+        <p class="description">
+            <?php 
+            if ($extra_fee_type === 'percentage') {
+                _e('Enter percentage value', 'jewellery-price-calc');
+            } else {
+                _e('Enter fixed amount in rupees', 'jewellery-price-calc');
+            }
+            ?>
+        </p>
     </div>
     <?php endif; ?>
     
