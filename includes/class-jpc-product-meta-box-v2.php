@@ -1,9 +1,10 @@
 <?php
 /**
- * Product Meta Box Handler v2.5.34
+ * Product Meta Box Handler v2.5.35
  * Enhanced with:
  * - Making Charges Toggle (Auto/Manual)
  * - Manual Diamond Entry with 4Cs
+ * v2.5.35: COMPLETE FIX - Changed wastage field name in BOTH save AND load
  * v2.5.34: MINIMAL FIX - Only changed wastage field name
  * v2.5.26: CRITICAL FIX - Save Additional Cost Fields with correct _value suffix
  */
@@ -86,7 +87,9 @@ class JPC_Product_Meta_Box {
         // Get saved values
         $metal_id = get_post_meta($post->ID, '_jpc_metal_id', true);
         $metal_weight = get_post_meta($post->ID, '_jpc_metal_weight', true);
-        $wastage = get_post_meta($post->ID, '_jpc_wastage', true);
+        
+        // v2.5.35: CRITICAL FIX - Read from _jpc_wastage_percentage (not _jpc_wastage)
+        $wastage = get_post_meta($post->ID, '_jpc_wastage_percentage', true);
         
         // Making charges v2.0.0
         $making_charges_mode = get_post_meta($post->ID, '_jpc_making_charges_mode', true) ?: 'auto';
@@ -278,7 +281,7 @@ class JPC_Product_Meta_Box {
     }
     
     /**
-     * Save meta box (v2.5.34 - MINIMAL FIX: Only changed wastage field name)
+     * Save meta box (v2.5.35 - COMPLETE FIX: Changed wastage field name in BOTH save AND load)
      */
     public function save_meta_box($post_id, $post) {
         // Verify nonce
@@ -301,7 +304,7 @@ class JPC_Product_Meta_Box {
         update_post_meta($post_id, '_jpc_metal_id', sanitize_text_field($_POST['jpc_metal_id'] ?? ''));
         update_post_meta($post_id, '_jpc_metal_weight', floatval($_POST['jpc_metal_weight'] ?? 0));
         
-        // v2.5.34: CRITICAL FIX - Save as _jpc_wastage_percentage (not _jpc_wastage)
+        // v2.5.35: CRITICAL FIX - Save as _jpc_wastage_percentage (not _jpc_wastage)
         update_post_meta($post_id, '_jpc_wastage_percentage', floatval($_POST['jpc_wastage'] ?? 0));
         
         // Save making charges v2.0.0
